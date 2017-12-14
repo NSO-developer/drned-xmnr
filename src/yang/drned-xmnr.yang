@@ -1,0 +1,131 @@
+module drned-xmnr {
+  namespace "http://cisco.com/ns/drned-xmnr";
+  prefix drned-xmnr;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description "A Doctor's bag of tools for examining & diagnosing your NSO NEDs";
+
+  grouping action-output-common {
+    leaf message {
+      type string;
+    }
+    leaf error {
+      type string;
+    }
+    leaf success {
+      type string;
+    }
+    leaf failure {
+      type string;
+    }
+  }
+
+  augment /ncs:devices/ncs:device {
+    container drned-xmnr {
+      ////////////////////////////////////////////////////////////////
+      //// CONFIG
+      ////////////////////////////////////////////////////////////////
+      container config {
+        //////// config/record-state /////////////////////////////////
+        tailf:action record-state {
+          tailf:info "Save the current device configuration state in a file. "+
+            "A collection of saved state files can later be used with the "+
+            "'config explore-transitions' command.";
+          tailf:actionpoint drned-xmnr;
+          input {
+            leaf state-name {
+              mandatory true;
+              type string;
+            }
+            leaf including-rollbacks {
+              type uint32 {
+                range 0..25;
+              }
+              default 0;
+            }
+          }
+          output {
+            uses action-output-common;
+            leaf state-name {
+              type string;
+            }
+          }
+        }
+        //////// config/delete-state /////////////////////////////////
+        tailf:action delete-state {
+          tailf:info "Delete a saved state file. ";
+          tailf:actionpoint drned-xmnr;
+          input {
+            leaf state-name {
+              mandatory true;
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// config/list-states //////////////////////////////////
+        tailf:action list-states {
+          tailf:info "List the saved states for this device.";
+          tailf:actionpoint drned-xmnr;
+          input {
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// config/transition-to-state //////////////////////////
+        tailf:action transition-to-state {
+          tailf:actionpoint drned-xmnr;
+          input {
+            leaf state-name {
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// config/build-states /////////////////////////////////
+        tailf:action build-states {
+          tailf:actionpoint drned-xmnr;
+          input {
+          }
+          output {
+            uses action-output-common;
+            leaf filename {
+              type string;
+            }
+          }
+        }
+        //////// config/explore-transitions //////////////////////////
+        tailf:action explore-transitions {
+          tailf:actionpoint drned-xmnr;
+          input {
+            container stop-after {
+              tailf:info "Do not start more transitions after given time/coverage has been reached.";
+              choice unit-selection {
+                leaf seconds { type uint64; }
+                leaf minutes { type uint64; }
+                leaf hours   { type uint64; }
+                leaf days    { type uint64; }
+                leaf percent { type uint64; }
+                leaf cases   { type uint64; }
+              }                
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+      }
+    }
+  }
+}
