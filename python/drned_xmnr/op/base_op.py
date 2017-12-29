@@ -48,12 +48,7 @@ class BaseOp(object):
     def extend_timeout(self, timeout_extension):
         dp.action_set_timeout(self.uinfo, timeout_extension)
         
-    def proc_run_outputfun(self, command, timeout, outputfun):
-        self.debug("run_outputfun '" + str(" ".join(command)))
-        proc = subprocess.Popen(command,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        self.debug("run_outputfun, going in")
+    def proc_run(self, proc, outputfun, timeout):
         fd = proc.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
@@ -76,39 +71,10 @@ class BaseOp(object):
         self.debug("run_finished, output len=" + str(len(stdoutdata)))
         return stdoutdata
 
-    def proc_run(self, command, stdin_str="", timeout=10, outputfun=None):
-        # Timeout is only used with outputfun
-        self.debug("run '" + str(" ".join(command))
-                     + "', input len=" + str(len(stdin_str)))
-
-        self.debug("env  " + str(os.environ))
-
-        try:
-            if outputfun:
-                return self.proc_run_outputfun(command, timeout, outputfun)
-            else:
-                self.debug("Subprocess command: "+str(command))
-
-                proc = subprocess.Popen(command,
-                                        env=env,
-                                        stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-                (stdoutdata, stderrdata) = proc.communicate(input=stdin_str)
-                self.debug("run finished, output len=" + str(len(stdoutdata))
-                             + ", err len=" + str(len(stderrdata)))
-                return (stdoutdata, stderrdata)
-        except OSError as oserr:
-            if oserr.errno == 2: # File not found
-                raise ActionError({'error':"Dependent application not found, please install: " + str(command[0])})
-            raise ActionError({'error':"OSError when executing " + str(command[0])})
-        except:
-            self.debug("run failed:\n" + repr(traceback.format_exception(*sys.exc_info())))
-            raise ActionError({'error':"Failed to execute " + str(command[0])})
-
     def progress_msg(self, msg):
         self.debug(msg)
-        maapi.cli_write(self.msocket, self.uinfo.usid, msg)
+        if self.uinfo.context == 'cli':
+            maapi.cli_write(self.msocket, self.uinfo.usid, msg)
 
     def get_exe_path(self, exe):
         path = self.get_exe_path_from_PATH(exe)

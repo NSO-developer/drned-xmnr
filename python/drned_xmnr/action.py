@@ -65,18 +65,6 @@ class ActionHandler(threading.Thread):
         dev_name = str(kp[-3][0])
         self.debug("thandle={0} usid={1}".format(uinfo.actx_thandle, uinfo.usid))
 
-        os.environ['DRNED'] = '/Users/jlindbla/git/drned'
-        sys.path = [os.environ['DRNED'], os.environ['NCS_DIR'] + '/lib/pyang'] + sys.path
-        os.environ['PATH'] = os.environ['NCS_DIR'] + '/bin:' + os.environ['PATH']
-        os.environ['DRNED_NCS'] = '../../..'
-        ## FIXME jlindbla
-        pycdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        testdir = os.path.normpath(pycdir + "/../../../../../../test/drned-xmnr/" + dev_name)
-        #/Users/jlindbla/git/virtual-mpls-vpn-xe-netconf/state/packages-in-use/1/drned-xmnr/python/drned_xmnr
-        #../../../../../../test/drned-xmnr/<dev>
-        os.chdir(testdir)
-        #os.chdir('/Users/jlindbla/git/virtual-mpls-vpn-xe-netconf/test/drned-xmnr/ce0')
-
         ## ce0-nc.cfg
         #        admin@ncs# devices device ce0-nc sync-from 
         

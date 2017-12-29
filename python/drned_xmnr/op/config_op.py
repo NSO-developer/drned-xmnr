@@ -7,11 +7,11 @@ import socket
 import subprocess
 import sys
 import time
-import traceback
 import inspect
 
 import _ncs
-import _ncs.maapi as maapi
+import ncs
+from ncs import maapi, maagic
 
 import base_op
 import drned_xmnr.namespaces.drned_xmnr_ns as ns
@@ -24,12 +24,61 @@ from ex import ActionError
 
 class ConfigOp(base_op.BaseOp):
     statefile_extension = '.state.cfg'
+
     def state_name_to_filename(self, statename, devname):
-        #return devname + '--' + statename + '.state.cfg'
         return statename + self.statefile_extension
 
     def state_filename_to_name(self, filename, devname):
         return filename[:-len(self.statefile_extension)]
+
+    def run_with_trans(self, callback):
+        if self.uinfo.actx_thandle == -1:
+            with maapi.single_read_trans(self.uinfo.username, self.uinfo.context) as trans:
+                return callback(trans)
+        else:
+            mp = maapi.Maapi(msock=self.msocket)
+            mp.attach(self.uinfo.actx_thandle)
+            return callback(maapi.Transaction(mp, rw=ncs.READ))
+
+    def setup_drned_env(self, trans):
+        env = dict(os.environ)
+        root = maagic.get_root(trans)
+        drdir = root.drned_xmnr.drned_dir
+        if drdir is None:
+            try:
+                drdir = env['DRNED']
+            except KeyError:
+                raise ActionError({'error': 'DrNED installation directory not set; ' +
+                                   'set environment variable DRNED or /drned-xmnr/drned-dir'})
+        else:
+            env['DRNED'] = drdir
+        if 'PYTHONPATH' in env:
+            env['PYTHONPATH'] += os.pathsep + drdir
+        else:
+            env['PYTHONPATH'] = drdir
+        try:
+            env['PYTHONPATH'] += os.pathsep + env['NCS_DIR'] + '/lib/pyang'
+        except KeyError:
+            raise ActionError({'error': 'NCS_DIR not set'})
+        return env
+
+    def drned_run(self, drned_args, timeout):
+        env = self.run_with_trans(self.setup_drned_env)
+        self.debug("using env {0}\n".format(env))
+        args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
+        args.insert(0, "py.test")
+        proc = subprocess.Popen(args,
+                                env=env,
+                                cwd= '/home/martin/devel/drned-xmnr/ncs/packages/pinoeer/test/drned', #FIXME
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        self.debug("run_outputfun, going in")
+
+        def progress_fun(state, stdout):
+            self.progress_msg(stdout)
+            self.extend_timeout(120)
+            return None
+        return self.proc_run(proc, progress_fun, timeout)
 
     def transition_to_state(self, to_state_filename):
         filename = os.path.join(self.states_dir, to_state_filename)
@@ -37,40 +86,27 @@ class ConfigOp(base_op.BaseOp):
             state_name = self.state_filename_to_name(to_state_filename, self.dev_name)
             raise ActionError({'error': 'No such state: {0}'.format(state_name)})
 
-        try:
-            self.debug("Transition_to_state: #{0}\n".format(filename))
-            self.debug("sys.path: #{0}\n".format(sys.path))
-            self.debug("os.environ: #{0}\n".format(os.environ))
-            self.debug("I live at: {0}\n".format(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))))
+        self.debug("Transition_to_state: #{0}\n".format(filename))
+        self.debug("sys.path: #{0}\n".format(sys.path))
+        self.debug("os.environ: #{0}\n".format(os.environ))
+        self.debug("I live at: {0}\n".format(
+            os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))))
 
-            def progress_fun(state, stdout):
-                self.progress_msg(stdout)
-                self.extend_timeout(120)
-                return None
+        # Max 120 seconds for executing the transaction and a compare-config
+        self.extend_timeout(120)
+        args = ["-k", "test_template_set", "--fname=" + filename]
+        result = self.drned_run(args, timeout=120)
+        self.debug("Test case completed\n")
+        with maapi.single_write_trans(self.uinfo.username, self.uinfo.context) as trans:
+            root = maagic.get_root(trans)
+            device = root.devices.device[self.dev_name]
+            result = device.compare_config()
+        if result.diff is None or result.diff == '':
+            self.debug("In sync\n")
+            return True
+        else:
+            return "out-of-sync"
 
-            self.extend_timeout(120) # Max 120 seconds for executing the transaction and a compare-config
-            #self.state_file = ""
-            command = [
-                "py.test", "-s", "--tb=short", "-k", "test_template_set",
-                "--device="+self.dev_name, 
-                "--fname=" +filename, 
-                "--unreserved"]
-            result = self.proc_run(command, timeout=120, outputfun=progress_fun)
-            #self.debug("Test case result\n"+str(result))
-            self.debug("Test case completed\n")
-            thandle = maapi.start_trans2(self.msocket, _ncs.RUNNING, _ncs.READ_WRITE, self.uinfo.usid)
-            result = maapi.request_action(self.msocket, [], 0, "/ncs:devices/device{" + self.dev_name + "}/compare-config")
-            if [] == result:
-                self.debug("In sync\n")
-                return True
-            else:
-                return "out-of-sync"
-        except:
-            self.debug("Exception: " + repr(traceback.format_exception(*sys.exc_info())))
-            return "transaction-failed"
-        finally:
-            maapi.finish_trans(self.msocket, thandle)
-            pass
 
 class DeleteStateOp(ConfigOp):
     def _init_params(self, params):
@@ -123,36 +159,39 @@ class RecordStateOp(ConfigOp):
         self.include_rollbacks = self.param_default(params, ns.ns.drned_xmnr_including_rollbacks, 0)
 
     def perform(self):
+        return self.run_with_trans(self._perform)
+
+    def _perform(self, trans):
         self.debug("config_record_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
         self.debug("incl_rollbacks="+str(self.include_rollbacks))
         try:
-            ## list_rollbacks() returns one less rollback than the second argument,
-            ## i.e. send 2 to get 1 rollback. Therefore the +1
+            # list_rollbacks() returns one less rollback than the second argument,
+            # i.e. send 2 to get 1 rollback. Therefore the +1
             rollbacks = maapi.list_rollbacks(self.msocket, int(self.include_rollbacks)+1)
-            ## rollbacks are returned 'most recent first', i.e. reverse chronological order
+            # rollbacks are returned 'most recent first', i.e. reverse chronological order
         except:
             rollbacks = []
         self.debug("rollbacks="+str([r.fixed_nr for r in rollbacks]))
-        maapi.attach2(self.msocket, 0, 0, self.uinfo.actx_thandle)
         index = 0
         state_filenames = []
         for rb in [None] + rollbacks:
-            if None == rb:
+            if rb is None:
                 self.debug("Recording current transaction state")
             else:
                 self.debug("Recording rollback"+str(rb.fixed_nr))
                 self.debug("Recording rollback"+str(rb.nr))
-                maapi.load_rollback(self.msocket, self.uinfo.actx_thandle, 3)#rb.nr)
+                trans.load_rollback(3)  # rb.nr
 
-            save_id = maapi.save_config(self.msocket, self.uinfo.actx_thandle, maapi.CONFIG_C,
+            save_id = trans.save_config(_ncs.maapi.CONFIG_C,
                                         "/ncs:devices/device{"+self.dev_name+"}/config")
 
             state_name_index = state_name
             if index > 0:
                 state_name_index = state_name+"-"+str(index)
-            state_filename = self.states_dir + "/" + self.state_name_to_filename(state_name_index, self.dev_name)
-            with file(state_filename, "w") as state_file:
+            state_filename = self.states_dir + "/" + \
+                self.state_name_to_filename(state_name_index, self.dev_name)
+            with open(state_filename, "w") as state_file:
                 try:
                     ssocket = socket.socket()
                     _ncs.stream_connect(
@@ -171,12 +210,12 @@ class RecordStateOp(ConfigOp):
                 finally:
                     ssocket.close()
             state_filenames += [state_name_index]
-                
-            ##maapi.save_config_result(sock, id) -> None
-                            
+
+            # maapi.save_config_result(sock, id) -> None
+
             index += 1
-            maapi.revert(self.msocket, self.uinfo.actx_thandle)
-        return {'success':"Recorded states " + str(state_filenames)}
+            trans.revert()
+        return {'success': "Recorded states " + str(state_filenames)}
 
 class ExploreTransitionsOp(ConfigOp):
     def _init_params(self, params):

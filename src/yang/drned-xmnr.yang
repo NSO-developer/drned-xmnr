@@ -26,6 +26,13 @@ module drned-xmnr {
     }
   }
 
+  container drned-xmnr {
+    leaf drned-dir {
+      description "DrNED installation directory; if unset, environment variable is used";
+      type string;
+    }
+  }
+
   augment /ncs:devices/ncs:device {
     container drned-xmnr {
       ////////////////////////////////////////////////////////////////
