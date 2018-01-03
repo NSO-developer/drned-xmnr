@@ -36,7 +36,7 @@ class ConfigOp(base_op.BaseOp):
             with maapi.single_read_trans(self.uinfo.username, self.uinfo.context) as trans:
                 return callback(trans)
         else:
-            mp = maapi.Maapi(msock=self.msocket)
+            mp = maapi.Maapi()
             mp.attach(self.uinfo.actx_thandle)
             return callback(maapi.Transaction(mp, rw=ncs.READ))
 
@@ -110,7 +110,7 @@ class ConfigOp(base_op.BaseOp):
 
 class DeleteStateOp(ConfigOp):
     def _init_params(self, params):
-        self.state_name = self.param_default(params, ns.ns.drned_xmnr_state_name, "")
+        self.state_name = self.param_default(params, "state_name", "")
 
     def perform(self):
         self.debug("config_delete_state() with device {0}".format(self.dev_name))
@@ -121,28 +121,6 @@ class DeleteStateOp(ConfigOp):
             return {'error':"Could not delete " + state_filename}
         return {'success':"Deleted " + self.state_name}
         
-class ImportIntoFileOp(ConfigOp):
-    def _init_params(self, params):
-        self.file_name = str(params[0].v)
-
-    def perform(self):
-        self.debug("config_import_into_file() with device {0}".format(self.dev_name))
-        tempfile_stem = "/tmp/" + os.path.basename(self.file_name)
-        tempfile_l_name = tempfile_stem + ".ncsload.xml"
-        log_name = tempfile_stem + ".log"
-
-        log = self.proc_run_xsltproc('ncs-import-from-top.xsl', self.file_name, tempfile_l_name, log_name)
-
-        #self.attach_load_file(self.file_name)
-        self.debug("config-snippet import done")
-        return {'filename':tempfile_l_name}
-
-    def attach_load_file(self, file_name):
-        self.debug("31")
-        maapi.attach2(self.msocket, 0, self.uinfo.usid, self.uinfo.actx_thandle)
-        self.debug("32 "+str(maapi.CONFIG_XML)+" "+str(self.uinfo.actx_thandle))
-        maapi.load_config(self.msocket, self.uinfo.actx_thandle, maapi.CONFIG_XML+maapi.CONFIG_XML_LOAD_LAX, file_name)
-        self.debug("33")
 
 class ListStatesOp(ConfigOp):
     def _init_params(self, params):
@@ -153,10 +131,11 @@ class ListStatesOp(ConfigOp):
         state_files = [self.state_filename_to_name(f, self.dev_name) for f in os.listdir(self.states_dir) if fnmatch.fnmatch(f, self.state_name_to_filename('*', self.dev_name))]
         return {'success':"Saved device states: " + str(state_files)}
 
+
 class RecordStateOp(ConfigOp):
     def _init_params(self, params):
-        self.state_name = self.param_default(params, ns.ns.drned_xmnr_state_name, "")
-        self.include_rollbacks = self.param_default(params, ns.ns.drned_xmnr_including_rollbacks, 0)
+        self.state_name = self.param_default(params, "state_name", "")
+        self.include_rollbacks = self.param_default(params, "including_rollbacks", 0)
 
     def perform(self):
         return self.run_with_trans(self._perform)
@@ -168,7 +147,7 @@ class RecordStateOp(ConfigOp):
         try:
             # list_rollbacks() returns one less rollback than the second argument,
             # i.e. send 2 to get 1 rollback. Therefore the +1
-            rollbacks = maapi.list_rollbacks(self.msocket, int(self.include_rollbacks)+1)
+            rollbacks = maapi.list_rollbacks(trans.maapi.msock, int(self.include_rollbacks)+1)
             # rollbacks are returned 'most recent first', i.e. reverse chronological order
         except:
             rollbacks = []
@@ -219,12 +198,12 @@ class RecordStateOp(ConfigOp):
 
 class ExploreTransitionsOp(ConfigOp):
     def _init_params(self, params):
-        self.stop_time = 24 * int(self.param_default(params, ns.ns.drned_xmnr_days, 0))
-        self.stop_time = 60 * int(self.param_default(params, ns.ns.drned_xmnr_hours, self.stop_time))
-        self.stop_time = 60 * int(self.param_default(params, ns.ns.drned_xmnr_minutes, self.stop_time))
-        self.stop_time =      int(self.param_default(params, ns.ns.drned_xmnr_seconds, self.stop_time))
-        self.stop_percent =   int(self.param_default(params, ns.ns.drned_xmnr_percent, 0))
-        self.stop_cases =     int(self.param_default(params, ns.ns.drned_xmnr_cases, 0))
+        self.stop_time = 24 * int(self.param_default(params, "days", 0))
+        self.stop_time = 60 * int(self.param_default(params, "hours", self.stop_time))
+        self.stop_time = 60 * int(self.param_default(params, "minutes", self.stop_time))
+        self.stop_time =      int(self.param_default(params, "seconds", self.stop_time))
+        self.stop_percent =   int(self.param_default(params, "percent", 0))
+        self.stop_cases =     int(self.param_default(params, "cases", 0))
 
     def perform(self):
         self.debug("config_explore_transitions() with device {0}".format(self.dev_name))
@@ -303,7 +282,7 @@ class ExploreTransitionsOp(ConfigOp):
         
 class TransitionToStateOp(ConfigOp):
     def _init_params(self, params):
-        self.state_name = self.param_default(params, ns.ns.drned_xmnr_state_name, "")
+        self.state_name = self.param_default(params, "state_name", "")
 
     def perform(self):
         self.debug("config_transition_to_state() with device {0} to state {1}".format(self.dev_name, self.state_name))

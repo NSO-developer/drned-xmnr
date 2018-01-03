@@ -21,8 +21,7 @@ class BaseOp(object):
     ncs_rollback_dir = os.path.join(ncs_run_dir, "logs")
     #states_dir = os.path.join(ncs_run_dir, "test", "drned", dev_name)
     
-    def __init__(self, msocket, uinfo, dev_name, params, debug_func):
-        self.msocket = msocket
+    def __init__(self, uinfo, dev_name, params, debug_func):
         self.uinfo = uinfo
         self.dev_name = dev_name
 
@@ -38,13 +37,15 @@ class BaseOp(object):
     def _init_params(self, params):
         # Implement in subclasses
         pass
-    
-    def param_default(self, params, tag, default):
-        matching_param_list = [p.v for p in params if p.tag == tag]
-        if len(matching_param_list) == 0:
+
+
+    def param_default(self, params, name, default):
+        value = getattr(params, name)
+        if value is None:
             return default
-        return str(matching_param_list[0])
-    
+        return value
+
+
     def extend_timeout(self, timeout_extension):
         dp.action_set_timeout(self.uinfo, timeout_extension)
         

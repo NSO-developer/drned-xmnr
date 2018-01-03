@@ -6,7 +6,7 @@
   <component>
     <name>drned_xmnr</name>
     <application>
-      <python-class-name>Action</python-class-name>
+      <python-class-name>drned_xmnr.action.Action</python-class-name>
     </application>
   </component>
 </ncs-package>
