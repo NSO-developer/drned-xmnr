@@ -27,9 +27,14 @@ module drned-xmnr {
   }
 
   container drned-xmnr {
-    leaf drned-dir {
+    leaf drned-directory {
       description "DrNED installation directory; if unset, environment variable is used";
       type string;
+    }
+    leaf xmnr-directory {
+      description "Directory where XMNR data is stored";
+      type string;
+      default "/tmp/xmnr";
     }
   }
 

@@ -15,7 +15,7 @@ from __future__ import print_function
 import sys
 import traceback
 
-from ncs import dp, application, maapi
+from ncs import dp, application
 import drned_xmnr.namespaces.drned_xmnr_ns as ns
 
 # operation modules
@@ -41,9 +41,6 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_record_state_: op.config_op.RecordStateOp,
         ns.ns.drned_xmnr_transition_to_state_: op.config_op.TransitionToStateOp,
     }
-
-    def init(self):
-        self.maapi = maapi.Maapi()  # FIXME: this makes it thread-unsafe!
 
     @dp.Action.action
     def cb_action(self, uinfo, op_name, kp, params, output):

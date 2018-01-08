@@ -3,7 +3,10 @@
 
 class ActionError(Exception):
     def __init__(self, info):
-        self.info = info
+        if type(info) is dict:
+            self.info = info
+        else:
+            self.info = {'error': info}
 
     def get_info(self):
         return self.info

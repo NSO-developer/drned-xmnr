@@ -10,11 +10,9 @@ import time
 import inspect
 
 import _ncs
-import ncs
 from ncs import maapi, maagic
 
 import base_op
-import drned_xmnr.namespaces.drned_xmnr_ns as ns
 from ex import ActionError
 
 
@@ -37,21 +35,29 @@ class ConfigOp(base_op.BaseOp):
                 return callback(trans)
         else:
             mp = maapi.Maapi()
-            mp.attach(self.uinfo.actx_thandle)
-            return callback(maapi.Transaction(mp, rw=ncs.READ))
+            return callback(mp.attach(self.uinfo.actx_thandle))
 
     def setup_drned_env(self, trans):
+        """Build a dictionary that is supposed to be passed to `Popen` as the
+        environment.
+
+        The environment variable `PWD` is set so that it can be used
+        as the running directory for DrNED runs; but this function
+        does not test its existence.
+        """
         env = dict(os.environ)
         root = maagic.get_root(trans)
-        drdir = root.drned_xmnr.drned_dir
+        drdir = root.drned_xmnr.drned_directory
         if drdir is None:
             try:
                 drdir = env['DRNED']
             except KeyError:
-                raise ActionError({'error': 'DrNED installation directory not set; ' +
-                                   'set environment variable DRNED or /drned-xmnr/drned-dir'})
+                raise ActionError('DrNED installation directory not set; ' +
+                                  'set /drned-xmnr/drned-directory or the ' +
+                                  'environment variable DRNED')
         else:
             env['DRNED'] = drdir
+        env['PWD'] = root.drned_xmnr.xmnr_directory + '/drned'
         if 'PYTHONPATH' in env:
             env['PYTHONPATH'] += os.pathsep + drdir
         else:
@@ -59,7 +65,11 @@ class ConfigOp(base_op.BaseOp):
         try:
             env['PYTHONPATH'] += os.pathsep + env['NCS_DIR'] + '/lib/pyang'
         except KeyError:
-            raise ActionError({'error': 'NCS_DIR not set'})
+            raise ActionError('NCS_DIR not set')
+        path = env['PATH']
+        # need to remove exec path inserted by NSO
+        env['PATH'] = os.pathsep.join(ppart for ppart in path.split(os.pathsep)
+                                      if 'ncs/erts' not in ppart)
         return env
 
     def drned_run(self, drned_args, timeout):
@@ -67,12 +77,17 @@ class ConfigOp(base_op.BaseOp):
         self.debug("using env {0}\n".format(env))
         args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
         args.insert(0, "py.test")
-        proc = subprocess.Popen(args,
-                                env=env,
-                                cwd= '/home/martin/devel/drned-xmnr/ncs/packages/pinoeer/test/drned', #FIXME
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        self.debug("run_outputfun, going in")
+        self.debug("drned: {0}, {1}, {2}".format(env['PYTHONPATH'], env['DRNED'], args))
+        try:
+            proc = subprocess.Popen(args,
+                                    env=env,
+                                    cwd=env['PWD'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            self.debug("run_outputfun, going in")
+        except OSError:
+            msg = 'DrNED running directory ({0}) does not seem to be set up'
+            raise ActionError(msg.format(env['PWD']))
 
         def progress_fun(state, stdout):
             self.progress_msg(stdout)
@@ -84,7 +99,7 @@ class ConfigOp(base_op.BaseOp):
         filename = os.path.join(self.states_dir, to_state_filename)
         if not os.path.exists(filename):
             state_name = self.state_filename_to_name(to_state_filename, self.dev_name)
-            raise ActionError({'error': 'No such state: {0}'.format(state_name)})
+            raise ActionError('No such state: {0}'.format(state_name))
 
         self.debug("Transition_to_state: #{0}\n".format(filename))
         self.debug("sys.path: #{0}\n".format(sys.path))
@@ -147,7 +162,7 @@ class RecordStateOp(ConfigOp):
         try:
             # list_rollbacks() returns one less rollback than the second argument,
             # i.e. send 2 to get 1 rollback. Therefore the +1
-            rollbacks = maapi.list_rollbacks(trans.maapi.msock, int(self.include_rollbacks)+1)
+            rollbacks = _ncs.maapi.list_rollbacks(trans.maapi.msock, int(self.include_rollbacks)+1)
             # rollbacks are returned 'most recent first', i.e. reverse chronological order
         except:
             rollbacks = []

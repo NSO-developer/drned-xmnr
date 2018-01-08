@@ -9,7 +9,8 @@ import time
 import traceback
 
 import _ncs.dp as dp
-import _ncs.maapi as maapi
+import _ncs.maapi as _maapi
+from ncs import maapi
 
 from ex import ActionError
 import drned_xmnr.namespaces.drned_xmnr_ns as ns
@@ -24,7 +25,7 @@ class BaseOp(object):
     def __init__(self, uinfo, dev_name, params, debug_func):
         self.uinfo = uinfo
         self.dev_name = dev_name
-
+        self.maapi = maapi.Maapi()
         self.debug = debug_func
         self.states_dir = os.path.join(self.ncs_run_dir, "test", "drned-xmnr", dev_name) ## FIXME: correct?
         try:
@@ -75,7 +76,7 @@ class BaseOp(object):
     def progress_msg(self, msg):
         self.debug(msg)
         if self.uinfo.context == 'cli':
-            maapi.cli_write(self.msocket, self.uinfo.usid, msg)
+            _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
 
     def get_exe_path(self, exe):
         path = self.get_exe_path_from_PATH(exe)
