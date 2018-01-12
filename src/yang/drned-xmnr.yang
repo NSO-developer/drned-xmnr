@@ -100,6 +100,11 @@ module drned-xmnr {
             leaf state-name {
               type string;
             }
+            leaf rollback {
+              description "If true, let DrNED do rollback to the original state";
+              type boolean;
+              default false;
+            }
           }
           output {
             uses action-output-common;
@@ -121,6 +126,16 @@ module drned-xmnr {
         tailf:action explore-transitions {
           tailf:actionpoint drned-xmnr;
           input {
+            choice states-choice {
+              default all;
+              leaf all {
+                type empty;
+              }
+              leaf-list states {
+                ordered-by user;
+                type string;
+              }
+            }
             container stop-after {
               tailf:info "Do not start more transitions after given time/coverage has been reached.";
               choice unit-selection {

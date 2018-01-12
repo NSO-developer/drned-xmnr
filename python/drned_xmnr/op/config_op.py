@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 import inspect
+import itertools
 
 import _ncs
 from ncs import maapi, maagic
@@ -29,10 +30,14 @@ class ConfigOp(base_op.BaseOp):
     def state_filename_to_name(self, filename, devname):
         return filename[:-len(self.statefile_extension)]
 
-    def run_with_trans(self, callback):
+    def run_with_trans(self, callback, write=False):
         if self.uinfo.actx_thandle == -1:
-            with maapi.single_read_trans(self.uinfo.username, self.uinfo.context) as trans:
-                return callback(trans)
+            if write:
+                with maapi.single_write_trans(self.uinfo.username, self.uinfo.context) as trans:
+                    return callback(trans)
+            else:
+                with maapi.single_read_trans(self.uinfo.username, self.uinfo.context) as trans:
+                    return callback(trans)
         else:
             mp = maapi.Maapi()
             return callback(mp.attach(self.uinfo.actx_thandle))
@@ -40,10 +45,6 @@ class ConfigOp(base_op.BaseOp):
     def setup_drned_env(self, trans):
         """Build a dictionary that is supposed to be passed to `Popen` as the
         environment.
-
-        The environment variable `PWD` is set so that it can be used
-        as the running directory for DrNED runs; but this function
-        does not test its existence.
         """
         env = dict(os.environ)
         root = maagic.get_root(trans)
@@ -57,7 +58,6 @@ class ConfigOp(base_op.BaseOp):
                                   'environment variable DRNED')
         else:
             env['DRNED'] = drdir
-        env['PWD'] = root.drned_xmnr.xmnr_directory + '/drned'
         if 'PYTHONPATH' in env:
             env['PYTHONPATH'] += os.pathsep + drdir
         else:
@@ -74,20 +74,20 @@ class ConfigOp(base_op.BaseOp):
 
     def drned_run(self, drned_args, timeout):
         env = self.run_with_trans(self.setup_drned_env)
-        self.debug("using env {0}\n".format(env))
+        self.log.debug("using env {0}\n".format(env))
         args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
         args.insert(0, "py.test")
-        self.debug("drned: {0}, {1}, {2}".format(env['PYTHONPATH'], env['DRNED'], args))
+        self.log.debug("drned: {0}".format(args))
         try:
             proc = subprocess.Popen(args,
                                     env=env,
-                                    cwd=env['PWD'],
+                                    cwd=self.drned_run_directory,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
-            self.debug("run_outputfun, going in")
+            self.log.debug("run_outputfun, going in")
         except OSError:
             msg = 'DrNED running directory ({0}) does not seem to be set up'
-            raise ActionError(msg.format(env['PWD']))
+            raise ActionError(msg.format(self.drned_run_directory))
 
         def progress_fun(state, stdout):
             self.progress_msg(stdout)
@@ -95,32 +95,27 @@ class ConfigOp(base_op.BaseOp):
             return None
         return self.proc_run(proc, progress_fun, timeout)
 
-    def transition_to_state(self, to_state_filename):
+    def transition_to_state(self, to_state_filename, rollback=False):
         filename = os.path.join(self.states_dir, to_state_filename)
         if not os.path.exists(filename):
             state_name = self.state_filename_to_name(to_state_filename, self.dev_name)
             raise ActionError('No such state: {0}'.format(state_name))
 
-        self.debug("Transition_to_state: #{0}\n".format(filename))
-        self.debug("sys.path: #{0}\n".format(sys.path))
-        self.debug("os.environ: #{0}\n".format(os.environ))
-        self.debug("I live at: {0}\n".format(
-            os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))))
+        # need to use relative path for DrNED to accept that
+        filename = os.path.relpath(filename, self.drned_run_directory)
+        self.log.debug("Transition_to_state: {0}\n".format(filename))
 
-        # Max 120 seconds for executing the transaction and a compare-config
+        # Max 120 seconds for executing DrNED
         self.extend_timeout(120)
-        args = ["-k", "test_template_set", "--fname=" + filename]
-        result = self.drned_run(args, timeout=120)
-        self.debug("Test case completed\n")
-        with maapi.single_write_trans(self.uinfo.username, self.uinfo.context) as trans:
-            root = maagic.get_root(trans)
-            device = root.devices.device[self.dev_name]
-            result = device.compare_config()
-        if result.diff is None or result.diff == '':
-            self.debug("In sync\n")
-            return True
+        if rollback:
+            args = ["test_template_set", "--fname={0}".format(filename)]
         else:
-            return "out-of-sync"
+            args = ["test_template_raw[{0}]".format(filename)]
+        result = self.drned_run(["-k"] + args, timeout=120)
+        self.log.debug("Test case completed\n")
+        if result != 0:
+            return "drned failed"
+        return True
 
 
 class DeleteStateOp(ConfigOp):
@@ -128,7 +123,7 @@ class DeleteStateOp(ConfigOp):
         self.state_name = self.param_default(params, "state_name", "")
 
     def perform(self):
-        self.debug("config_delete_state() with device {0}".format(self.dev_name))
+        self.log.debug("config_delete_state() with device {0}".format(self.dev_name))
         state_filename = self.states_dir + "/" + self.state_name_to_filename(self.state_name, self.dev_name)
         try:
             os.remove(state_filename)
@@ -142,7 +137,7 @@ class ListStatesOp(ConfigOp):
         pass
 
     def perform(self):
-        self.debug("config_list_states() with device {0}".format(self.dev_name))
+        self.log.debug("config_list_states() with device {0}".format(self.dev_name))
         state_files = [self.state_filename_to_name(f, self.dev_name) for f in os.listdir(self.states_dir) if fnmatch.fnmatch(f, self.state_name_to_filename('*', self.dev_name))]
         return {'success':"Saved device states: " + str(state_files)}
 
@@ -153,12 +148,12 @@ class RecordStateOp(ConfigOp):
         self.include_rollbacks = self.param_default(params, "including_rollbacks", 0)
 
     def perform(self):
-        return self.run_with_trans(self._perform)
+        return self.run_with_trans(self._perform, write=True)
 
     def _perform(self, trans):
-        self.debug("config_record_state() with device {0}".format(self.dev_name))
+        self.log.debug("config_record_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
-        self.debug("incl_rollbacks="+str(self.include_rollbacks))
+        self.log.debug("incl_rollbacks="+str(self.include_rollbacks))
         try:
             # list_rollbacks() returns one less rollback than the second argument,
             # i.e. send 2 to get 1 rollback. Therefore the +1
@@ -166,16 +161,16 @@ class RecordStateOp(ConfigOp):
             # rollbacks are returned 'most recent first', i.e. reverse chronological order
         except:
             rollbacks = []
-        self.debug("rollbacks="+str([r.fixed_nr for r in rollbacks]))
+        self.log.debug("rollbacks="+str([r.fixed_nr for r in rollbacks]))
         index = 0
         state_filenames = []
         for rb in [None] + rollbacks:
             if rb is None:
-                self.debug("Recording current transaction state")
+                self.log.debug("Recording current transaction state")
             else:
-                self.debug("Recording rollback"+str(rb.fixed_nr))
-                self.debug("Recording rollback"+str(rb.nr))
-                trans.load_rollback(3)  # rb.nr
+                self.log.debug("Recording rollback"+str(rb.fixed_nr))
+                self.log.debug("Recording rollback"+str(rb.nr))
+                trans.load_rollback(rb.nr)
 
             save_id = trans.save_config(_ncs.maapi.CONFIG_C,
                                         "/ncs:devices/device{"+self.dev_name+"}/config")
@@ -200,7 +195,7 @@ class RecordStateOp(ConfigOp):
                         if not config_data:
                             break
                         state_file.write(str(config_data))
-                        self.debug("Data: "+str(config_data))
+                        self.log.debug("Data: "+str(config_data))
                 finally:
                     ssocket.close()
             state_filenames += [state_name_index]
@@ -211,45 +206,51 @@ class RecordStateOp(ConfigOp):
             trans.revert()
         return {'success': "Recorded states " + str(state_filenames)}
 
+
 class ExploreTransitionsOp(ConfigOp):
     def _init_params(self, params):
-        self.stop_time = 24 * int(self.param_default(params, "days", 0))
-        self.stop_time = 60 * int(self.param_default(params, "hours", self.stop_time))
-        self.stop_time = 60 * int(self.param_default(params, "minutes", self.stop_time))
-        self.stop_time =      int(self.param_default(params, "seconds", self.stop_time))
-        self.stop_percent =   int(self.param_default(params, "percent", 0))
-        self.stop_cases =     int(self.param_default(params, "cases", 0))
+        stp = params.stop_after
+        self.stop_time = 24 * int(self.param_default(stp, "days", 0))
+        self.stop_time = 60 * int(self.param_default(stp, "hours", self.stop_time))
+        self.stop_time = 60 * int(self.param_default(stp, "minutes", self.stop_time))
+        self.stop_time =      int(self.param_default(stp, "seconds", self.stop_time))
+        self.stop_percent =   int(self.param_default(stp, "percent", 0))
+        self.stop_cases =     int(self.param_default(stp, "cases", 0))
+        self.states = 'all' if params.all.exists() else list(params.states)
 
     def perform(self):
-        self.debug("config_explore_transitions() with device {0}".format(self.dev_name))
-        state_files = [f for f in os.listdir(self.states_dir) if fnmatch.fnmatch(f, self.state_name_to_filename('*', self.dev_name))]
-        num_states = len(state_files)
+        self.log.debug("config_explore_transitions() with device {0}".format(self.dev_name))
+        state_files = [f for f in os.listdir(self.states_dir)
+                       if fnmatch.fnmatch(f, self.state_name_to_filename('*', self.dev_name))]
+        if self.states == 'all':
+            states = state_files
+        else:
+            states = [state + self.statefile_extension
+                      for state in self.states
+                      if state + self.statefile_extension in state_files]
+        num_states = len(states)
         num_transitions = num_states * (num_states - 1)
         if(0 == num_transitions):
-            return {'error':"No transitions to make. Run 'config record-state' several times, "
-                    "with some device configuration changes in between each recorded state before running this command."}
-        self.progress_msg("Found {0} states recorded for device {1} which gives a total of {2} transitions.\n".
-                          format(num_states, self.dev_name, num_transitions))
+            return {'error': "No transitions to make. Run 'config record-state' several times, "
+                    "with some device configuration changes in between each recorded state "
+                    "before running this command."}
+        msg = "Found {0} states recorded for device {1} which gives a total of {2} transitions.\n"
+        self.progress_msg(msg.format(num_states, self.dev_name, num_transitions))
 
         failed_transitions = []
-        remaining_transitions = {}
+        rstates = list(states)
+        random.shuffle(rstates)
+        transitions = itertools.permutations(rstates, 2)
         stop_cases = self.stop_cases
         if self.stop_percent:
-            stop_cases = int(self.stop_percent / 100.0 * num_transitions + .999) ## Round upwards
+            stop_cases = int(self.stop_percent / 100.0 * num_transitions + .999)  # Round upwards
         stop_time = self.stop_time
         if stop_time:
             stop_time += time.time()
-        self.debug("stop_cases = {0}, stop_time = {1}".format(stop_cases, stop_time))
+        self.log.debug("stop_cases = {0}, stop_time = {1}".format(stop_cases, stop_time))
         index = 0
-        for from_state in xrange(0, num_states):
-            remaining_transitions[from_state] = {}
-            for to_state in xrange(0, num_states):
-                if to_state == from_state:
-                    continue ## Can't transition to same state
-                remaining_transitions[from_state][to_state] = 1
-        from_state = None ## Start in undefined state
         error_msg = None
-        while remaining_transitions:
+        for (from_state, to_state) in transitions:
             if (stop_time and time.time() > stop_time) or (stop_cases and index >= stop_cases):
                 self.progress_msg("Requested stop-after limit reached\n")
                 break
@@ -261,9 +262,9 @@ class ExploreTransitionsOp(ConfigOp):
                 start_attempts_remaining = 10
                 while start_attempts_remaining:
                     from_state = random.choice(remaining_transitions.keys())
-                    from_name = self.state_filename_to_name(state_files[from_state], self.dev_name)
+                    from_name = self.state_filename_to_name(states[from_state], self.dev_name)
                     self.progress_msg("\nStarting from known state {0}\n".format(from_name))
-                    result = self.transition_to_state(state_files[from_state])
+                    result = self.transition_to_state(states[from_state])
                     if True != result:
                         self.progress_msg("... failed setting known state\n")
                         start_attempts_remaining -= 1
@@ -278,10 +279,10 @@ class ExploreTransitionsOp(ConfigOp):
             if 0 == len(remaining_transitions[from_state]):
                 del remaining_transitions[from_state]
             
-            from_name = self.state_filename_to_name(state_files[from_state], self.dev_name)
-            to_name = self.state_filename_to_name(state_files[to_state], self.dev_name)
+            from_name = self.state_filename_to_name(states[from_state], self.dev_name)
+            to_name = self.state_filename_to_name(states[to_state], self.dev_name)
             self.progress_msg("Transition {0}/{1}: {2} ==> {3}\n".format(index, num_transitions, from_name, to_name))
-            result = self.transition_to_state(state_files[to_state])
+            result = self.transition_to_state(states[to_state])
             if True != result:
                 failed_transitions += [(from_name, to_name, result)]
                 self.progress_msg("   {0}\n".format(result))
@@ -298,11 +299,12 @@ class ExploreTransitionsOp(ConfigOp):
 class TransitionToStateOp(ConfigOp):
     def _init_params(self, params):
         self.state_name = self.param_default(params, "state_name", "")
+        self.rollback = params.rollback
 
     def perform(self):
-        self.debug("config_transition_to_state() with device {0} to state {1}".format(self.dev_name, self.state_name))
+        self.log.debug("config_transition_to_state() with device {0} to state {1}".format(self.dev_name, self.state_name))
         to_filename = self.state_name_to_filename(self.state_name, self.dev_name)
-        result = self.transition_to_state(to_filename)
+        result = self.transition_to_state(to_filename, self.rollback)
         if True == result:
             return {'success':"Done"}
         else:
