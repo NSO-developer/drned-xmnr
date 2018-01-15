@@ -5,9 +5,7 @@ import os
 import random
 import socket
 import subprocess
-import sys
 import time
-import inspect
 import itertools
 
 import _ncs
@@ -86,8 +84,8 @@ class ConfigOp(base_op.BaseOp):
                                     stderr=subprocess.STDOUT)
             self.log.debug("run_outputfun, going in")
         except OSError:
-            msg = 'DrNED running directory ({0}) does not seem to be set up'
-            raise ActionError(msg.format(self.drned_run_directory))
+            raise ActionError('DrNED running directory ({0}) does not seem to be set up'
+                              .format(self.drned_run_directory))
 
         def progress_fun(state, stdout):
             self.progress_msg(stdout)
@@ -295,18 +293,21 @@ class ExploreTransitionsOp(ConfigOp):
         if error_msg:
             result['error'] = error_msg
         return result
-        
+
+
 class TransitionToStateOp(ConfigOp):
     def _init_params(self, params):
         self.state_name = self.param_default(params, "state_name", "")
         self.rollback = params.rollback
 
     def perform(self):
-        self.log.debug("config_transition_to_state() with device {0} to state {1}".format(self.dev_name, self.state_name))
+        msg = "config_transition_to_state() with device {0} to state {1}" \
+              .format(self.dev_name, self.state_name)
+        self.log.debug(msg)
         to_filename = self.state_name_to_filename(self.state_name, self.dev_name)
         result = self.transition_to_state(to_filename, self.rollback)
-        if True == result:
-            return {'success':"Done"}
+        if result is True:
+            return {'success': "Done"}
         else:
-            return {'failure':result}
+            return {'failure': result}
 
