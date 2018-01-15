@@ -19,6 +19,13 @@ from ex import ActionError
 # py.test -s --tb=short -k 'test_coverage' --device ce0 --yangpath=src/yang/ --fname=src/yang/Cisco-IOS-XE-native.yang --fname=src/yang/Cisco-IOS-XE-bgp.yang 
 
 
+state_metadata = """\
+# automatically generated
+# all XMNR state files need to be loaded in 'override' mode
+mode = override
+"""
+
+
 class ConfigOp(base_op.BaseOp):
     statefile_extension = '.state.cfg'
 
@@ -196,6 +203,8 @@ class RecordStateOp(ConfigOp):
                         self.log.debug("Data: "+str(config_data))
                 finally:
                     ssocket.close()
+                with open(state_filename + ".load", 'w') as meta:
+                    print >> meta, state_metadata
             state_filenames += [state_name_index]
 
             # maapi.save_config_result(sock, id) -> None
