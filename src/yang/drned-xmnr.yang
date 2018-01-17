@@ -111,30 +111,32 @@ module drned-xmnr {
           }
         }
         //////// config/build-states /////////////////////////////////
-        tailf:action build-states {
+        tailf:action import-state-files {
           tailf:actionpoint drned-xmnr;
           input {
+            leaf file-path-pattern {
+              type string;
+              mandatory true;
+            }
+            leaf overwrite {
+              type boolean;
+              default false;
+            }
           }
           output {
             uses action-output-common;
-            leaf filename {
-              type string;
-            }
           }
         }
         //////// config/explore-transitions //////////////////////////
         tailf:action explore-transitions {
           tailf:actionpoint drned-xmnr;
           input {
-            choice states-choice {
-              default all;
-              leaf all {
-                type empty;
-              }
-              leaf-list states {
-                ordered-by user;
-                type string;
-              }
+            leaf-list states {
+              description
+                "List of states to pass through (in given order); if
+                 empty, all states in random order are used.";
+              ordered-by user;
+              type string;
             }
             container stop-after {
               tailf:info "Do not start more transitions after given time/coverage has been reached.";

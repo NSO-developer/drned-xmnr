@@ -40,6 +40,7 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_list_states_: op.config_op.ListStatesOp,
         ns.ns.drned_xmnr_record_state_: op.config_op.RecordStateOp,
         ns.ns.drned_xmnr_transition_to_state_: op.config_op.TransitionToStateOp,
+        ns.ns.drned_xmnr_import_state_files_: op.config_op.ImportStateFiles,
     }
 
     @dp.Action.action
