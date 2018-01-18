@@ -28,13 +28,34 @@ module drned-xmnr {
 
   container drned-xmnr {
     leaf drned-directory {
-      description "DrNED installation directory; if unset, environment variable is used";
+      tailf:info "DrNED installation directory; if unset, environment variable is used";
       type string;
     }
     leaf xmnr-directory {
-      description "Directory where XMNR data is stored";
+      tailf:info "Directory where XMNR data is stored";
       type string;
       default "/tmp/xmnr";
+    }
+  }
+
+  grouping states-input {
+    leaf-list states {
+      tailf:info
+        "List of states to pass through (in given order); if empty,
+         all states in random order are used.";
+      ordered-by user;
+      type string;
+    }
+    container stop-after {
+      tailf:info "Do not start more transitions after given time/coverage has been reached.";
+      choice unit-selection {
+        leaf seconds { type uint64; }
+        leaf minutes { type uint64; }
+        leaf hours   { type uint64; }
+        leaf days    { type uint64; }
+        leaf percent { type uint64; }
+        leaf cases   { type uint64; }
+      }
     }
   }
 
@@ -115,7 +136,7 @@ module drned-xmnr {
               type string;
             }
             leaf rollback {
-              description "If true, let DrNED do rollback to the original state";
+              tailf:info "If true, let DrNED do rollback to the original state";
               type boolean;
               default false;
             }
@@ -127,24 +148,7 @@ module drned-xmnr {
         tailf:action explore-transitions {
           tailf:actionpoint drned-xmnr;
           input {
-            leaf-list states {
-              description
-                "List of states to pass through (in given order); if
-                 empty, all states in random order are used.";
-              ordered-by user;
-              type string;
-            }
-            container stop-after {
-              tailf:info "Do not start more transitions after given time/coverage has been reached.";
-              choice unit-selection {
-                leaf seconds { type uint64; }
-                leaf minutes { type uint64; }
-                leaf hours   { type uint64; }
-                leaf days    { type uint64; }
-                leaf percent { type uint64; }
-                leaf cases   { type uint64; }
-              }                
-            }
+            uses states-input;
           }
           output {
             uses action-output-common;
