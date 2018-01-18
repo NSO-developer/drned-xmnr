@@ -3,6 +3,7 @@
 import fcntl
 import os
 import select
+import glob
 
 import _ncs.dp as dp
 import _ncs.maapi as _maapi
@@ -39,6 +40,32 @@ class BaseOp(object):
         if value is None:
             return default
         return value
+
+    statefile_extension = '.state.cfg'
+
+    def state_name_to_filename(self, statename):
+        return os.path.join(self.states_dir, statename + self.statefile_extension)
+
+    def state_filename_to_name(self, filename):
+        return os.path.basename(filename)[:-len(self.statefile_extension)]
+
+    def get_states(self):
+        return [self.state_filename_to_name(f) for f in self.get_state_files()]
+
+    def run_with_trans(self, callback, write=False):
+        if self.uinfo.actx_thandle == -1:
+            if write:
+                with maapi.single_write_trans(self.uinfo.username, self.uinfo.context) as trans:
+                    return callback(trans)
+            else:
+                with maapi.single_read_trans(self.uinfo.username, self.uinfo.context) as trans:
+                    return callback(trans)
+        else:
+            mp = maapi.Maapi()
+            return callback(mp.attach(self.uinfo.actx_thandle))
+
+    def get_state_files(self):
+        return glob.glob(self.state_name_to_filename('*'))
 
     def extend_timeout(self, timeout_extension):
         dp.action_set_timeout(self.uinfo, timeout_extension)

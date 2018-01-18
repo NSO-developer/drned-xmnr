@@ -20,6 +20,7 @@ import drned_xmnr.namespaces.drned_xmnr_ns as ns
 
 # operation modules
 import op.config_op
+import op.transitions_op
 from op.ex import ActionError
 
 assert sys.version_info >= (2, 7)
@@ -36,11 +37,11 @@ def param_default(params, tag, default):
 class ActionHandler(dp.Action):
     handlers = {
         ns.ns.drned_xmnr_delete_state_: op.config_op.DeleteStateOp,
-        ns.ns.drned_xmnr_explore_transitions_: op.config_op.ExploreTransitionsOp,
         ns.ns.drned_xmnr_list_states_: op.config_op.ListStatesOp,
         ns.ns.drned_xmnr_record_state_: op.config_op.RecordStateOp,
-        ns.ns.drned_xmnr_transition_to_state_: op.config_op.TransitionToStateOp,
         ns.ns.drned_xmnr_import_state_files_: op.config_op.ImportStateFiles,
+        ns.ns.drned_xmnr_transition_to_state_: op.transitions_op.TransitionToStateOp,
+        ns.ns.drned_xmnr_explore_transitions_: op.transitions_op.ExploreTransitionsOp,
     }
 
     @dp.Action.action

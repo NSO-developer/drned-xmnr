@@ -44,7 +44,6 @@ module drned-xmnr {
       //// CONFIG
       ////////////////////////////////////////////////////////////////
       container config {
-        //////// config/record-state /////////////////////////////////
         tailf:action record-state {
           tailf:info "Save the current device configuration state in a file. "+
             "A collection of saved state files can later be used with the "+
@@ -69,7 +68,6 @@ module drned-xmnr {
             }
           }
         }
-        //////// config/delete-state /////////////////////////////////
         tailf:action delete-state {
           tailf:info "Delete a saved state file. ";
           tailf:actionpoint drned-xmnr;
@@ -83,7 +81,6 @@ module drned-xmnr {
             uses action-output-common;
           }
         }
-        //////// config/list-states //////////////////////////////////
         tailf:action list-states {
           tailf:info "List the saved states for this device.";
           tailf:actionpoint drned-xmnr;
@@ -93,24 +90,6 @@ module drned-xmnr {
             uses action-output-common;
           }
         }
-        //////// config/transition-to-state //////////////////////////
-        tailf:action transition-to-state {
-          tailf:actionpoint drned-xmnr;
-          input {
-            leaf state-name {
-              type string;
-            }
-            leaf rollback {
-              description "If true, let DrNED do rollback to the original state";
-              type boolean;
-              default false;
-            }
-          }
-          output {
-            uses action-output-common;
-          }
-        }
-        //////// config/build-states /////////////////////////////////
         tailf:action import-state-files {
           tailf:actionpoint drned-xmnr;
           input {
@@ -127,7 +106,24 @@ module drned-xmnr {
             uses action-output-common;
           }
         }
-        //////// config/explore-transitions //////////////////////////
+      }
+      container transitions {
+        tailf:action transition-to-state {
+          tailf:actionpoint drned-xmnr;
+          input {
+            leaf state-name {
+              type string;
+            }
+            leaf rollback {
+              description "If true, let DrNED do rollback to the original state";
+              type boolean;
+              default false;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
         tailf:action explore-transitions {
           tailf:actionpoint drned-xmnr;
           input {
