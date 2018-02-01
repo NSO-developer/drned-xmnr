@@ -26,18 +26,6 @@ module drned-xmnr {
     }
   }
 
-  container drned-xmnr {
-    leaf drned-directory {
-      tailf:info "DrNED installation directory; if unset, environment variable is used";
-      type string;
-    }
-    leaf xmnr-directory {
-      tailf:info "Directory where XMNR data is stored";
-      type string;
-      default "/tmp/xmnr";
-    }
-  }
-
   grouping states-input {
     leaf-list states {
       tailf:info
@@ -58,6 +46,18 @@ module drned-xmnr {
       }
     }
   }
+  container drned-xmnr {
+    leaf drned-directory {
+      tailf:info "DrNED installation directory; if unset, environment variable is used";
+      type string;
+    }
+    leaf xmnr-directory {
+      tailf:info "Directory where XMNR data is stored";
+      type string;
+      default "/tmp/xmnr";
+    }
+  }
+
 
   augment /ncs:devices/ncs:device {
     container drned-xmnr {
@@ -112,6 +112,7 @@ module drned-xmnr {
           }
         }
         tailf:action import-state-files {
+          tailf:info "Convert a configuration file or files to a XMNR state file.";
           tailf:actionpoint drned-xmnr;
           input {
             leaf file-path-pattern {
@@ -146,6 +147,16 @@ module drned-xmnr {
           }
         }
         tailf:action explore-transitions {
+          tailf:actionpoint drned-xmnr;
+          input {
+            uses states-input;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        tailf:action walk-states {
+          tailf:info "Go through all states one after another.";
           tailf:actionpoint drned-xmnr;
           input {
             uses states-input;

@@ -42,6 +42,7 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_import_state_files_: op.config_op.ImportStateFiles,
         ns.ns.drned_xmnr_transition_to_state_: op.transitions_op.TransitionToStateOp,
         ns.ns.drned_xmnr_explore_transitions_: op.transitions_op.ExploreTransitionsOp,
+        ns.ns.drned_xmnr_walk_states_: op.transitions_op.WalkTransitionsOp,
     }
 
     @dp.Action.action

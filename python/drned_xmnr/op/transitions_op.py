@@ -66,8 +66,8 @@ class TransitionsOp(base_op.BaseOp):
                                     stderr=subprocess.STDOUT)
             self.log.debug("run_outputfun, going in")
         except OSError:
-            raise ActionError('DrNED running directory ({0}) does not seem to be set up'
-                              .format(self.drned_run_directory))
+            msg = 'PyTest not installed or DrNED running directory ({0}) not set up'
+            raise ActionError(msg.format(self.drned_run_directory))
 
         def progress_fun(state, stdout):
             self.progress_msg(stdout)
@@ -175,7 +175,7 @@ class ExploreTransitionsOp(ExploringOp):
                     continue
                 prev_state = from_state
             self.progress_msg("Transition {0}/{1}: {2} ==> {3}\n"
-                              .format(index, num_transitions, from_name, to_name))
+                              .format(index+1, num_transitions, from_name, to_name))
             result = self.transition_to_state(to_state, rollback=True)
             if result is not True:
                 failed_transitions.append((from_name, to_name, result))
@@ -188,3 +188,16 @@ class ExploreTransitionsOp(ExploringOp):
         if error_msgs != []:
             result['error'] = '\n'.join(error_msgs)
         return result
+
+
+class WalkTransitionsOp(ExploringOp):
+    def perform(self):
+        self.log.debug("walking states {0}"
+                       .format([self.state_filename_to_name(filename)
+                                for filename in self.state_filenames]))
+        fname_args = ["--fname=" + filename for filename in self.state_filenames]
+        result = self.drned_run(fname_args + ["--unsorted", "-k", "test_template_set"])
+        self.log.debug("DrNED completed: {0}".format(result))
+        if result != 0:
+            raise ActionError("drned failed")
+        return {'success': "Completed successfully"}
