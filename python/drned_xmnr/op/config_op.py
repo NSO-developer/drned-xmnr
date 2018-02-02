@@ -1,7 +1,6 @@
 # -*- mode: python; python-indent: 4 -*-
 
 import os
-import socket
 import glob
 import shutil
 
@@ -83,36 +82,17 @@ class RecordStateOp(ConfigOp):
                 self.log.debug("Recording rollback"+str(rb.nr))
                 trans.load_rollback(rb.nr)
 
-            save_id = trans.save_config(_ncs.maapi.CONFIG_C,
-                                        "/ncs:devices/device{"+self.dev_name+"}/config")
-
             state_name_index = state_name
             if index > 0:
                 state_name_index = state_name+"-"+str(index)
             state_filename = self.state_name_to_filename(state_name_index)
             with open(state_filename, "w") as state_file:
-                try:
-                    ssocket = socket.socket()
-                    _ncs.stream_connect(
-                        sock=ssocket,
-                        id=save_id,
-                        flags=0,
-                        ip='127.0.0.1',
-                        port=_ncs.NCS_PORT)
-
-                    while True:
-                        config_data = ssocket.recv(4096)
-                        if not config_data:
-                            break
-                        state_file.write(str(config_data))
-                        self.log.debug("Data: "+str(config_data))
-                finally:
-                    ssocket.close()
-                self.write_metadata(state_filename)
+                for data in self.save_config(trans,
+                                             _ncs.maapi.CONFIG_C,
+                                             "/ncs:devices/device{"+self.dev_name+"}/config"):
+                    state_file.write(data)
+            self.write_metadata(state_filename)
             state_filenames += [state_name_index]
-
-            # maapi.save_config_result(sock, id) -> None
-
             index += 1
             trans.revert()
         return {'success': "Recorded states " + str(state_filenames)}

@@ -21,6 +21,7 @@ import drned_xmnr.namespaces.drned_xmnr_ns as ns
 # operation modules
 import op.config_op
 import op.transitions_op
+import op.setup_op
 from op.ex import ActionError
 
 assert sys.version_info >= (2, 7)
@@ -36,6 +37,7 @@ def param_default(params, tag, default):
 
 class ActionHandler(dp.Action):
     handlers = {
+        ns.ns.drned_xmnr_setup_xmnr_: op.setup_op.SetupOp,
         ns.ns.drned_xmnr_delete_state_: op.config_op.DeleteStateOp,
         ns.ns.drned_xmnr_list_states_: op.config_op.ListStatesOp,
         ns.ns.drned_xmnr_record_state_: op.config_op.RecordStateOp,

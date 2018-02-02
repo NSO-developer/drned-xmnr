@@ -4,6 +4,9 @@ import fcntl
 import os
 import select
 import glob
+import socket
+
+import _ncs
 
 import _ncs.dp as dp
 import _ncs.maapi as _maapi
@@ -24,8 +27,9 @@ class BaseOp(object):
     def _setup_directories(self, trans):
         root = maagic.get_root(trans)
         self.xmnr_directory = root.drned_xmnr.xmnr_directory
-        self.drned_run_directory = os.path.join(self.xmnr_directory, 'drned')
-        self.states_dir = os.path.join(self.xmnr_directory, self.dev_name)
+        self.dev_test_dir = os.path.join(self.xmnr_directory, self.dev_name, 'test')
+        self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned')
+        self.states_dir = os.path.join(self.dev_test_dir, 'states')
         try:
             os.makedirs(self.states_dir)
         except:
@@ -112,3 +116,57 @@ class BaseOp(object):
             if os.path.exists(path):
                 return path
         return None
+
+    def setup_drned_env(self, trans):
+        """Build a dictionary that is supposed to be passed to `Popen` as the
+        environment.
+        """
+        env = dict(os.environ)
+        root = maagic.get_root(trans)
+        drdir = root.drned_xmnr.drned_directory
+        if drdir is None:
+            try:
+                drdir = env['DRNED']
+            except KeyError:
+                raise ActionError('DrNED installation directory not set; ' +
+                                  'set /drned-xmnr/drned-directory or the ' +
+                                  'environment variable DRNED')
+        else:
+            env['DRNED'] = drdir
+        if 'PYTHONPATH' in env:
+            env['PYTHONPATH'] += os.pathsep + drdir
+        else:
+            env['PYTHONPATH'] = drdir
+        try:
+            env['PYTHONPATH'] += os.pathsep + env['NCS_DIR'] + '/lib/pyang'
+        except KeyError:
+            raise ActionError('NCS_DIR not set')
+        path = env['PATH']
+        # need to remove exec path inserted by NSO
+        env['PATH'] = os.pathsep.join(ppart for ppart in path.split(os.pathsep)
+                                      if 'ncs/erts' not in ppart)
+        return env
+
+    def progress_fun(self, state, stdout):
+        self.progress_msg(stdout)
+        self.extend_timeout(120)
+        return None
+
+    def save_config(self, trans, config_type, path):
+        save_id = trans.save_config(config_type, path)
+        try:
+            ssocket = socket.socket()
+            _ncs.stream_connect(
+                sock=ssocket,
+                id=save_id,
+                flags=0,
+                ip='127.0.0.1',
+                port=_ncs.NCS_PORT)
+            while True:
+                config_data = ssocket.recv(4096)
+                if not config_data:
+                    return
+                yield str(config_data)
+                self.log.debug("Data: "+str(config_data))
+        finally:
+            ssocket.close()

@@ -6,8 +6,6 @@ import time
 import random
 import itertools
 
-from ncs import maagic
-
 from . import base_op
 from ex import ActionError
 
@@ -21,36 +19,6 @@ class TransitionsOp(base_op.BaseOp):
         self.stop_time = int(self.param_default(stp, "seconds", self.stop_time))
         self.stop_percent = int(self.param_default(stp, "percent", 0))
         self.stop_cases = int(self.param_default(stp, "cases", 0))
-
-    def setup_drned_env(self, trans):
-        """Build a dictionary that is supposed to be passed to `Popen` as the
-        environment.
-        """
-        env = dict(os.environ)
-        root = maagic.get_root(trans)
-        drdir = root.drned_xmnr.drned_directory
-        if drdir is None:
-            try:
-                drdir = env['DRNED']
-            except KeyError:
-                raise ActionError('DrNED installation directory not set; ' +
-                                  'set /drned-xmnr/drned-directory or the ' +
-                                  'environment variable DRNED')
-        else:
-            env['DRNED'] = drdir
-        if 'PYTHONPATH' in env:
-            env['PYTHONPATH'] += os.pathsep + drdir
-        else:
-            env['PYTHONPATH'] = drdir
-        try:
-            env['PYTHONPATH'] += os.pathsep + env['NCS_DIR'] + '/lib/pyang'
-        except KeyError:
-            raise ActionError('NCS_DIR not set')
-        path = env['PATH']
-        # need to remove exec path inserted by NSO
-        env['PATH'] = os.pathsep.join(ppart for ppart in path.split(os.pathsep)
-                                      if 'ncs/erts' not in ppart)
-        return env
 
     def drned_run(self, drned_args, timeout=120):
         env = self.run_with_trans(self.setup_drned_env)
@@ -69,11 +37,7 @@ class TransitionsOp(base_op.BaseOp):
             msg = 'PyTest not installed or DrNED running directory ({0}) not set up'
             raise ActionError(msg.format(self.drned_run_directory))
 
-        def progress_fun(state, stdout):
-            self.progress_msg(stdout)
-            self.extend_timeout(120)
-            return None
-        return self.proc_run(proc, progress_fun, timeout)
+        return self.proc_run(proc, self.progress_fun, timeout)
 
     def transition_to_state(self, filename, rollback=False):
         if not os.path.exists(filename):
