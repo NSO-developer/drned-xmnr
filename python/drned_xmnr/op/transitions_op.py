@@ -1,7 +1,6 @@
 # -*- mode: python; python-indent: 4 -*-
 
 import os
-import subprocess
 import time
 import random
 import itertools
@@ -21,23 +20,10 @@ class TransitionsOp(base_op.BaseOp):
         self.stop_cases = int(self.param_default(stp, "cases", 0))
 
     def drned_run(self, drned_args, timeout=120):
-        env = self.run_with_trans(self.setup_drned_env)
-        self.log.debug("using env {0}\n".format(env))
         args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
         args.insert(0, "py.test")
         self.log.debug("drned: {0}".format(args))
-        try:
-            proc = subprocess.Popen(args,
-                                    env=env,
-                                    cwd=self.drned_run_directory,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
-            self.log.debug("run_outputfun, going in")
-        except OSError:
-            msg = 'PyTest not installed or DrNED running directory ({0}) not set up'
-            raise ActionError(msg.format(self.drned_run_directory))
-
-        return self.proc_run(proc, self.progress_fun, timeout)
+        return self.run_in_drned_env(args, timeout)
 
     def transition_to_state(self, filename, rollback=False):
         if not os.path.exists(filename):
@@ -52,7 +38,7 @@ class TransitionsOp(base_op.BaseOp):
         self.extend_timeout(120)
         test = "test_template_single" if rollback else "test_template_raw"
         args = ["-k {0}[{1}]".format(test, filename)]
-        result = self.drned_run(args)
+        result, _ = self.drned_run(args)
         self.log.debug("Test case completed\n")
         if result != 0:
             return "drned failed"
@@ -160,7 +146,7 @@ class WalkTransitionsOp(ExploringOp):
                        .format([self.state_filename_to_name(filename)
                                 for filename in self.state_filenames]))
         fname_args = ["--fname=" + filename for filename in self.state_filenames]
-        result = self.drned_run(fname_args + ["--unsorted", "-k", "test_template_set"])
+        result, _ = self.drned_run(fname_args + ["--unsorted", "-k", "test_template_set"])
         self.log.debug("DrNED completed: {0}".format(result))
         if result != 0:
             raise ActionError("drned failed")

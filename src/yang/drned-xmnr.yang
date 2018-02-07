@@ -189,6 +189,85 @@ module drned-xmnr {
           }
         }
       }
+      container coverage {
+        tailf:action reset {
+          tailf:info "Reset DrNED coverage data.";
+          tailf:actionpoint drned-xmnr;
+          output {
+            uses action-output-common;
+          }
+        }
+        tailf:action collect {
+          tailf:info "Collect DrNED coverage status.";
+          tailf:actionpoint drned-xmnr;
+          input {
+            leaf-list yang-patterns {
+              tailf:info
+                "Pattern of YANG modules to be used for coverage
+                 status.  If empty, the device source YANG modules are
+                 used.";
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        container data {
+          config false;
+          
+          leaf nodes-total {
+            type uint32;
+          }
+          leaf lists-total {
+            type uint32;
+          }
+          grouping node-coverage {
+            container read-or-set {
+              uses coverage;
+            }
+            container set {
+              uses coverage;
+            }
+            container deleted {
+              uses coverage;
+            }
+            container set-set {
+              uses coverage;
+            }
+            container deleted-separately {
+              uses coverage;
+            }
+          }
+          grouping coverage {
+            leaf total {
+              type int32;
+            }
+            leaf percent {
+              type int8;
+            }
+          }
+          container percents {
+            container nodes {
+              uses node-coverage;
+            }
+            container lists {
+              container read-or-set {
+                uses coverage;
+              }
+              container deleted {
+                uses coverage;
+              }
+              container multi-read-or-set {
+                uses coverage;
+              }
+            }
+            container grouping-nodes {
+              uses node-coverage;
+            }
+          }
+        }
+      }
     }
   }
 }

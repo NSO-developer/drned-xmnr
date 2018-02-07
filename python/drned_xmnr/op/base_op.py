@@ -5,6 +5,7 @@ import os
 import select
 import glob
 import socket
+import subprocess
 
 import _ncs
 
@@ -94,7 +95,7 @@ class BaseOp(object):
                 proc.kill()
 
         self.log.debug("run_finished, output len=" + str(len(stdoutdata)))
-        return proc.wait()
+        return proc.wait(), stdoutdata
 
     def progress_msg(self, msg):
         self.log.debug(msg)
@@ -146,6 +147,24 @@ class BaseOp(object):
         env['PATH'] = os.pathsep.join(ppart for ppart in path.split(os.pathsep)
                                       if 'ncs/erts' not in ppart)
         return env
+
+    def run_in_drned_env(self, args, timeout=120, outputfun=None):
+        env = self.run_with_trans(self.setup_drned_env)
+        self.log.debug("using env {0}\n".format(env))
+        self.log.debug("running", args)
+        try:
+            proc = subprocess.Popen(args,
+                                    env=env,
+                                    cwd=self.drned_run_directory,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            self.log.debug("run_outputfun, going in")
+        except OSError:
+            msg = 'PyTest not installed or DrNED running directory ({0}) not set up'
+            raise ActionError(msg.format(self.drned_run_directory))
+        if outputfun is None:
+            outputfun = self.progress_fun
+        return self.proc_run(proc, outputfun, timeout)
 
     def progress_fun(self, state, stdout):
         self.progress_msg(stdout)

@@ -81,7 +81,8 @@ class SetupOp(base_op.BaseOp):
                                 cwd=self.drned_run_directory,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
-        if self.proc_run(proc, self.progress_fun, 120) != 0:
+        result, _ = self.proc_run(proc, self.progress_fun, 120)
+        if result != 0:
             raise ActionError("Failed to set up env.sh for DrNED")
         self.cfg_file = os.path.join(self.drned_run_directory, self.dev_name + '.cfg')
         if self.overwrite or not os.path.exists(self.cfg_file):
