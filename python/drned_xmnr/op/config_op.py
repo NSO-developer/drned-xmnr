@@ -6,8 +6,8 @@ import shutil
 
 import _ncs
 
-import base_op
-from ex import ActionError
+from . import base_op
+from .ex import ActionError
 
 
 state_metadata = """\

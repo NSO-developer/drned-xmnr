@@ -13,7 +13,7 @@ import _ncs.dp as dp
 import _ncs.maapi as _maapi
 from ncs import maapi, maagic
 
-from ex import ActionError
+from .ex import ActionError
 
 
 class BaseOp(object):

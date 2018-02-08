@@ -8,7 +8,7 @@ import functools
 import itertools
 
 from . import base_op
-from ex import ActionError
+from .ex import ActionError
 
 
 class ResetCoverageOp(base_op.BaseOp):

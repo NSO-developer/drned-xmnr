@@ -6,7 +6,7 @@ import random
 import itertools
 
 from . import base_op
-from ex import ActionError
+from .ex import ActionError
 
 
 class TransitionsOp(base_op.BaseOp):

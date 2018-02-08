@@ -8,7 +8,7 @@ import _ncs
 from ncs import maagic
 
 from . import base_op
-from ex import ActionError
+from .ex import ActionError
 
 
 class SetupOp(base_op.BaseOp):
