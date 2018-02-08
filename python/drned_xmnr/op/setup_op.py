@@ -106,7 +106,7 @@ class SetupOp(base_op.BaseOp):
         # need to delete some elements
         devices = config_tree[0]
         dev = devices[0]
-        for name in ['ssh', 'connect-timeout', 'read-timeout', 'trace']:
+        for name in ['ssh', 'connect-timeout', 'read-timeout', 'trace', 'config']:
             del_element(dev, name)
         with open(self.cfg_file, 'w') as cfg:
             cfg.write(ET.tostring(devices))

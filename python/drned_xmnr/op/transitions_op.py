@@ -128,7 +128,7 @@ class ExploreTransitionsOp(ExploringOp):
             from_name = self.state_filename_to_name(from_state)
             to_name = self.state_filename_to_name(to_state)
             if prev_state != from_state:
-                self.progress_msg("Starting with state " + from_name)
+                self.progress_msg("Starting with state {0}\n".format(from_name))
                 result = self.transition_to_state(from_state)
                 if result is not True:
                     msg = "Failed to initialize state {0}: {1}"\
