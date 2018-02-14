@@ -9,7 +9,7 @@ from . import base_op
 from .ex import ActionError
 
 
-class TransitionsOp(base_op.BaseOp):
+class TransitionsOp(base_op.ActionBase):
     def _init_params_stop(self, params):
         stp = params.stop_after
         self.stop_time = 24 * int(self.param_default(stp, "days", 0))

@@ -11,7 +11,7 @@ from . import base_op
 from .ex import ActionError
 
 
-class SetupOp(base_op.BaseOp):
+class SetupOp(base_op.ActionBase):
     def _init_params(self, params):
         self.test_skeleton = params.test_skeleton
         self.overwrite = params.overwrite

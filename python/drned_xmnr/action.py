@@ -14,8 +14,10 @@ from __future__ import print_function
 
 import sys
 import traceback
+import threading
 
-from ncs import dp, application
+import _ncs
+from ncs import dp, application, experimental
 import drned_xmnr.namespaces.drned_xmnr_ns as ns
 
 # operation modules
@@ -85,14 +87,29 @@ class ActionHandler(dp.Action):
             output.filename = result['filename']
 
 
+class XmnrDataHandler(object):
+    def __init__(self, daemon, actionpoint, log=None, init_args=None):
+        # FIXME: really experimental
+        self._state = dp._daemon_as_dict(daemon)
+        ctx = self._state['ctx']
+        self.log = log or self._state['log']
+        dcb = experimental.DataCallbacks(self.log)
+        dcb.register('/ncs:devices/ncs:device', op.coverage_op.DataHandler(self.log))
+        _ncs.dp.register_data_cb(ctx, ns.ns.callpoint_coverage_data, dcb)
+
+    def start(self):
+        self.log.debug('started XMNR data')
+
+
 # ---------------------------------------------
 # COMPONENT THREAD THAT WILL BE STARTED BY NCS.
 # ---------------------------------------------
 
-class Action(application.Application):
+class Xmnr(application.Application):
 
     def setup(self):
-        self.register_action('drned-xmnr', ActionHandler)
+        self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler)
+        self.register_service(ns.ns.callpoint_coverage_data, XmnrDataHandler)
 
     def finish(self):
         pass

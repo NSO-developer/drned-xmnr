@@ -17,7 +17,7 @@ mode = override
 """
 
 
-class ConfigOp(base_op.BaseOp):
+class ConfigOp(base_op.ActionBase):
     def write_metadata(self, state_filename):
         with open(state_filename + ".load", 'w') as meta:
             print >> meta, state_metadata

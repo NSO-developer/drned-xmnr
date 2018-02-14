@@ -16,14 +16,10 @@ from ncs import maapi, maagic
 from .ex import ActionError
 
 
-class BaseOp(object):
-    def __init__(self, uinfo, dev_name, params, log_obj):
-        self.uinfo = uinfo
+class XmnrBase(object):
+    def __init__(self, dev_name, log_obj):
         self.dev_name = dev_name
-        self.maapi = maapi.Maapi()
         self.log = log_obj
-        self.run_with_trans(self._setup_directories)
-        self._init_params(params)
 
     def _setup_directories(self, trans):
         root = maagic.get_root(trans)
@@ -36,6 +32,17 @@ class BaseOp(object):
         except:
             pass
 
+
+class ActionBase(XmnrBase):
+    statefile_extension = '.state.cfg'
+
+    def __init__(self, uinfo, dev_name, params, log_obj):
+        super(ActionBase, self).__init__(dev_name, log_obj)
+        self.uinfo = uinfo
+        self.maapi = maapi.Maapi()
+        self.run_with_trans(self._setup_directories)
+        self._init_params(params)
+
     def _init_params(self, params):
         # Implement in subclasses
         pass
@@ -45,8 +52,6 @@ class BaseOp(object):
         if value is None:
             return default
         return value
-
-    statefile_extension = '.state.cfg'
 
     def state_name_to_filename(self, statename):
         return os.path.join(self.states_dir, statename + self.statefile_extension)
