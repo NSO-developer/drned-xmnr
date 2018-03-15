@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+conftest.py
+drned-*
+env.sh
+pytest.xml
+setup.cfg
+src/test_builtin.py

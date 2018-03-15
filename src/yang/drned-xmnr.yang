@@ -63,18 +63,10 @@ module drned-xmnr {
       container setup {
         tailf:action setup-xmnr {
           tailf:info
-            "Set up XMNR working directory; this includes setting up
-             the DRNED subdirectory if drned-skeleton is provided";
+            "Set up XMNR working directory, including setting up
+             the DRNED subdirectory";
           tailf:actionpoint drned-xmnr;
           input {
-            leaf test-skeleton {
-              mandatory true;
-              tailf:info
-                "Path to the test skeleton dir, for instance
-                 package-skeletons/ned-test/ in a ned-skeleton clone
-                 (git@stash.tail-f.com:NED/ned-skeleton.git).";
-              type string;
-            }
             leaf overwrite {
               tailf:info "Overwrite existing data in the target directory.";
               type boolean;

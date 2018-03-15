@@ -13,14 +13,13 @@ from .ex import ActionError
 
 class SetupOp(base_op.ActionBase):
     def _init_params(self, params):
-        self.test_skeleton = params.test_skeleton
         self.overwrite = params.overwrite
 
     def perform(self):
         # device and states directory should have been already created
-        pkg_file = self.run_with_trans(self.get_package)
+        self.run_with_trans(self.prepare_setup)
         try:
-            shutil.copy(pkg_file,
+            shutil.copy(self.pkg_file,
                         os.path.join(os.path.dirname(self.dev_test_dir), 'package-meta-data.xml'))
         except:
             raise ActionError("Failed to copy package-meta-data file.")
@@ -32,12 +31,9 @@ class SetupOp(base_op.ActionBase):
             except:
                 pass
         try:
-            shutil.copytree(os.path.join(self.test_skeleton, "drned"), target)
+            shutil.copytree(self.drned_skeleton, target)
         except OSError as ose:
-            if ose.errno == errno.ENOENT:
-                msg = "The directory {0} does not contain `drned' subdirectory" \
-                      .format(self.test_skeleton)
-            elif ose.errno == errno.EEXIST:
+            if ose.errno == errno.EEXIST:
                 msg = "The target {0} already exists. Did you use `overwrite' parameter?" \
                       .format(target)
             else:
@@ -46,8 +42,13 @@ class SetupOp(base_op.ActionBase):
         self.setup_drned()
         return {'success': "XMNR set up for device " + self.dev_name}
 
-    def get_package(self, trans):
+    def prepare_setup(self, trans):
         root = maagic.get_root(trans)
+        self.pkg_file = self.get_package(root)
+        xmnr_pkg = root.packages.package['drned-xmnr'].directory
+        self.drned_skeleton = os.path.join(xmnr_pkg, 'drned')
+
+    def get_package(self, root):
         devtype = root.devices.device[self.dev_name].device_type
         if devtype.ne_type in (devtype.netconf, devtype.snmp):
             # for netconf/snmp devices, there is (usually) no package
