@@ -26,18 +26,21 @@ class TransitionsOp(base_op.ActionBase):
         return self.run_in_drned_env(args, timeout)
 
     def transition_to_state(self, filename, rollback=False):
+        state_name = self.state_filename_to_name(filename)
         if not os.path.exists(filename):
-            state_name = self.state_filename_to_name(filename)
             raise ActionError('No such state: {0}'.format(state_name))
 
+        self.log.debug("Transition_to_state: {0}\n".format(state_name))
+        # filename needs to use '~' instead of '-'
         # need to use relative path for DrNED to accept that
-        filename = os.path.relpath(filename, self.drned_run_directory)
-        self.log.debug("Transition_to_state: {0}\n".format(filename))
+        filepath = os.path.relpath(self.state_name_to_filename(state_name.replace("-", "~")),
+                                   self.drned_run_directory)
 
+        self.log.debug("Using file {0}\n".format(filepath))
         # Max 120 seconds for executing DrNED
         self.extend_timeout(120)
         test = "test_template_single" if rollback else "test_template_raw"
-        args = ["-k {0}[{1}]".format(test, filename)]
+        args = ["-k {0}[{1}]".format(test, filepath)]
         result, _ = self.drned_run(args)
         self.log.debug("Test case completed\n")
         if result != 0:
