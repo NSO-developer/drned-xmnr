@@ -37,7 +37,7 @@ class DeleteStateOp(ConfigOp):
             except OSError:
                 pass
         except:
-            return {'error': "Could not delete " + state_filename}
+            return {'failure': "Could not delete " + state_filename}
         return {'success': "Deleted " + self.state_name}
 
 

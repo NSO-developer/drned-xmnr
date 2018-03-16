@@ -6,7 +6,7 @@ class ActionError(Exception):
         if type(info) is dict:
             self.info = info
         else:
-            self.info = {'error': info}
+            self.info = {'failure': info}
 
     def get_info(self):
         return self.info

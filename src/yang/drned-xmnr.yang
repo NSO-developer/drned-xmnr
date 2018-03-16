@@ -12,9 +12,6 @@ module drned-xmnr {
   description "A Doctor's bag of tools for examining & diagnosing your NSO NEDs";
 
   grouping action-output-common {
-    leaf message {
-      type string;
-    }
     leaf error {
       type string;
     }

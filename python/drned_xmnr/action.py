@@ -60,7 +60,7 @@ class ActionHandler(dp.Action):
 
         try:
             if op_name not in self.handlers:
-                raise ActionError({'error': "Operation not implemented: {0}".format(op_name)})
+                raise ActionError({'failure': "Operation not implemented: {0}".format(op_name)})
             handler_cls = self.handlers[op_name]
             handler = handler_cls(uinfo, dev_name, params, self.log)
             result = handler.perform()
@@ -72,19 +72,15 @@ class ActionHandler(dp.Action):
 
         except:
             self.log.debug("Other exception: " + repr(traceback.format_exception(*sys.exc_info())))
-            output.error = "Operation failed"
+            output.failure = "Operation failed"
 
     def action_response(self, uinfo, result, output):
-        if 'message' in result:
-            output.message = result['message']
         if 'error' in result:
             output.error = result['error']
         if 'success' in result:
             output.success = result['success']
         if 'failure' in result:
             output.failure = result['failure']
-        if 'filename' in result:
-            output.filename = result['filename']
 
 
 class XmnrDataHandler(object):

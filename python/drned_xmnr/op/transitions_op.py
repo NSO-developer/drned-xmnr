@@ -87,7 +87,8 @@ class ExploreTransitionsOp(ExploringOp):
         num_states = len(states)
         num_transitions = num_states * (num_states - 1)
         if(0 == num_transitions):
-            return {'error': "No transitions to make. Run 'config record-state' or "
+            return {'failure': "Could not process the request",
+                    'error': "No transitions to make. Run 'config record-state' or "
                     "'config import-state-files' several times "
                     "before running this command."}
         msg = "Found {0} states recorded for device {1} which gives a total of {2} transitions.\n"
