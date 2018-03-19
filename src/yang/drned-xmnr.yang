@@ -75,11 +75,11 @@ module drned-xmnr {
           }
         }
       }
-      container config {
+      container state {
         tailf:action record-state {
           tailf:info "Save the current device configuration state in a file. "+
             "A collection of saved state files can later be used with the "+
-            "'config explore-transitions' command.";
+            "'transitions explore-transitions' command.";
           tailf:actionpoint drned-xmnr;
           input {
             leaf state-name {
