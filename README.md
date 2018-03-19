@@ -10,11 +10,13 @@ package.  Using the tool's actions you can:
  * make DrNED generate reports on how well the state transitions cover the
    device model.
 
+
 ## Prerequisites
 
 The only prerequisite is DrNED itself; you can clone it from
 <ssh://git@stash.tail-f.com/ned/drned>.  Of course, DrNED has its own set of
 dependencies, in particular `pytest`, `pexpect`, and `lxml`.
+
 
 ## What it can do
 
@@ -36,29 +38,39 @@ actions have only a textual output with fields `success` (populated if the
 action completed successfully), `failure` and `error` (the latter may contain
 more details about the problem in case of failure).
 
-### Setup
+ * **Setup**
 
-Run the action `drned-xmnr/setup/setup-xmnr` to prepare and populate the data
-directory.  This is needed as the first action before any further work with the
-tool, or to clean up the directory (with parameter `overwrite`).
+    Run the action `drned-xmnr/setup/setup-xmnr` to prepare and populate the data
+    directory.  This is needed as the first action before any further work with the
+    tool, or to clean up the directory (with parameter `overwrite`).
 
-### Device states
+ * **Device states**
 
-Once set up, you need to prepare device states.  A device state is pretty much
-a device configuration, so you can configure the device and record its state,
-or you can directly import saved device configurations (provided they are in
-the Cisco-CLI format).
+    Once set up, you need to prepare device states.  A device state is pretty much
+    a device configuration, so you can configure the device and record its state,
+    or you can directly import saved device configurations (provided they are in
+    the Cisco-CLI format).
 
-### Transitions
+ * **Transitions**
 
-The main purpose of this tool is to help you verify that the device under test
-transitions smoothly between states - you can move from state to state, or walk
-several states at once, or explore all possible transitions between several
-states.  The tool invokes DrNED for all these tasks and uses its capabilities
-to detect auto-configuration issues, problems with rollback, etc.
+    The main purpose of this tool is to help you verify that the device under test
+    transitions smoothly between states - you can move from state to state, or walk
+    several states at once, or explore all possible transitions between several
+    states.  The tool invokes DrNED for all these tasks and uses its capabilities
+    to detect auto-configuration issues, problems with rollback, etc.
 
-### Coverage
+ * **Coverage**
 
-DrNED is capable of reporting how big part of the device model your tests have
-covered; the tool implements a simple wrapper around this capability, including
-a status data providing the coverage report in a structured form.
+    DrNED is capable of reporting how big part of the device model your tests have
+    covered; the tool implements a simple wrapper around this capability, including
+    a status data providing the coverage report in a structured form.
+
+
+## Common problems
+
+DrNED uses `py.test` as a tool for running tests.  `py.test` cannot process
+correctly command line arguments containing hyphens (`-`); DrNED works around
+that by translating hyphens to tildes (`~`) in file names (but not in device
+names), so it should be possible to use hyphens in state names (again: not in
+device names), but due to the workaround, it is not possible to use tildes
+there.
