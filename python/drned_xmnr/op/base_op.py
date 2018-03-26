@@ -159,6 +159,7 @@ class ActionBase(XmnrBase):
         self.log.debug("running", args)
         try:
             proc = subprocess.Popen(args,
+                                    universal_newlines=True,
                                     env=env,
                                     cwd=self.drned_run_directory,
                                     stdout=subprocess.PIPE,

@@ -14,18 +14,17 @@ from __future__ import print_function
 
 import sys
 import traceback
-import threading
 
 import _ncs
 from ncs import dp, application, experimental
 import drned_xmnr.namespaces.drned_xmnr_ns as ns
 
 # operation modules
-import op.config_op
-import op.transitions_op
-import op.setup_op
-import op.coverage_op
-from op.ex import ActionError
+from drned_xmnr.op import config_op
+from drned_xmnr.op import transitions_op
+from drned_xmnr.op import setup_op
+from drned_xmnr.op import coverage_op
+from drned_xmnr.op.ex import ActionError
 
 assert sys.version_info >= (2, 7)
 # Not tested with anything lower
@@ -40,16 +39,16 @@ def param_default(params, tag, default):
 
 class ActionHandler(dp.Action):
     handlers = {
-        ns.ns.drned_xmnr_setup_xmnr_: op.setup_op.SetupOp,
-        ns.ns.drned_xmnr_delete_state_: op.config_op.DeleteStateOp,
-        ns.ns.drned_xmnr_list_states_: op.config_op.ListStatesOp,
-        ns.ns.drned_xmnr_record_state_: op.config_op.RecordStateOp,
-        ns.ns.drned_xmnr_import_state_files_: op.config_op.ImportStateFiles,
-        ns.ns.drned_xmnr_transition_to_state_: op.transitions_op.TransitionToStateOp,
-        ns.ns.drned_xmnr_explore_transitions_: op.transitions_op.ExploreTransitionsOp,
-        ns.ns.drned_xmnr_walk_states_: op.transitions_op.WalkTransitionsOp,
-        ns.ns.drned_xmnr_reset_: op.coverage_op.ResetCoverageOp,
-        ns.ns.drned_xmnr_collect_: op.coverage_op.CoverageOp,
+        ns.ns.drned_xmnr_setup_xmnr_: setup_op.SetupOp,
+        ns.ns.drned_xmnr_delete_state_: config_op.DeleteStateOp,
+        ns.ns.drned_xmnr_list_states_: config_op.ListStatesOp,
+        ns.ns.drned_xmnr_record_state_: config_op.RecordStateOp,
+        ns.ns.drned_xmnr_import_state_files_: config_op.ImportStateFiles,
+        ns.ns.drned_xmnr_transition_to_state_: transitions_op.TransitionToStateOp,
+        ns.ns.drned_xmnr_explore_transitions_: transitions_op.ExploreTransitionsOp,
+        ns.ns.drned_xmnr_walk_states_: transitions_op.WalkTransitionsOp,
+        ns.ns.drned_xmnr_reset_: coverage_op.ResetCoverageOp,
+        ns.ns.drned_xmnr_collect_: coverage_op.CoverageOp,
     }
 
     @dp.Action.action
@@ -90,7 +89,7 @@ class XmnrDataHandler(object):
         ctx = self._state['ctx']
         self.log = log or self._state['log']
         dcb = experimental.DataCallbacks(self.log)
-        dcb.register('/ncs:devices/ncs:device', op.coverage_op.DataHandler(self.log))
+        dcb.register('/ncs:devices/ncs:device', coverage_op.DataHandler(self.log))
         _ncs.dp.register_data_cb(ctx, ns.ns.callpoint_coverage_data, dcb)
 
     def start(self):

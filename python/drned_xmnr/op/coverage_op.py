@@ -7,7 +7,7 @@ import operator
 import functools
 import itertools
 from collections import defaultdict
-import cPickle
+import pickle
 import traceback
 
 from ncs import maapi
@@ -82,7 +82,7 @@ class CoverageOp(base_op.ActionBase):
             mx = valrx.match(lines.next())
             self.covdata['percents'][cname][value] = mx.groupdict()
         with open(os.path.join(self.dev_test_dir, 'coverage.data'), 'w') as data:
-            cPickle.dump(self.covdata, data)
+            pickle.dump(self.covdata, data)
 
 
 class DataHandler(object):
@@ -105,7 +105,7 @@ class DeviceData(base_op.XmnrBase):
     def get_data(self):
         try:
             with open(os.path.join(self.dev_test_dir, 'coverage.data')) as data:
-                data = cPickle.load(data)
+                data = pickle.load(data)
                 self.log.debug('unpickled data: ', data)
         except Exception as exc:
             self.log.error('Could not load coverage data, "collect" may not have been run')
