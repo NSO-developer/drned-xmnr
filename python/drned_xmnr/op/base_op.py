@@ -107,22 +107,6 @@ class ActionBase(XmnrBase):
         if self.uinfo.context == 'cli':
             _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
 
-    def get_exe_path(self, exe):
-        path = self.get_exe_path_from_PATH(exe)
-        if not os.path.exists(path):
-            msg = 'Unable to execute {0}, command no found in PATH {1}'
-            raise ActionError(msg.format(exe, os.environ['PATH']))
-
-        return path
-
-    def get_exe_path_from_PATH(self, exe):
-        parts = (os.environ['PATH'] or '/bin').split(os.path.pathsep)
-        for part in parts:
-            path = os.path.join(part, exe)
-            if os.path.exists(path):
-                return path
-        return None
-
     def setup_drned_env(self, trans):
         """Build a dictionary that is supposed to be passed to `Popen` as the
         environment.
