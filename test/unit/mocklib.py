@@ -46,6 +46,8 @@ class XtestPatch(object):
             with nest_mgrs([gen() for gen in self.mock_gens]) as mocks:
                 for mock_inst in mocks:
                     setattr(self, mock_inst.name, mock_inst)
+                if hasattr(self, 'system') and hasattr(self, 'open'):
+                    self.system.set_open_mocks(self.open)
                 args = list(args)
                 args.append(self)
                 fn(*args)
@@ -79,23 +81,102 @@ def ncs_mock():
                 yield mock_inst
 
 
+class FileData(object):
+    def __init__(self, name, data=None):
+        self.name = name
+        self.data = data
+
+    def read(self):
+        if self.data is None:
+            raise RuntimeError('Cannot read from {}'.format(self.name))
+        return self.data
+
+    def write(self, data):
+        if self.data is None:
+            self.data = b''
+        self.data += data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+
 class SystemMock(XtestMock):
     def __init__(self, patches):
         super(SystemMock, self).__init__('system')
         self.tree = {}
         self.patches = patches
         for fn, fnmock in patches['os'].items():
-            fnmock.side_effect = self.get_invoke_closure(fn, fnmock)
+            fnmock.side_effect = functools.partial(self.invoke_system, fnmock, fn)
         socket = patches['socket']['socket']
         socket.return_value = mock.Mock(recv=Mock(side_effect=self.get_socket_data))
         self.socket_data('')
 
-    def get_invoke_closure(self, fnmock, fn):
-        return lambda *args: self.invoke_system(fnmock, fn, args)
-
     def invoke_system(self, mock, name, *args):
-        print('invoking:', mock, name, args)
+        if name == 'path.exists':
+            return self.exists(*args)
+        if name == 'makedirs':
+            return self.makedirs(*args)
+        if name == 'remove':
+            return self.remove(*args)
+        if name == 'open':
+            return self.open(*args)
+        print('operation', name, 'not supported')
         return mock
+
+    def set_open_mocks(self, openmock):
+        for omock in openmock.mocks:
+            omock.side_effect = functools.partial(self.invoke_system, omock, 'open')
+
+    def descend_tree(self, path, start=None):
+        node = self.tree if start is None else start
+        part_iter = iter(path.split('/') if type(path) is str else path)
+        for part in part_iter:
+            child = node.get(part, None)
+            if type(child) is not dict:
+                return node, [part] + list(part_iter), child
+            node = child
+        return node, None, None
+
+    def makedirs(self, path, start=None):
+        node, rest, child = self.descend_tree(path, start=start)
+        if type(child) is dict:
+            raise RuntimeError('Directory exists: {}'.format(path))
+        if child is not None:
+            raise RuntimeError('Cannot create directory: {}'.format(path))
+        for part in rest:
+            node[part] = {}
+            node = node[part]
+
+    def exists(self, path):
+        print('existing', path)
+        _, _, child = self.descend_tree(path)
+        return child is not None
+
+    def remove(self, path):
+        node, rest, child = self.descend_tree(path)
+        if type(child) is not dict:
+            raise RuntimeError('cannot remove: {}'.format(path))
+        del node[rest[0]]
+
+    def open(self, path, attr='r'):
+        node, rest, child = self.descend_tree(path)
+        if attr == 'r':
+            if isinstance(child, FileData):
+                return child
+            raise RuntimeError('cannot read: {}'.format(path))
+        if attr == 'w':
+            if isinstance(child, dict):
+                raise RuntimeError('cannot write to {}'.format(path))
+            if len(rest) > 1:
+                prest = rest[:-1]
+                self.makedirs(prest, start=node)
+                node, _, _ = self.descend_tree(prest, start=node)
+            name = rest[-1]
+            node[name] = FileData(name)
+            return node[name]
 
     def socket_data(self, data, chunk=10):
         self.data_iter = (data[i*chunk:(i+1)*chunk] for i in range(0, (len(data)+chunk-1)//chunk))
@@ -137,6 +218,21 @@ def system_mock():
             wait_mock = mock.Mock(return_value=0)
             popen.return_value = mock.Mock(wait=wait_mock)
             yield SystemMock(patches)
+
+
+class OpenMock(XtestMock):
+    def __init__(self, open_mocks):
+        super(OpenMock, self).__init__('open')
+        self.mocks = open_mocks
+
+
+def open_mock(*modules):
+    @contextmanager
+    def cmgr():
+        with nest_mgrs([mock.patch('drned_xmnr.op.{}.open'.format(module))
+                        for module in modules]) as open_mocks:
+            yield OpenMock(open_mocks)
+    return cmgr
 
 
 def init_mocks():
