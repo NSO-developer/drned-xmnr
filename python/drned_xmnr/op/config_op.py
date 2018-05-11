@@ -24,6 +24,8 @@ class ConfigOp(base_op.ActionBase):
 
 
 class DeleteStateOp(ConfigOp):
+    action_name = 'delete state'
+
     def _init_params(self, params):
         self.state_name = self.param_default(params, "state_name", "")
 
@@ -42,6 +44,8 @@ class DeleteStateOp(ConfigOp):
 
 
 class ListStatesOp(ConfigOp):
+    action_name = 'list states'
+
     def _init_params(self, params):
         pass
 
@@ -53,6 +57,8 @@ class ListStatesOp(ConfigOp):
 
 
 class RecordStateOp(ConfigOp):
+    action_name = 'record state'
+
     def _init_params(self, params):
         self.state_name = self.param_default(params, "state_name", "")
         self.include_rollbacks = self.param_default(params, "including_rollbacks", 0)
@@ -99,6 +105,8 @@ class RecordStateOp(ConfigOp):
 
 
 class ImportStateFiles(ConfigOp):
+    action_name = 'import states'
+
     def _init_params(self, params):
         self.pattern = params.file_path_pattern
         self.overwrite = params.overwrite

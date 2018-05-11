@@ -6,6 +6,7 @@ import select
 import glob
 import socket
 import subprocess
+from datetime import datetime as dt
 
 import _ncs
 
@@ -24,6 +25,7 @@ class XmnrBase(object):
     def _setup_directories(self, trans):
         root = maagic.get_root(trans)
         self.xmnr_directory = root.drned_xmnr.xmnr_directory
+        self.log_filename = root.drned_xmnr.xmnr_log_file
         self.dev_test_dir = os.path.join(self.xmnr_directory, self.dev_name, 'test')
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned')
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
@@ -46,6 +48,17 @@ class ActionBase(XmnrBase):
     def _init_params(self, params):
         # Implement in subclasses
         pass
+
+    def perform_action(self):
+        if self.log_filename is not None:
+            with open(os.path.join(self.xmnr_directory, self.log_filename), 'w+') as lf:
+                msg = '{} - {}'.format(dt.now(), self.action_name)
+                lf.write('\n{}\n{}\n{}\n'.format('-'*len(msg), msg, '-'*len(msg)))
+                self.log_file = lf
+                return self.perform()
+        else:
+            self.log_file = None
+            return self.perform()
 
     def param_default(self, params, name, default):
         value = getattr(params, name)
@@ -106,6 +119,8 @@ class ActionBase(XmnrBase):
         self.log.debug(msg)
         if self.uinfo.context == 'cli':
             _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
+        if self.log_file is not None:
+            self.log_file.write(msg)
 
     def setup_drned_env(self, trans):
         """Build a dictionary that is supposed to be passed to `Popen` as the

@@ -49,6 +49,8 @@ class TransitionsOp(base_op.ActionBase):
 
 
 class TransitionToStateOp(TransitionsOp):
+    action_name = 'transition to state'
+
     def _init_params(self, params):
         self.state_name = self.param_default(params, "state_name", "")
         self.rollback = params.rollback
@@ -80,6 +82,8 @@ class ExploringOp(TransitionsOp):
 
 
 class ExploreTransitionsOp(ExploringOp):
+    action_name = 'explore transitions'
+
     def perform(self):
         self.log.debug("config_explore_transitions() with device {0} states {1}"
                        .format(self.dev_name, self.state_filenames))
@@ -145,6 +149,8 @@ class ExploreTransitionsOp(ExploringOp):
 
 
 class WalkTransitionsOp(ExploringOp):
+    action_name = 'walk states'
+
     def perform(self):
         self.log.debug("walking states {0}"
                        .format([self.state_filename_to_name(filename)

@@ -62,7 +62,7 @@ class ActionHandler(dp.Action):
                 raise ActionError({'failure': "Operation not implemented: {0}".format(op_name)})
             handler_cls = self.handlers[op_name]
             handler = handler_cls(uinfo, dev_name, params, self.log)
-            result = handler.perform()
+            result = handler.perform_action()
             return self.action_response(uinfo, result, output)
 
         except ActionError as ae:

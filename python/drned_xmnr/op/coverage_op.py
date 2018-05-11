@@ -17,6 +17,8 @@ from .ex import ActionError
 
 
 class ResetCoverageOp(base_op.ActionBase):
+    action_name = 'reset coverage'
+
     def perform(self):
         result, _ = self.run_in_drned_env(['make', 'covstart'])
         if result != 0:
@@ -25,6 +27,8 @@ class ResetCoverageOp(base_op.ActionBase):
 
 
 class CoverageOp(base_op.ActionBase):
+    action_name = 'collect coverage'
+
     def _init_params(self, params):
         self.patterns = list(params.yang_patterns)
 

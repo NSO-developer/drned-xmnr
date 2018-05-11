@@ -12,6 +12,8 @@ from .ex import ActionError
 
 
 class SetupOp(base_op.ActionBase):
+    action_name = 'xmnr setup'
+
     def _init_params(self, params):
         self.overwrite = params.overwrite
 

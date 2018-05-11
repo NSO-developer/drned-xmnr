@@ -53,6 +53,13 @@ module drned-xmnr {
       type string;
       default "/tmp/xmnr";
     }
+    leaf xmnr-log-file {
+      tailf:info
+        "If set, all output is stored to that file (relative to
+         xmnr-directory).  Useful especially if actions are not run
+         from the CLI.";
+      type string;
+    }
   }
 
   augment /ncs:devices/ncs:device {
