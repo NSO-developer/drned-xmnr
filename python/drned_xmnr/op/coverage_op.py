@@ -94,19 +94,12 @@ class DataHandler(object):
         self.log = log
 
     def get_object(self, tctx, kp, args):
-        with maapi.Maapi() as mp:
-            trans = mp.attach(tctx)
-            dd = DeviceData(args['device'], self.log, trans).get_data()
-            mp.detach(tctx)
-            return {'drned-xmnr': {'coverage': {'data': dd}}}
+        dd =  DeviceData.get_data(tctx, args['device'], self.log, DeviceData.get_coverage_data)
+        return {'drned-xmnr': {'coverage': {'data': dd}}}
 
 
-class DeviceData(base_op.XmnrBase):
-    def __init__(self, dev_name, log, trans):
-        super(DeviceData, self).__init__(dev_name, log)
-        self._setup_directories(trans)
-
-    def get_data(self):
+class DeviceData(base_op.XmnrDeviceData):
+    def get_coverage_data(self):
         try:
             with open(os.path.join(self.dev_test_dir, 'coverage.data')) as data:
                 data = pickle.load(data)

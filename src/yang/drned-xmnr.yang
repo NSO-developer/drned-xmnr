@@ -29,7 +29,9 @@ module drned-xmnr {
         "List of states to pass through (in given order); if empty,
          all states in random order are used.";
       ordered-by user;
-      type string;
+      type leafref {
+        path ../../../state/states/state;
+      }
     }
     container stop-after {
       tailf:info "Do not start more transitions after given time/coverage has been reached.";
@@ -83,6 +85,14 @@ module drned-xmnr {
         }
       }
       container state {
+        list states {
+          config false;
+          tailf:callpoint xmnr-states;
+          key state;
+          leaf state {
+            type string;
+          }
+        }
         tailf:action record-state {
           tailf:info "Save the current device configuration state in a file. "+
             "A collection of saved state files can later be used with the "+
@@ -103,7 +113,9 @@ module drned-xmnr {
           output {
             uses action-output-common;
             leaf state-name {
-              type string;
+              type leafref {
+                path ../../states/state;
+              }
             }
           }
         }
@@ -113,7 +125,9 @@ module drned-xmnr {
           input {
             leaf state-name {
               mandatory true;
-              type string;
+              type leafref {
+                path ../../states/state;
+              }
             }
           }
           output {
@@ -152,7 +166,9 @@ module drned-xmnr {
           tailf:actionpoint drned-xmnr;
           input {
             leaf state-name {
-              type string;
+              type leafref {
+                path ../../../state/states/state;
+              }
             }
             leaf rollback {
               tailf:info "If true, let DrNED do rollback to the original state";

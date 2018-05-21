@@ -141,3 +141,23 @@ class ImportStateFiles(ConfigOp):
         while ext != "":
             (base, ext) = os.path.splitext(base)
         return base
+
+
+class StatesProvider(object):
+    def __init__(self, log):
+        self.log = log
+        self.log.debug('run initialize')
+
+    def get_states_data(self, tctx, args):
+        return StatesData.get_data(tctx, args['device'], self.log, StatesData.states)
+
+    def get_object(self, tctx, kp, args):
+        self.log.debug('get_object', args, str(kp))
+        states = self.get_states_data(tctx, args)
+        self.log.debug('states ', [(st,) for st in states])
+        return {'states': [{'state': st} for st in states]}
+
+
+class StatesData(base_op.XmnrDeviceData):
+    def states(self):
+        return self.get_states()

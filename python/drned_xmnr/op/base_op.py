@@ -18,6 +18,8 @@ from .ex import ActionError
 
 
 class XmnrBase(object):
+    statefile_extension = '.state.cfg'
+
     def __init__(self, dev_name, log_obj):
         self.dev_name = dev_name
         self.log = log_obj
@@ -34,10 +36,20 @@ class XmnrBase(object):
         except:
             pass
 
+    def state_name_to_filename(self, statename):
+        return os.path.join(self.states_dir, statename + self.statefile_extension)
+
+    def state_filename_to_name(self, filename):
+        return os.path.basename(filename)[:-len(self.statefile_extension)]
+
+    def get_states(self):
+        return [self.state_filename_to_name(f) for f in self.get_state_files()]
+
+    def get_state_files(self):
+        return glob.glob(self.state_name_to_filename('*'))
+
 
 class ActionBase(XmnrBase):
-    statefile_extension = '.state.cfg'
-
     def __init__(self, uinfo, dev_name, params, log_obj):
         super(ActionBase, self).__init__(dev_name, log_obj)
         self.uinfo = uinfo
@@ -66,15 +78,6 @@ class ActionBase(XmnrBase):
             return default
         return value
 
-    def state_name_to_filename(self, statename):
-        return os.path.join(self.states_dir, statename + self.statefile_extension)
-
-    def state_filename_to_name(self, filename):
-        return os.path.basename(filename)[:-len(self.statefile_extension)]
-
-    def get_states(self):
-        return [self.state_filename_to_name(f) for f in self.get_state_files()]
-
     def run_with_trans(self, callback, write=False):
         if self.uinfo.actx_thandle == -1:
             if write:
@@ -86,9 +89,6 @@ class ActionBase(XmnrBase):
         else:
             mp = maapi.Maapi()
             return callback(mp.attach(self.uinfo.actx_thandle))
-
-    def get_state_files(self):
-        return glob.glob(self.state_name_to_filename('*'))
 
     def extend_timeout(self, timeout_extension):
         dp.action_set_timeout(self.uinfo, timeout_extension)
@@ -194,3 +194,18 @@ class ActionBase(XmnrBase):
                 self.log.debug("Data: "+str(config_data))
         finally:
             ssocket.close()
+
+
+class XmnrDeviceData(XmnrBase):
+    """Base for XMNR data providers."""
+    @classmethod
+    def get_data(clazz, tctx, device, log, data_cb):
+        with maapi.Maapi() as mp:
+            with mp.attach(tctx) as trans:
+                dd = clazz(device, log, trans)
+                data = data_cb(dd)
+                return data
+
+    def __init__(self, device, log, trans):
+        super(XmnrDeviceData, self).__init__(device, log)
+        self._setup_directories(trans)

@@ -91,6 +91,10 @@ class XmnrDataHandler(object):
         dcb = experimental.DataCallbacks(self.log)
         dcb.register('/ncs:devices/ncs:device', coverage_op.DataHandler(self.log))
         _ncs.dp.register_data_cb(ctx, ns.ns.callpoint_coverage_data, dcb)
+        scb = experimental.DataCallbacks(self.log)
+        scb.register('/ncs:devices/ncs:device/drned-xmnr:drned-xmnr/drned-xmnr:state',
+                     config_op.StatesProvider(self.log))
+        _ncs.dp.register_data_cb(ctx, ns.ns.callpoint_xmnr_states, scb)
 
     def start(self):
         self.log.debug('started XMNR data')
@@ -105,6 +109,7 @@ class Xmnr(application.Application):
     def setup(self):
         self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler)
         self.register_service(ns.ns.callpoint_coverage_data, XmnrDataHandler)
+        self.register_service(ns.ns.callpoint_xmnr_states, XmnrDataHandler)
 
     def finish(self):
         pass
