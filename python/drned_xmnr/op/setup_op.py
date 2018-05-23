@@ -1,8 +1,15 @@
 import os
+import sys
 import shutil
 import errno
 import subprocess
 from xml.etree import ElementTree as ET
+if sys.version_info >= (3, 3):
+    import functools
+    et_tostring = functools.partial(ET.tostring, encoding='unicode')
+else:
+    et_tostring = ET.tostring
+
 
 import _ncs
 from ncs import maagic
@@ -114,4 +121,4 @@ class SetupOp(base_op.ActionBase):
         for name in ['ssh', 'connect-timeout', 'read-timeout', 'trace', 'config']:
             del_element(dev, name)
         with open(self.cfg_file, 'w') as cfg:
-            cfg.write(ET.tostring(devices))
+            cfg.write(et_tostring(devices))

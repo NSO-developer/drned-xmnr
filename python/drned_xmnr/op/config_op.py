@@ -53,7 +53,7 @@ class ListStatesOp(ConfigOp):
         self.log.debug("config_list_states() with device {0}".format(self.dev_name))
         state_files = self.get_state_files()
         return {'success': "Saved device states: " +
-                str(map(self.state_filename_to_name, state_files))}
+                str([self.state_filename_to_name(st) for st in state_files])}
 
 
 class RecordStateOp(ConfigOp):
@@ -146,15 +146,12 @@ class ImportStateFiles(ConfigOp):
 class StatesProvider(object):
     def __init__(self, log):
         self.log = log
-        self.log.debug('run initialize')
 
     def get_states_data(self, tctx, args):
         return StatesData.get_data(tctx, args['device'], self.log, StatesData.states)
 
     def get_object(self, tctx, kp, args):
-        self.log.debug('get_object', args, str(kp))
         states = self.get_states_data(tctx, args)
-        self.log.debug('states ', [(st,) for st in states])
         return {'states': [{'state': st} for st in states]}
 
 
