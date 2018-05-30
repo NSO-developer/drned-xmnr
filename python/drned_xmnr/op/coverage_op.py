@@ -68,7 +68,7 @@ class CoverageOp(base_op.ActionBase):
         rx = re.compile(expr)
         valrx = re.compile(' *(?P<total>[0-9]*) \( *(?P<percent>[0-9]*)%\) ')
         lines = itertools.dropwhile(lambda line: rx.match(line) is None, lines)
-        match = rx.match(lines.next())
+        match = rx.match(next(lines))
         self.covdata = dict(total=match.groupdict(), percents=defaultdict(dict))
         for (cname, value) in [('nodes', 'read-or-set'),
                                ('lists', 'read-or-set'),
@@ -83,7 +83,7 @@ class CoverageOp(base_op.ActionBase):
                                ('grouping-nodes', 'deleted'),
                                ('grouping-nodes', 'set-set'),
                                ('grouping-nodes', 'deleted-separately')]:
-            mx = valrx.match(lines.next())
+            mx = valrx.match(next(lines))
             self.covdata['percents'][cname][value] = mx.groupdict()
         with open(os.path.join(self.dev_test_dir, 'coverage.data'), 'w') as data:
             pickle.dump(self.covdata, data)
