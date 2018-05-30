@@ -123,10 +123,15 @@ module drned-xmnr {
           tailf:info "Delete a saved state file. ";
           tailf:actionpoint drned-xmnr;
           input {
-            leaf state-name {
+            choice delete-state {
               mandatory true;
-              type leafref {
-                path ../../states/state;
+              leaf state-name {
+                type leafref {
+                  path ../../states/state;
+                }
+              }
+              leaf state-name-pattern {
+                type string;
               }
             }
           }

@@ -20,27 +20,36 @@ mode = override
 class ConfigOp(base_op.ActionBase):
     def write_metadata(self, state_filename):
         with open(state_filename + ".load", 'w') as meta:
-            print >> meta, state_metadata
+            meta.write(state_metadata)
 
 
 class DeleteStateOp(ConfigOp):
     action_name = 'delete state'
 
     def _init_params(self, params):
-        self.state_name = self.param_default(params, "state_name", "")
+        self.state_name_pattern = params.state_name_pattern
+        self.state_name = params.state_name
 
     def perform(self):
         self.log.debug("config_delete_state() with device {0}".format(self.dev_name))
-        state_filename = self.state_name_to_filename(self.state_name)
-        try:
-            os.remove(state_filename)
+        name_or_pattern = self.state_name_pattern
+        if name_or_pattern is None:
+            name_or_pattern = self.state_name
+        state_filename_pattern = self.state_name_to_filename(name_or_pattern)
+        state_filenames = glob.glob(state_filename_pattern)
+        if state_filenames == []:
+            raise ActionError('no such states: ' + self.state_name)
+        for state_filename in state_filenames:
             try:
-                os.remove(state_filename + ".load")
-            except OSError:
-                pass
-        except:
-            return {'failure': "Could not delete " + state_filename}
-        return {'success': "Deleted " + self.state_name}
+                os.remove(state_filename)
+                try:
+                    os.remove(state_filename + ".load")
+                except OSError:
+                    pass
+            except:
+                return {'failure': "Could not delete " + state_filename}
+        return {'success': "Deleted: " + ', '.join(self.state_filename_to_name(state_filename)
+                                                   for state_filename in state_filenames)}
 
 
 class ListStatesOp(ConfigOp):
