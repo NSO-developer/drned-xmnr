@@ -69,7 +69,8 @@ class CoverageOp(base_op.ActionBase):
         valrx = re.compile(' *(?P<total>[0-9]*) \( *(?P<percent>[0-9]*)%\) ')
         lines = itertools.dropwhile(lambda line: rx.match(line) is None, lines)
         match = rx.match(next(lines))
-        self.covdata = dict(total=match.groupdict(), percents=defaultdict(dict))
+        self.covdata = dict(total={k: int(v) for (k, v) in match.groupdict().items()},
+                            percents=defaultdict(dict))
         for (cname, value) in [('nodes', 'read-or-set'),
                                ('lists', 'read-or-set'),
                                ('lists', 'deleted'),
@@ -84,7 +85,8 @@ class CoverageOp(base_op.ActionBase):
                                ('grouping-nodes', 'set-set'),
                                ('grouping-nodes', 'deleted-separately')]:
             mx = valrx.match(next(lines))
-            self.covdata['percents'][cname][value] = mx.groupdict()
+            self.covdata['percents'][cname][value] = {k: int(v)
+                                                      for (k, v) in mx.groupdict().items()}
         with open(os.path.join(self.dev_test_dir, 'coverage.data'), 'w') as data:
             pickle.dump(self.covdata, data)
 
@@ -94,7 +96,7 @@ class DataHandler(object):
         self.log = log
 
     def get_object(self, tctx, kp, args):
-        dd =  DeviceData.get_data(tctx, args['device'], self.log, DeviceData.get_coverage_data)
+        dd = DeviceData.get_data(tctx, args['device'], self.log, DeviceData.get_coverage_data)
         return {'drned-xmnr': {'coverage': {'data': dd}}}
 
 
