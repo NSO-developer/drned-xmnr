@@ -3,8 +3,10 @@ from __future__ import print_function
 from . import mocklib
 from .mocklib import mock, xtest_patch
 from drned_xmnr import action
-from drned_xmnr.op import config_op, base_op
+from drned_xmnr.op import config_op, base_op, coverage_op
 import os
+from collections import namedtuple
+from random import randint
 import functools
 import itertools
 
@@ -300,3 +302,74 @@ class TestTransitions(TestBase):
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         self.check_drned_call(popen_mock.call_args, fnames=self.states)
         popen_mock.assert_called_once()
+
+
+class TestCoverage(TestBase):
+    drned_collect_output = '''
+Found a total of {nodes-total} nodes (0 of type empty) and {lists-total} lists,
+     {nodes[read-or-set][total]} (  {nodes[read-or-set][percent]}%) nodes read or set
+     {lists[read-or-set][total]} (  {lists[read-or-set][percent]}%) lists read or set
+     {lists[deleted][total]} (  {lists[deleted][percent]}%) lists deleted
+     {lists[multi-read-or-set][total]} (  {lists[multi-read-or-set][percent]}%) \
+lists with multiple entries read or set
+     {nodes[set][total]} (  {nodes[set][percent]}%) nodes set
+     {nodes[deleted][total]} (  {nodes[deleted][percent]}%) nodes deleted
+     {nodes[set-set][total]} (  {nodes[set-set][percent]}%) nodes set when already set
+     {nodes[deleted-separately][total]} (  {nodes[deleted-separately][percent]}%) \
+nodes deleted separately (disregarding 9 bool-no|prefix-key|mandatory)
+     {grouping-nodes[read-or-set][total]} (  {grouping-nodes[read-or-set][percent]}%) \
+grouping nodes read or set
+     {grouping-nodes[set][total]} (  {grouping-nodes[set][percent]}%) grouping nodes set
+     {grouping-nodes[deleted][total]} (  {grouping-nodes[deleted][percent]}%) grouping nodes deleted
+     {grouping-nodes[set-set][total]} (  {grouping-nodes[set-set][percent]}%) \
+grouping nodes set when already set
+     {grouping-nodes[deleted-separately][total]} \
+(  {grouping-nodes[deleted-separately][percent]}%) \
+grouping nodes deleted separately (disregarding 9 bool-no|prefix-key|mandatory)
+'''
+
+    collect_groups = {'nodes': ['read-or-set', 'set', 'deleted', 'set-set', 'deleted-separately'],
+                      'lists': ['read-or-set', 'deleted', 'multi-read-or-set'],
+                      'grouping-nodes': ['read-or-set', 'set', 'deleted', 'set-set',
+                                         'deleted-separately']}
+
+    def line_entry(self, total, percent):
+        return dict(total=total, percent=percent)
+
+    @xtest_patch
+    def test_coverage_reset(self, xpatch):
+        output = self.invoke_action('reset')
+        self.check_output(output)
+        popen_mock = xpatch.system.patches['subprocess']['Popen']
+        popen_mock.assert_called_once()
+        assert popen_mock.call_args[0] == (['make', 'covstart'],)
+
+    @xtest_patch
+    def test_coverage(self, xpatch):
+        collect_dict = {'nodes-total': randint(0, 1000), 'lists-total': randint(0, 1000)}
+        for (group, entries) in self.collect_groups.items():
+            collect_dict[group] = {}
+            for entry in entries:
+                collect_dict[group][entry] = self.line_entry(randint(0, 1000), randint(0, 100))
+        xpatch.system.proc_data(self.drned_collect_output.format(**collect_dict))
+        output = self.invoke_action('collect', yang_patterns=['pat1', 'pat2'])
+        self.check_output(output)
+        log = mock.Mock()
+        cdata = coverage_op.DataHandler(log)
+        self.setup_log(cdata)
+        tctx = mock.Mock()
+        obj = cdata.get_object(tctx, None, {'device': mocklib.DEVICE_NAME})
+        data = obj['drned-xmnr']['coverage']['data']
+        assert int(data['nodes-total']) == collect_dict['nodes-total']
+        assert int(data['lists-total']) == collect_dict['lists-total']
+        for group in self.collect_groups:
+            assert data['percents'][group] == collect_dict[group]
+
+    @xtest_patch
+    def test_coverage_failure(self, xpatch):
+        log = mock.Mock()
+        cdata = coverage_op.DataHandler(log)
+        self.setup_log(cdata)
+        tctx = mock.Mock()
+        obj = cdata.get_object(tctx, None, {'device': mocklib.DEVICE_NAME})
+        assert obj['drned-xmnr']['coverage']['data'] == {}

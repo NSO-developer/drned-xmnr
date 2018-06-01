@@ -118,24 +118,46 @@ class FileData(object):
 
 
 class StreamData(object):
-    """Auxiliary class for mocking anything that provides streamed data."""
-    def __init__(self, data, chunk):
-        if data == []:
+    """Auxiliary class for mocking objects that provides streamed data."""
+    def __init__(self):
+        self.set_data('', 0)
+
+    def set_data(self, data, chunk):
+        if data == '':
             self.data = []
         else:
-            self.data = [data[i*chunk:(i+1)*chunk]
-                         for i in range(0, (len(data)+chunk-1)//chunk)]
+            # reversing to have better performance for pop
+            self.data = list(reversed([data[i*chunk:(i+1)*chunk]
+                                       for i in range(0, (len(data)+chunk-1)//chunk)]))
 
     def __iter__(self):
         return self
 
     def next(self):
         if self.finished():
-            raise StopIteration()
-        return self.data.pop(0)
+            raise StopIteration
+        return self.next_data()
 
     def finished(self):
         return self.data == []
+
+    def select(self, rlist, *ignore):
+        if self.finished():
+            return [], [], []
+        return rlist, [], []
+
+    def read(self):
+        if self.finished():
+            return ''
+        return self.next_data()
+
+    def next_data(self):
+        return self.data.pop()
+
+    def poll(self):
+        if self.finished():
+            return 0
+        return None
 
 
 class SystemMock(XtestMock):
@@ -143,21 +165,36 @@ class SystemMock(XtestMock):
         super(SystemMock, self).__init__('system')
         self.patches = patches
         self.ff_patcher = ff_patcher
-        socket = patches['socket']['socket']
-        socket.return_value = mock.Mock(recv=Mock(side_effect=self.get_socket_data))
-        self.socket_data('')
+        self.proc_stream = StreamData()
+        self.socket_stream = StreamData()
+        self.mock_socket_data()
+        self.complete_popen_mock()
+
+    def mock_socket_data(self):
+        socket = self.patches['socket']['socket']
+        socket.return_value = mock.Mock(recv=self.get_socket_data)
+
+    def complete_popen_mock(self):
+        popen = self.patches['subprocess']['Popen']
+        wait_mock = mock.Mock(return_value=0)
+        stdout_mock = mock.Mock(read=self.proc_stream.read)
+        popen.return_value = mock.Mock(wait=wait_mock,
+                                       poll=self.proc_stream.poll,
+                                       test=self.proc_stream.finished,
+                                       stdout=stdout_mock)
+        self.patches['select']['select'].side_effect = self.proc_stream.select
 
     def socket_data(self, data, chunk=10):
-        self.socket_data_iter = self.chunk_data(data, chunk)
-
-    def chunk_data(self, data, chunk):
-        return (data[i*chunk:(i+1)*chunk] for i in range(0, (len(data)+chunk-1)//chunk))
+        self.socket_stream.set_data(data, chunk)
 
     def get_socket_data(self, *args):
         try:
-            return next(self.socket_data_iter)
+            return next(self.socket_stream)
         except StopIteration:
             return ''
+
+    def proc_data(self, data, chunk=10):
+        self.proc_stream.set_data(data, chunk)
 
 
 @contextmanager
@@ -168,7 +205,6 @@ def system_mock():
     subprocess are mocked to avoid tests touching the system state.
     """
     calls = {'fcntl': ['fcntl'],
-             'pickle': ['load', 'dump'],
              'select': ['select'],
              'socket': ['socket'],
              'subprocess': ['Popen']}
@@ -183,9 +219,6 @@ def system_mock():
             # os.environ needs special care
             with mock.patch.dict('os.environ', {'NCS_DIR': 'tmp_ncs_dir'}):
                 patches = dict(zip(calls.keys(), reversed(patchlist)))
-                popen = patches['subprocess']['Popen']
-                wait_mock = mock.Mock(return_value=0)
-                popen.return_value = mock.Mock(wait=wait_mock)
                 yield SystemMock(ff_patcher, patches)
 
 
