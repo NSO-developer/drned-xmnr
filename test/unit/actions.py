@@ -5,7 +5,6 @@ from .mocklib import mock, xtest_patch
 from drned_xmnr import action
 from drned_xmnr.op import config_op, base_op, coverage_op
 import os
-from collections import namedtuple
 from random import randint
 import functools
 import itertools
@@ -30,6 +29,30 @@ device_data = '''
 
 test_state_data = '''
 test state data
+'''
+
+
+drned_collect_output = '''
+Found a total of {nodes-total} nodes (0 of type empty) and {lists-total} lists,
+     {nodes[read-or-set][total]} (  {nodes[read-or-set][percent]}%) nodes read or set
+     {lists[read-or-set][total]} (  {lists[read-or-set][percent]}%) lists read or set
+     {lists[deleted][total]} (  {lists[deleted][percent]}%) lists deleted
+     {lists[multi-read-or-set][total]} (  {lists[multi-read-or-set][percent]}%) \
+lists with multiple entries read or set
+     {nodes[set][total]} (  {nodes[set][percent]}%) nodes set
+     {nodes[deleted][total]} (  {nodes[deleted][percent]}%) nodes deleted
+     {nodes[set-set][total]} (  {nodes[set-set][percent]}%) nodes set when already set
+     {nodes[deleted-separately][total]} (  {nodes[deleted-separately][percent]}%) \
+nodes deleted separately (disregarding 9 bool-no|prefix-key|mandatory)
+     {grouping-nodes[read-or-set][total]} (  {grouping-nodes[read-or-set][percent]}%) \
+grouping nodes read or set
+     {grouping-nodes[set][total]} (  {grouping-nodes[set][percent]}%) grouping nodes set
+     {grouping-nodes[deleted][total]} (  {grouping-nodes[deleted][percent]}%) grouping nodes deleted
+     {grouping-nodes[set-set][total]} (  {grouping-nodes[set-set][percent]}%) \
+grouping nodes set when already set
+     {grouping-nodes[deleted-separately][total]} \
+(  {grouping-nodes[deleted-separately][percent]}%) \
+grouping nodes deleted separately (disregarding 9 bool-no|prefix-key|mandatory)
 '''
 
 
@@ -102,7 +125,7 @@ class TestSetup(TestBase):
     def test_setup(self, xpatch):
         self.setup_fs_data(xpatch.system)
         self.setup_ncs_data(xpatch.ncs)
-        xpatch.system.socket_data(device_data)
+        xpatch.system.socket_data(device_data.encode())
         output = self.invoke_action('setup-xmnr', overwrite=True)
         self.check_output(output)
         with open(os.path.join(self.test_run_dir, 'drned/skeleton')) as skel_test:
@@ -144,7 +167,7 @@ class TestStates(TestBase):
 
     @xtest_patch
     def test_record_state(self, xpatch):
-        xpatch.system.socket_data(test_state_data)
+        xpatch.system.socket_data(test_state_data.encode())
         output = self.invoke_action('record-state',
                                     state_name='test_state',
                                     including_rollbacks=None)
@@ -305,29 +328,6 @@ class TestTransitions(TestBase):
 
 
 class TestCoverage(TestBase):
-    drned_collect_output = '''
-Found a total of {nodes-total} nodes (0 of type empty) and {lists-total} lists,
-     {nodes[read-or-set][total]} (  {nodes[read-or-set][percent]}%) nodes read or set
-     {lists[read-or-set][total]} (  {lists[read-or-set][percent]}%) lists read or set
-     {lists[deleted][total]} (  {lists[deleted][percent]}%) lists deleted
-     {lists[multi-read-or-set][total]} (  {lists[multi-read-or-set][percent]}%) \
-lists with multiple entries read or set
-     {nodes[set][total]} (  {nodes[set][percent]}%) nodes set
-     {nodes[deleted][total]} (  {nodes[deleted][percent]}%) nodes deleted
-     {nodes[set-set][total]} (  {nodes[set-set][percent]}%) nodes set when already set
-     {nodes[deleted-separately][total]} (  {nodes[deleted-separately][percent]}%) \
-nodes deleted separately (disregarding 9 bool-no|prefix-key|mandatory)
-     {grouping-nodes[read-or-set][total]} (  {grouping-nodes[read-or-set][percent]}%) \
-grouping nodes read or set
-     {grouping-nodes[set][total]} (  {grouping-nodes[set][percent]}%) grouping nodes set
-     {grouping-nodes[deleted][total]} (  {grouping-nodes[deleted][percent]}%) grouping nodes deleted
-     {grouping-nodes[set-set][total]} (  {grouping-nodes[set-set][percent]}%) \
-grouping nodes set when already set
-     {grouping-nodes[deleted-separately][total]} \
-(  {grouping-nodes[deleted-separately][percent]}%) \
-grouping nodes deleted separately (disregarding 9 bool-no|prefix-key|mandatory)
-'''
-
     collect_groups = {'nodes': ['read-or-set', 'set', 'deleted', 'set-set', 'deleted-separately'],
                       'lists': ['read-or-set', 'deleted', 'multi-read-or-set'],
                       'grouping-nodes': ['read-or-set', 'set', 'deleted', 'set-set',
@@ -345,13 +345,13 @@ grouping nodes deleted separately (disregarding 9 bool-no|prefix-key|mandatory)
         assert popen_mock.call_args[0] == (['make', 'covstart'],)
 
     @xtest_patch
-    def test_coverage(self, xpatch):
+    def test_coverage_collect(self, xpatch):
         collect_dict = {'nodes-total': randint(0, 1000), 'lists-total': randint(0, 1000)}
         for (group, entries) in self.collect_groups.items():
             collect_dict[group] = {}
             for entry in entries:
                 collect_dict[group][entry] = self.line_entry(randint(0, 1000), randint(0, 100))
-        xpatch.system.proc_data(self.drned_collect_output.format(**collect_dict))
+        xpatch.system.proc_data(drned_collect_output.format(**collect_dict))
         output = self.invoke_action('collect', yang_patterns=['pat1', 'pat2'])
         self.check_output(output)
         log = mock.Mock()

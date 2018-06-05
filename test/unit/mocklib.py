@@ -119,11 +119,12 @@ class FileData(object):
 
 class StreamData(object):
     """Auxiliary class for mocking objects that provides streamed data."""
-    def __init__(self):
-        self.set_data('', 0)
+    def __init__(self, init=''):
+        self.set_data(init, 10)
+        self.init = init
 
     def set_data(self, data, chunk):
-        if data == '':
+        if len(data) == 0:
             self.data = []
         else:
             # reversing to have better performance for pop
@@ -134,6 +135,9 @@ class StreamData(object):
         return self
 
     def next(self):
+        return self.__next__()
+
+    def __next__(self):
         if self.finished():
             raise StopIteration
         return self.next_data()
@@ -148,7 +152,7 @@ class StreamData(object):
 
     def read(self):
         if self.finished():
-            return ''
+            return self.init
         return self.next_data()
 
     def next_data(self):
@@ -166,7 +170,7 @@ class SystemMock(XtestMock):
         self.patches = patches
         self.ff_patcher = ff_patcher
         self.proc_stream = StreamData()
-        self.socket_stream = StreamData()
+        self.socket_stream = StreamData(b'')
         self.mock_socket_data()
         self.complete_popen_mock()
 
@@ -191,7 +195,7 @@ class SystemMock(XtestMock):
         try:
             return next(self.socket_stream)
         except StopIteration:
-            return ''
+            return b''
 
     def proc_data(self, data, chunk=10):
         self.proc_stream.set_data(data, chunk)
