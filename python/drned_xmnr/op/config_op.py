@@ -101,7 +101,7 @@ class RecordStateOp(ConfigOp):
             if index > 0:
                 state_name_index = state_name+"-"+str(index)
             state_filename = self.state_name_to_filename(state_name_index)
-            with open(state_filename, "w") as state_file:
+            with open(state_filename, "wb") as state_file:
                 for data in self.save_config(trans,
                                              _ncs.maapi.CONFIG_C,
                                              "/ncs:devices/device{"+self.dev_name+"}/config"):

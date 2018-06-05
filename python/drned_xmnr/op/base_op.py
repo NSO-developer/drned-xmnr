@@ -190,7 +190,7 @@ class ActionBase(XmnrBase):
                 config_data = ssocket.recv(4096)
                 if not config_data:
                     return
-                yield str(config_data)
+                yield config_data
                 self.log.debug("Data: "+str(config_data))
         finally:
             ssocket.close()

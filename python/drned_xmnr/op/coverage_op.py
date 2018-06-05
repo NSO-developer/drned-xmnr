@@ -10,8 +10,6 @@ from collections import defaultdict
 import pickle
 import traceback
 
-from ncs import maapi
-
 from . import base_op
 from .ex import ActionError
 
@@ -87,8 +85,8 @@ class CoverageOp(base_op.ActionBase):
             mx = valrx.match(next(lines))
             self.covdata['percents'][cname][value] = {k: int(v)
                                                       for (k, v) in mx.groupdict().items()}
-        with open(os.path.join(self.dev_test_dir, 'coverage.data'), 'w') as data:
-            pickle.dump(self.covdata, data)
+        with open(os.path.join(self.dev_test_dir, 'coverage.data'), 'wb') as data:
+            pickle.dump(self.covdata, data, protocol=2)
 
 
 class DataHandler(object):
@@ -103,12 +101,13 @@ class DataHandler(object):
 class DeviceData(base_op.XmnrDeviceData):
     def get_coverage_data(self):
         try:
-            with open(os.path.join(self.dev_test_dir, 'coverage.data')) as data:
-                data = pickle.load(data)
+            with open(os.path.join(self.dev_test_dir, 'coverage.data'), 'rb') as datafile:
+                # pickle.load() causes problems on some platforms
+                data = pickle.loads(datafile.read())
                 self.log.debug('unpickled data: ', data)
         except Exception as exc:
-            self.log.error('Could not load coverage data, "collect" may not have been run')
-            self.log.debug(traceback.format_exc(exc))
+            self.log.error('Could not load coverage data, "collect" may not have been run', exc)
+            self.log.debug(traceback.format_exc())
             return {}
         return {'nodes-total': data['total']['nodes'],
                 'lists-total': data['total']['lists'],

@@ -4,18 +4,18 @@ import shutil
 import errno
 import subprocess
 from xml.etree import ElementTree as ET
-if sys.version_info >= (3, 3):
-    import functools
-    et_tostring = functools.partial(ET.tostring, encoding='unicode')
-else:
-    et_tostring = ET.tostring
-
 
 import _ncs
 from ncs import maagic
 
 from . import base_op
 from .ex import ActionError
+
+if sys.version_info >= (3, 3):
+    import functools
+    et_tostring = functools.partial(ET.tostring, encoding='unicode')
+else:
+    et_tostring = ET.tostring
 
 
 class SetupOp(base_op.ActionBase):
@@ -114,7 +114,7 @@ class SetupOp(base_op.ActionBase):
         cfg_iter = self.save_config(trans,
                                     _ncs.maapi.CONFIG_XML_PRETTY,
                                     '/devices/device{{{0}}}'.format(self.dev_name))
-        config_tree = ET.fromstring(''.join(cfg_iter))
+        config_tree = ET.fromstring(b''.join(cfg_iter))
         # need to delete some elements
         devices = config_tree[0]
         dev = devices[0]
