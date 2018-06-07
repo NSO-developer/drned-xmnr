@@ -99,7 +99,7 @@ class ExploreTransitionsOp(ExploringOp):
         self.progress_msg(msg.format(num_states, self.dev_name, num_transitions))
 
         failed_transitions = []
-        transitions = itertools.permutations(states, 2)
+        transitions = list(itertools.permutations(states, 2))
         stop_cases = self.stop_cases
         if self.stop_percent:
             stop_cases = int(self.stop_percent / 100.0 * num_transitions + .999)  # Round upwards
