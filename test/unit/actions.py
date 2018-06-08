@@ -389,8 +389,7 @@ class TestTransitions(TestBase):
     def test_walk_states(self, xpatch):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
-                                    states=self.states,
-                                    stop_after=self.stop_params())
+                                    states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         self.check_drned_call(popen_mock.call_args, fnames=self.states)

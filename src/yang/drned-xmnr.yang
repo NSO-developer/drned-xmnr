@@ -23,28 +23,6 @@ module drned-xmnr {
     }
   }
 
-  grouping states-input {
-    leaf-list states {
-      tailf:info
-        "List of states to pass through (in given order); if empty,
-         all states in random order are used.";
-      ordered-by user;
-      type leafref {
-        path ../../../state/states/state;
-      }
-    }
-    container stop-after {
-      tailf:info "Do not start more transitions after given time/coverage has been reached.";
-      choice unit-selection {
-        leaf seconds { type uint64; }
-        leaf minutes { type uint64; }
-        leaf hours   { type uint64; }
-        leaf days    { type uint64; }
-        leaf percent { type uint64; }
-        leaf cases   { type uint64; }
-      }
-    }
-  }
   container drned-xmnr {
     leaf drned-directory {
       tailf:info "DrNED installation directory; if unset, environment variable is used";
@@ -188,7 +166,26 @@ module drned-xmnr {
         tailf:action explore-transitions {
           tailf:actionpoint drned-xmnr;
           input {
-            uses states-input;
+            leaf-list states {
+              tailf:info
+                "List of states to pass through (in given order); if
+                 empty, all states in random order are used.";
+              ordered-by user;
+              type leafref {
+                path ../../../state/states/state;
+              }
+            }
+            container stop-after {
+              tailf:info "Do not start more transitions after given time/coverage has been reached.";
+              choice unit-selection {
+                leaf seconds { type uint64; }
+                leaf minutes { type uint64; }
+                leaf hours   { type uint64; }
+                leaf days    { type uint64; }
+                leaf percent { type uint64; }
+                leaf cases   { type uint64; }
+              }
+            }
           }
           output {
             uses action-output-common;
@@ -198,7 +195,15 @@ module drned-xmnr {
           tailf:info "Go through all states one after another.";
           tailf:actionpoint drned-xmnr;
           input {
-            uses states-input;
+            leaf-list states {
+              tailf:info
+                "List of states to pass through (in given order); if
+                 empty, all states in random order are used.";
+              ordered-by user;
+              type leafref {
+                path ../../../state/states/state;
+              }
+            }
           }
           output {
             uses action-output-common;

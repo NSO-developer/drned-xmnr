@@ -10,15 +10,6 @@ from .ex import ActionError
 
 
 class TransitionsOp(base_op.ActionBase):
-    def _init_params_stop(self, params):
-        stp = params.stop_after
-        self.stop_time = 24 * int(self.param_default(stp, "days", 0))
-        self.stop_time = 60 * int(self.param_default(stp, "hours", self.stop_time))
-        self.stop_time = 60 * int(self.param_default(stp, "minutes", self.stop_time))
-        self.stop_time = int(self.param_default(stp, "seconds", self.stop_time))
-        self.stop_percent = int(self.param_default(stp, "percent", 0))
-        self.stop_cases = int(self.param_default(stp, "cases", 0))
-
     def drned_run(self, drned_args, timeout=120):
         args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
         args.insert(0, "py.test")
@@ -69,7 +60,6 @@ class TransitionToStateOp(TransitionsOp):
 
 class ExploringOp(TransitionsOp):
     def _init_params(self, params):
-        self._init_params_stop(params)
         state_files = self.get_state_files()
         pstates = list(params.states)
         if pstates == []:
@@ -83,6 +73,16 @@ class ExploringOp(TransitionsOp):
 
 class ExploreTransitionsOp(ExploringOp):
     action_name = 'explore transitions'
+
+    def _init_params(self, params):
+        super(ExploreTransitionsOp, self)._init_params(params)
+        stp = params.stop_after
+        self.stop_time = 24 * int(self.param_default(stp, "days", 0))
+        self.stop_time = 60 * int(self.param_default(stp, "hours", self.stop_time))
+        self.stop_time = 60 * int(self.param_default(stp, "minutes", self.stop_time))
+        self.stop_time = int(self.param_default(stp, "seconds", self.stop_time))
+        self.stop_percent = int(self.param_default(stp, "percent", 0))
+        self.stop_cases = int(self.param_default(stp, "cases", 0))
 
     def perform(self):
         self.log.debug("config_explore_transitions() with device {0} states {1}"
