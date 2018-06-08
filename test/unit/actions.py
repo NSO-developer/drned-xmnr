@@ -228,9 +228,33 @@ class TestStates(TestBase):
         self.check_states(self.states)
 
 
+class StopTestTimer(object):
+    def __init__(self, **args):
+        self.reset(**args)
+
+    def reset(self, step=1):
+        self.step = step
+        self._time = 0
+
+    def tick(self, *args, **kwargs):
+        for drned_arg in args[0]:
+            if 'test_template_single' in drned_arg:
+                # this is a transition under test, do a tick
+                self._time += self.step
+                break
+        return mock.DEFAULT
+
+    def time(self):
+        return self._time
+
+
 class TestTransitions(TestBase):
     stop_names = ['seconds', 'minutes', 'hours', 'days', 'percent', 'cases']
-    stop_params = {stop: None for stop in stop_names}
+
+    def stop_params(self, **params):
+        pars = {stop: None for stop in self.stop_names}
+        pars.update(**params)
+        return mock.Mock(**pars)
 
     def check_drned_call(self, call, state=None, rollback=False, fnames=None):
         if fnames is None:
@@ -284,18 +308,64 @@ class TestTransitions(TestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('explore-transitions',
                                     states=self.states,
-                                    stop_after=mock.Mock(**self.stop_params))
+                                    stop_after=self.stop_params())
         self.check_output(output)
+        self.check_popen_invocations(xpatch)
+
+    def check_popen_invocations(self, xpatch, count=None):
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         ls = len(self.states)
-        assert len(popen_mock.call_args_list) == ls*ls
-        calls = iter(popen_mock.call_args_list)
+        max = ls*ls if count is None else count
+        calls = 0
+        transitions = 0
+        call_iter = iter(popen_mock.call_args_list)
         for from_state in self.states:
-            self.check_drned_call(next(calls), from_state)
+            self.check_drned_call(next(call_iter), from_state)
+            calls += 1
             for to_state in self.states:
+                if transitions == max:
+                    break
                 if from_state == to_state:
                     continue
-                self.check_drned_call(next(calls), to_state, rollback=True)
+                self.check_drned_call(next(call_iter), to_state, rollback=True)
+                calls += 1
+                transitions += 1
+            if transitions == max:
+                break
+        assert len(popen_mock.call_args_list) == calls
+
+    @xtest_patch
+    def test_explore_stop_cases(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        output = self.invoke_action('explore-transitions',
+                                    states=self.states,
+                                    stop_after=self.stop_params(cases=3))
+        self.check_output(output)
+        self.check_popen_invocations(xpatch, 3)
+
+    @xtest_patch
+    def test_explore_stop_time(self, xpatch):
+        timer = StopTestTimer(step=1)
+        popen_mock = xpatch.system.patches['subprocess']['Popen']
+        popen_mock.side_effect = timer.tick
+        self.setup_states_data(xpatch.system)
+        TIME_SEC = 3
+        TIME_MIN = 2
+        with mock.patch('time.time', side_effect=timer.time):
+            output = self.invoke_action('explore-transitions',
+                                        states=self.states,
+                                        stop_after=self.stop_params(seconds=TIME_SEC-1))
+            self.check_output(output)
+            # for every len(states) transitions under test there is one more
+            exp_calls = TIME_SEC + TIME_SEC // len(self.states) + 1
+            assert len(popen_mock.call_args_list) == exp_calls
+            timer.reset(step=60)
+            output = self.invoke_action('explore-transitions',
+                                        states=self.states,
+                                        stop_after=self.stop_params(minutes=TIME_MIN-1))
+            self.check_output(output)
+            exp_calls += TIME_MIN + TIME_MIN // len(self.states) + 1
+            assert len(popen_mock.call_args_list) == exp_calls
 
     def popen_fail_state(self, args, *rest, **kwargs):
         for arg in args:
@@ -310,7 +380,7 @@ class TestTransitions(TestBase):
         popen_mock.side_effect = self.popen_fail_state
         output = self.invoke_action('explore-transitions',
                                     states=self.states,
-                                    stop_after=mock.Mock(**self.stop_params))
+                                    stop_after=self.stop_params())
         assert output.success is None
         assert 'Failed to initialize state otherstate1' in output.error
         assert '==> otherstate1' in output.failure
@@ -320,7 +390,7 @@ class TestTransitions(TestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
                                     states=self.states,
-                                    stop_after=mock.Mock(**self.stop_params))
+                                    stop_after=self.stop_params())
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         self.check_drned_call(popen_mock.call_args, fnames=self.states)
