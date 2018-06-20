@@ -148,7 +148,7 @@ module drned-xmnr {
         tailf:action transition-to-state {
           tailf:info
             "Change the device state/configuration, possibly with
-             rollback."
+             rollback.";
           tailf:actionpoint drned-xmnr;
           input {
             leaf state-name {
@@ -169,7 +169,7 @@ module drned-xmnr {
         tailf:action explore-transitions {
           tailf:info
             "Try all possible transitions between states in the state
-             set."
+             set.";
           tailf:actionpoint drned-xmnr;
           input {
             leaf-list states {
