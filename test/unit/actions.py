@@ -9,7 +9,7 @@ from random import randint
 import functools
 import itertools
 
-device_data = '''
+device_data = '''\
     <config xmlns="http://tail-f.com/ns/config/1.0">
       <devices xmlns="http://tail-f.com/ns/ncs">
         <device>
@@ -27,12 +27,139 @@ device_data = '''
 '''
 
 
-test_state_data = '''
+test_state_data = '''\
 test state data
 '''
 
 
-drned_collect_output = '''
+drned_explore_start_output = '''\
+--generic drned data--
+============================== sync_from()
+--generic drned data--
+test_template_raw[../states/{state_from}.state.cfg]
+============================== rload(../states/{state_from}.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+% No modifications to commit.
+============================== compare_config()
+'''
+
+drned_init_failed = '''\
+Failed to initialize state {state_from}
+'''
+
+drned_transition_failed = '''\
+Transition failed
+'''
+
+drned_explore_start_output_filtered = '''\
+   prepare the device
+   load {state_from}
+   commit
+       (no modifications)
+   compare config
+       succeeded
+'''
+
+drned_transition_output = '''\
+--generic drned data--
+============================== load(./polaris.cfg)
+--generic drned data--
+============================== sync_from()
+test_template_single[../states/{state_to}.state.cfg]
+--generic drned data--
+============================== rload(../states/{state_to}.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit-queue {{
+    id 1529558544009
+    status failed
+    failed-device {{
+        name polaris
+        reason RPC error towards test device
+    }}
+}}
+Commit complete.
+============================== compare_config()
+--generic drned data--
+============================== rollback()
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit-queue {{
+    id 1528715048477
+    status completed
+}}
+Commit complete.
+============================== compare_config()
+'''
+
+drned_transition_output_filtered = '''\
+   prepare the device
+   load {state_to}
+   commit
+       failed (RPC error towards test device)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+'''
+
+
+drned_walk_output = '''\
+--generic drned data--
+============================== rload(../states/{state_to}.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit-queue {{
+    id 1529566672491
+    status completed
+}}
+Commit complete.
+--generic drned data--
+============================== compare_config()
+--generic drned data--
+============================== rollback()
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit-queue {{
+    id 1529566674280
+    status completed
+}}
+--generic drned data--
+============================== compare_config()
+--generic drned data--
+'''
+
+
+drned_walk_output_filtered = '''\
+   load {state_to}
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+'''
+
+
+drned_walk_output_intro = '''\
+py.test -k test_template_set --fname=.../states/{state_to}.state.cfg \
+--op=load --op=commit --op=compare-config --device=device
+'''
+
+
+drned_collect_output = '''\
 Found a total of {nodes-total} nodes (0 of type empty) and {lists-total} lists,
      {nodes[read-or-set][total]} (  {nodes[read-or-set][percent]}%) nodes read or set
      {lists[read-or-set][total]} (  {lists[read-or-set][percent]}%) lists read or set
@@ -79,13 +206,16 @@ class TestBase(object):
             prefix = '<{}>'.format(level.upper())
             setattr(handler.log, level, functools.partial(print, prefix, file=self.unit_log_file()))
 
+    def action_uinfo(self):
+        return mock.Mock()
+
     def invoke_action(self, action_name, **action_params):
         params = mock.Mock(spec=action_params.keys(), **action_params)
         ah = action.ActionHandler()
         self.setup_log(ah)
         kp = [[mocklib.DEVICE_NAME], None, None]
         output = mock.Mock(error=None, failure=None, success=None)
-        ah.cb_action(mock.Mock(), action_name, kp, params, output)
+        ah.cb_action(self.action_uinfo(), action_name, kp, params, output)
         return output
 
     def setup_states_data(self, system, state_path=None):
@@ -248,7 +378,7 @@ class StopTestTimer(object):
         return self._time
 
 
-class TestTransitions(TestBase):
+class TransitionsTestBase(TestBase):
     stop_names = ['seconds', 'minutes', 'hours', 'days', 'percent', 'cases']
 
     def stop_params(self, **params):
@@ -256,6 +386,8 @@ class TestTransitions(TestBase):
         pars.update(**params)
         return mock.Mock(**pars)
 
+
+class TestTransitions(TransitionsTestBase):
     def check_drned_call(self, call, state=None, rollback=False, fnames=None):
         if fnames is None:
             test = 'test_template_single' if rollback else 'test_template_raw'
@@ -394,6 +526,197 @@ class TestTransitions(TestBase):
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         self.check_drned_call(popen_mock.call_args, fnames=self.states)
         popen_mock.assert_called_once()
+
+
+class DrnedOutput(object):
+    def __init__(self, state_data, filter_type, system):
+        self.state_data = state_data
+        self.system = system
+        self.filter_type = filter_type
+        self.output_iter = self.output()
+        self.failure = False
+        self.popen_mock = system.patches['subprocess']['Popen']
+        self.popen_mock.side_effect = self.popen_effect
+
+    def popen_effect(self, *args, **kwargs):
+        next_data = next(self.output_iter)
+        self.system.proc_data(next_data)
+        if self.failure:
+            self.failure = False
+            self.popen_mock.return_value.wait = mock.Mock(return_value=-1)
+        else:
+            self.popen_mock.return_value.wait = mock.Mock(return_value=0)
+        return mock.DEFAULT
+
+
+class DrnedTransitionOutput(DrnedOutput):
+    def expected_output(self):
+        if self.filter_type == 'all':
+            transition_output = drned_transition_output
+        elif self.filter_type == 'drned-overview':
+            transition_output = drned_transition_output_filtered
+        else:
+            transition_output = ''
+        yield transition_output.format(state_to=self.state_data)
+
+    def output(self):
+        yield drned_transition_output.format(state_to=self.state_data)
+
+
+class DrnedExploreOutput(DrnedOutput):
+    def expected_output(self):
+        if self.filter_type == 'none':
+            return
+        count = len(self.state_data)
+        num_transitions = count * (count-1)
+        yield 'Found {} states recorded for device {} '.format(count, mocklib.DEVICE_NAME)
+        yield 'which gives a total of {} transitions.\n'.format(num_transitions)
+        index = 0
+        if self.filter_type == 'all':
+            start_output = drned_explore_start_output
+            transition_output = drned_transition_output
+        elif self.filter_type == 'drned-overview':
+            start_output = drned_explore_start_output_filtered
+            transition_output = drned_transition_output_filtered
+        else:
+            start_output = transition_output = ''
+        for from_state in self.state_data:
+            yield 'Starting with state {}\n'.format(from_state)
+            if self.filter_type != 'overview':
+                yield start_output.format(state_from=from_state)
+            if from_state == 'otherstate1':
+                yield drned_init_failed.format(state_from=from_state)
+                continue
+            for to_state in self.state_data:
+                if to_state == from_state:
+                    continue
+                index += 1
+                yield 'Transition {}/{}: {} ==> {}\n'.format(
+                    index, num_transitions, from_state, to_state)
+                if self.filter_type != 'overview':
+                    yield transition_output.format(state_to=to_state)
+                if to_state == 'otherstate1':
+                    yield drned_transition_failed
+
+    def output(self):
+        for from_state in self.state_data:
+            if from_state == 'otherstate1':
+                self.failure = True
+            yield drned_explore_start_output.format(state_from=from_state)
+            if from_state == 'otherstate1':
+                continue
+            for to_state in self.state_data:
+                if to_state == from_state:
+                    continue
+                if to_state == 'otherstate1':
+                    self.failure = True
+                yield drned_transition_output.format(state_to=to_state)
+
+
+class DrnedWalkOutput(DrnedOutput):
+    def expected_output(self):
+        if self.filter_type == 'none':
+            return
+        elif self.filter_type == 'all':
+            start_output = ''
+            intro_output = drned_walk_output_intro
+            trans_output = drned_walk_output
+        else:
+            start_output = 'Prepare the device\n'
+            intro_output = 'Test transition to {state_to}\n'
+            trans_output = drned_walk_output_filtered
+        yield start_output
+        for state in self.state_data:
+            yield intro_output.format(state_to=state)
+            if self.filter_type != 'overview':
+                yield trans_output.format(state_to=state)
+
+    def full_output(self):
+        for state in self.state_data:
+            yield drned_walk_output_intro.format(state_to=state)
+            yield drned_walk_output.format(state_to=state)
+
+    def output(self):
+        yield ''.join(self.full_output())
+
+
+class TestTransitionsLogFilters(TransitionsTestBase):
+    def setup_filter(self, xpatch, level):
+        root = xpatch.ncs.data['root']
+        root.drned_xmnr.log_detail.cli = level
+
+    def action_uinfo(self):
+        return mock.Mock(context='cli')
+
+    @xtest_patch
+    def test_filter_explore_overview(self, xpatch):
+        self.explore_filter_test_run(xpatch, 'overview')
+
+    @xtest_patch
+    def test_filter_explore_drned(self, xpatch):
+        self.explore_filter_test_run(xpatch, 'drned-overview')
+
+    @xtest_patch
+    def test_filter_explore_all(self, xpatch):
+        self.explore_filter_test_run(xpatch, 'all')
+
+    @xtest_patch
+    def test_filter_explore_none(self, xpatch):
+        self.explore_filter_test_run(xpatch, 'none')
+
+    def explore_filter_test_run(self, xpatch, filter_type):
+        self.filter_test_run(xpatch, filter_type, DrnedExploreOutput, self.states,
+                             'explore-transitions',
+                             states=self.states, stop_after=self.stop_params())
+
+    def filter_test_run(self, xpatch, filter_type, output_data, state_data, action, **params):
+        self.setup_filter(xpatch, filter_type)
+        self.setup_states_data(xpatch.system)
+        drned_output = output_data(state_data, filter_type, xpatch.system)
+        self.invoke_action(action, **params)
+        calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
+        assert ''.join(drned_output.expected_output()) == \
+            ''.join(call[0][2] for call in calls)
+
+    @xtest_patch
+    def test_filter_transition_overview(self, xpatch):
+        self.transition_filter_test_run(xpatch, 'overview')
+
+    @xtest_patch
+    def test_filter_transition_all(self, xpatch):
+        self.transition_filter_test_run(xpatch, 'all')
+
+    @xtest_patch
+    def test_filter_transition_none(self, xpatch):
+        self.transition_filter_test_run(xpatch, 'none')
+
+    @xtest_patch
+    def test_filter_transition_drned(self, xpatch):
+        self.transition_filter_test_run(xpatch, 'drned-overview')
+
+    def transition_filter_test_run(self, xpatch, filter_type):
+        self.filter_test_run(xpatch, filter_type, DrnedTransitionOutput, 'state1',
+                             'transition-to-state', state_name='state1', rollback=True)
+
+    @xtest_patch
+    def test_filter_walk_overview(self, xpatch):
+        self.walk_filter_test_run(xpatch, 'overview')
+
+    @xtest_patch
+    def test_filter_walk_all(self, xpatch):
+        self.walk_filter_test_run(xpatch, 'all')
+
+    @xtest_patch
+    def test_filter_walk_none(self, xpatch):
+        self.walk_filter_test_run(xpatch, 'none')
+
+    @xtest_patch
+    def test_filter_walk_drned(self, xpatch):
+        self.walk_filter_test_run(xpatch, 'drned-overview')
+
+    def walk_filter_test_run(self, xpatch, filter_type):
+        self.filter_test_run(xpatch, filter_type, DrnedWalkOutput, self.states,
+                             'walk-states', states=self.states)
 
 
 class TestCoverage(TestBase):

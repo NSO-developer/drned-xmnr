@@ -115,10 +115,16 @@ class ActionBase(XmnrBase):
         self.log.debug("run_finished, output len=" + str(len(stdoutdata)))
         return proc.wait(), stdoutdata
 
+    def cli_write(self, msg):
+        _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
+
+    def cli_filter(self, msg):
+        self.cli_write(msg)
+
     def progress_msg(self, msg):
         self.log.debug(msg)
         if self.uinfo.context == 'cli':
-            _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
+            self.cli_filter(msg)
         if self.log_file is not None:
             self.log_file.write(msg)
 
@@ -160,6 +166,7 @@ class ActionBase(XmnrBase):
             proc = subprocess.Popen(args,
                                     universal_newlines=True,
                                     env=env,
+                                    bufsize=1,
                                     cwd=self.drned_run_directory,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)

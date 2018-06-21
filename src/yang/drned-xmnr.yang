@@ -40,6 +40,34 @@ module drned-xmnr {
          from the CLI.";
       type string;
     }
+    container log-detail {
+      typedef filter {
+        type enumeration {
+          enum none {
+            tailf:info "No output at all";
+          }
+          enum overview {
+            tailf:info "Only log info about top-level steps";
+          }
+          enum drned-overview {
+            tailf:info "Log info about steps inside DrNED";
+          }
+          enum all {
+            tailf:info "No filtering, everything is logged";
+          }
+        }
+      }
+      leaf cli {
+        tailf:info "CLI output detail level";
+        type filter;
+        default drned-overview;
+      }
+      // leaf file {
+      //   tailf:info "File output detail level";
+      //   type filter;
+      //   default all;
+      // }
+    }
   }
 
   augment /ncs:devices/ncs:device {

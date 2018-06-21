@@ -5,11 +5,36 @@ import time
 import random
 import itertools
 
+from ncs import maagic
+
 from . import base_op
+from . import filtering
 from .ex import ActionError
 
 
 class TransitionsOp(base_op.ActionBase):
+    def perform(self):
+        self.run_with_trans(self.set_filters)
+        result = self.start_testing()
+        self.filter_cr.send(-1)  # indicate EOF
+        return result
+
+    def set_filters(self, trans):
+        root = maagic.get_root(trans)
+        detail = root.drned_xmnr.log_detail
+        self.log.debug('CLI detail: ', detail.cli)
+        self.filter_cr = self.build_filter(detail.cli)
+
+    def cli_filter(self, msg):
+        self.filter_cr.send(msg)
+
+    def build_filter(self, level):
+        if level == 'none':
+            return filtering.drop()
+        if level == 'all':
+            return filtering.filter_sink(self.cli_write)
+        return filtering.build_filter(self, level, self.cli_write)
+
     def drned_run(self, drned_args, timeout=120):
         args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
         args.insert(0, "py.test")
@@ -46,7 +71,10 @@ class TransitionToStateOp(TransitionsOp):
         self.state_name = self.param_default(params, "state_name", "")
         self.rollback = params.rollback
 
-    def perform(self):
+    def event_processor(self, level, sink):
+        return filtering.transition_output_filter(level, sink)
+
+    def start_testing(self):
         msg = "config_transition_to_state() with device {0} to state {1}" \
               .format(self.dev_name, self.state_name)
         self.log.debug(msg)
@@ -74,6 +102,9 @@ class ExploringOp(TransitionsOp):
 class ExploreTransitionsOp(ExploringOp):
     action_name = 'explore transitions'
 
+    def event_processor(self, level, sink):
+        return filtering.explore_output_filter(level, sink)
+
     def _init_params(self, params):
         super(ExploreTransitionsOp, self)._init_params(params)
         stp = params.stop_after
@@ -84,7 +115,7 @@ class ExploreTransitionsOp(ExploringOp):
         self.stop_percent = int(self.param_default(stp, "percent", 0))
         self.stop_cases = int(self.param_default(stp, "cases", 0))
 
-    def perform(self):
+    def start_testing(self):
         self.log.debug("config_explore_transitions() with device {0} states {1}"
                        .format(self.dev_name, self.state_filenames))
         states = self.state_filenames
@@ -125,8 +156,8 @@ class ExploreTransitionsOp(ExploringOp):
                 self.progress_msg("Starting with state {0}\n".format(from_name))
                 result = self.transition_to_state(from_state)
                 if result is not True:
-                    msg = "Failed to initialize state {0}: {1}"\
-                          .format(from_name, result)
+                    msg = "Failed to initialize state {0}".format(from_name)
+                    self.progress_msg(msg + '\n')
                     self.log.warning(msg)
                     error_msgs.append(msg)
                     failed_state = from_state
@@ -137,7 +168,7 @@ class ExploreTransitionsOp(ExploringOp):
             result = self.transition_to_state(to_state, rollback=True)
             if result is not True:
                 failed_transitions.append((from_name, to_name, result))
-                self.progress_msg("   {0}\n".format(result))
+                self.progress_msg("Transition failed\n")
         if failed_transitions == [] and error_msgs == []:
             return {'success': "Completed successfully"}
         result = {'failure':
@@ -151,7 +182,7 @@ class ExploreTransitionsOp(ExploringOp):
 class WalkTransitionsOp(ExploringOp):
     action_name = 'walk states'
 
-    def perform(self):
+    def start_testing(self):
         self.log.debug("walking states {0}"
                        .format([self.state_filename_to_name(filename)
                                 for filename in self.state_filenames]))
@@ -161,3 +192,6 @@ class WalkTransitionsOp(ExploringOp):
         if result != 0:
             raise ActionError("drned failed")
         return {'success': "Completed successfully"}
+
+    def event_processor(self, level, sink):
+        return filtering.walk_output_filter(level, sink)

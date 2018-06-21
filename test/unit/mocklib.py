@@ -81,8 +81,10 @@ def ncs_mock():
                     packages=Mock(package={'drned-xmnr': Mock(directory=XMNR_INSTALL)}),
                     drned_xmnr=Mock(xmnr_directory=XMNR_DIRECTORY,
                                     drned_directory=DRNED_DIRECTORY,
+                                    log_filtering=Mock(cli_filter='full',
+                                                       file_filter='full'),
                                     xmnr_log_file=None))
-    ncs_items = ['_ncs.stream_connect', '_ncs.dp.action_set_timeout']
+    ncs_items = ['_ncs.stream_connect', '_ncs.dp.action_set_timeout', '_ncs.maapi.cli_write']
     with patch('ncs.maapi.Maapi', return_value=MaapiMock()) as maapi:
         with patch('ncs.maagic.get_root', return_value=rootmock):
             with nest_mgrs([patch(ncs_item) for ncs_item in ncs_items]) as ncs_patches:
