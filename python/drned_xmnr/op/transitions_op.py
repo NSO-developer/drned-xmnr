@@ -16,7 +16,8 @@ class TransitionsOp(base_op.ActionBase):
     def perform(self):
         self.run_with_trans(self.set_filters)
         result = self.start_testing()
-        self.filter_cr.send(-1)  # indicate EOF
+        if self.uinfo.context == 'cli':
+            self.filter_cr.send(-1)  # indicate EOF
         return result
 
     def set_filters(self, trans):
