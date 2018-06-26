@@ -55,7 +55,7 @@ class SetupOp(base_op.ActionBase):
         root = maagic.get_root(trans)
         self.pkg_file = self.get_package(root)
         xmnr_pkg = root.packages.package['drned-xmnr'].directory
-        self.drned_skeleton = os.path.join(xmnr_pkg, 'drned')
+        self.drned_skeleton = os.path.join(xmnr_pkg, 'drned-skeleton')
 
     def get_package(self, root):
         devtype = root.devices.device[self.dev_name].device_type

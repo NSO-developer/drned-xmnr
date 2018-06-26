@@ -244,7 +244,9 @@ class TestSetup(TestBase):
     def setup_fs_data(self, system):
         system.ff_patcher.fs.create_dir(mocklib.XMNR_DIRECTORY)
         system.ff_patcher.fs.add_real_file('/dev/null')
-        system.ff_patcher.fs.create_file(os.path.join(mocklib.XMNR_INSTALL, 'drned', 'skeleton'),
+        system.ff_patcher.fs.create_file(os.path.join(mocklib.XMNR_INSTALL,
+                                                      'drned-skeleton',
+                                                      'skeleton'),
                                          contents='drned skeleton')
 
     def setup_ncs_data(self, ncs):
