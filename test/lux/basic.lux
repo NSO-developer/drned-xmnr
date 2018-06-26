@@ -1,0 +1,136 @@
+[doc Testing DrNED-XMNR integration with NCS and DrNED]
+[config timeout=2000]
+
+[macro shell-check]
+    !echo ==$?==
+    ?==0==
+[endmacro]
+
+[shell os]
+    !rm -rf ncs-run
+    [progress prepare ncs-run and packages]
+    !ncs-project create ncs-run
+    [invoke shell-check]
+    !cd ncs-run/packages
+    [invoke shell-check]
+    !ln -s ../../../../ drned-xmnr
+    !file drned-xmnr
+    ?drned-xmnr: symbolic link to .*
+    !file drned-xmnr/python
+    ?drned-xmnr/python: directory
+    !echo `dirname $$PWD`
+    !ncs-make-package --netconf-ned ../../yang ned
+    [invoke shell-check]
+    !make -C drned-xmnr/src all
+    [invoke shell-check]
+    !make -C ned/src all
+    [invoke shell-check]
+    [progress create and start the netsim]
+    !cd ..
+    !ncs-netsim delete-network
+    !ncs-netsim create-network packages/ned 1 ned
+    [invoke shell-check]
+    !ncs-netsim start
+    [invoke shell-check]
+    [progress start ncs]
+    [timeout 10]
+    !ncs --stop; ncs
+    [invoke shell-check]
+    [timeout]
+
+[shell ncs-cli]
+    -[Ee][Rr][Rr][Oo][Rr]
+    !ncs_cli -u admin -C
+    ???admin@ncs#
+    !config
+    [progress set up the NCS device]
+    # clean up, if there is anything left from previous runs
+    !no devices device dhcp
+    # set up python-vm logging to see any problems
+    !python-vm logging level level-debug
+    !commit
+    ???Commit complete.
+    !devices device dhcp
+    ???admin@ncs(config-device-dhcp)#
+    """!
+    address 127.0.0.1
+    port 12022
+    device-type netconf
+    authgroup default
+    state admin-state unlocked
+    ssh fetch-host-keys
+    """
+    !commit
+    ???Commit complete.
+    !sync-from
+    !no config
+    !commit
+    ?Commit complete|No modifications to commit
+    [progress setup xmnr]
+    !drned-xmnr setup setup-xmnr overwrite true
+    ???success
+    [progress record states]
+    !drned-xmnr state record-state state-name empty
+    ???success
+    !config dhcp defaultLeaseTime 200s
+    !commit
+    ???Commit complete.
+    !drned-xmnr state record-state state-name time
+    ???success
+    !config dhcp SharedNetworks sharedNetwork test SubNets subNet 1.1.1.1 255.255.255.0
+    !commit
+    ???Commit complete.
+    !drned-xmnr state record-state state-name subnet
+    ???success
+    [progress walk states]
+    [timeout 10]
+    !drned-xmnr transitions walk-states states [ empty subnet time ]
+    """???
+    Prepare the device
+    Test transition to empty
+       load empty
+       commit
+           succeeded
+       compare config
+           succeeded
+       rollback
+       commit
+           succeeded
+       compare config
+           succeeded
+    Test transition to subnet
+       load subnet
+       commit
+           (no modifications)
+       compare config
+           succeeded
+       rollback
+       commit
+           (no modifications)
+       compare config
+           succeeded
+    Test transition to time
+       load time
+       commit
+           succeeded
+       compare config
+           succeeded
+       rollback
+       commit
+           succeeded
+       compare config
+           succeeded
+       commit
+           (no modifications)
+       compare config
+           succeeded
+    success Completed successfully
+    """
+
+[cleanup]
+    !cd ncs-run
+    ?SH-PROMPT:
+    !ncs --stop
+    ?SH-PROMPT:
+    !ncs-netsim stop
+    ?SH-PROMPT:
