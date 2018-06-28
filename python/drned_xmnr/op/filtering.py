@@ -227,7 +227,8 @@ line_regexp = re.compile('''\
 (?:\
 (?P<init_states>Found [0-9]* states recorded for device .*)|\
 (?P<start>Starting with state .*)|\
-(?P<py_test>py.test -k test_template_set --fname=[^ ]*.state.cfg(?: --op=[^ ]*)* --device=[^ ]*)|\
+(?P<py_test>py.test -k test_template_set --fname=[^ ]*.state.cfg\
+(?: --op=[^ ]*)*(?: --end-op=)? --device=[^ ]*)|\
 (?P<transition>Transition [0-9]*/[0-9]*: .* ==> .*)|\
 (?P<init_failed>Failed to initialize state .*)|\
 (?P<trans_failed>Transition failed)|\

@@ -238,6 +238,13 @@ module drned-xmnr {
                 path ../../../state/states/state;
               }
             }
+            leaf rollback {
+              tailf:info
+                "If set to true, after each transition a rollback is
+                 performed to the original state.";
+              type boolean;
+              default false;
+            }
           }
           output {
             uses action-output-common;

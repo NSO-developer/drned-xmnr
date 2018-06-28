@@ -155,7 +155,7 @@ drned_walk_output_filtered = '''\
 
 drned_walk_output_intro = '''\
 py.test -k test_template_set --fname=.../states/{state_to}.state.cfg \
---op=load --op=commit --op=compare-config --device=device
+--op=load --op=commit --op=compare-config {end_op}--device=device
 '''
 
 
@@ -399,6 +399,8 @@ class TestTransitions(TransitionsTestBase):
                                                           'states',
                                                           state + '.state.cfg'))
                          for state in self.states]
+            if not rollback:
+                test_args += ['--end-op', '']
             test_args += ['--unsorted', '-k', 'test_template_set']
         args = ['py.test', '-s', '--tb=short', '--device=' + mocklib.DEVICE_NAME, '--unreserved']
         args += test_args
@@ -523,10 +525,22 @@ class TestTransitions(TransitionsTestBase):
     def test_walk_states(self, xpatch):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
+                                    rollback=False,
                                     states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         self.check_drned_call(popen_mock.call_args, fnames=self.states)
+        popen_mock.assert_called_once()
+
+    @xtest_patch
+    def test_walk_rollback_states(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        output = self.invoke_action('walk-states',
+                                    rollback=True,
+                                    states=self.states)
+        self.check_output(output)
+        popen_mock = xpatch.system.patches['subprocess']['Popen']
+        self.check_drned_call(popen_mock.call_args, rollback=True, fnames=self.states)
         popen_mock.assert_called_once()
 
 
@@ -629,13 +643,15 @@ class DrnedWalkOutput(DrnedOutput):
             trans_output = drned_walk_output_filtered
         yield start_output
         for state in self.state_data:
-            yield intro_output.format(state_to=state)
+            end_op = '--end-op= ' if state == 'otherstate1' else ''
+            yield intro_output.format(state_to=state, end_op=end_op)
             if self.filter_type != 'overview':
                 yield trans_output.format(state_to=state)
 
     def full_output(self):
         for state in self.state_data:
-            yield drned_walk_output_intro.format(state_to=state)
+            end_op = '--end-op= ' if state == 'otherstate1' else ''
+            yield drned_walk_output_intro.format(state_to=state, end_op=end_op)
             yield drned_walk_output.format(state_to=state)
 
     def output(self):
@@ -718,7 +734,7 @@ class TestTransitionsLogFilters(TransitionsTestBase):
 
     def walk_filter_test_run(self, xpatch, filter_type):
         self.filter_test_run(xpatch, filter_type, DrnedWalkOutput, self.states,
-                             'walk-states', states=self.states)
+                             'walk-states', states=self.states, rollback=False)
 
 
 class TestCoverage(TestBase):

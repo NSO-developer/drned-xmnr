@@ -183,12 +183,19 @@ class ExploreTransitionsOp(ExploringOp):
 class WalkTransitionsOp(ExploringOp):
     action_name = 'walk states'
 
+    def _init_params(self, params):
+        super(WalkTransitionsOp, self)._init_params(params)
+        self.rollback = params.rollback
+
     def start_testing(self):
         self.log.debug("walking states {0}"
                        .format([self.state_filename_to_name(filename)
                                 for filename in self.state_filenames]))
+        # the default for end_op is "rollback", "commit", "compare_config"
+        # if rollback is not desired, we need to set it to an empty list
         fname_args = ["--fname=" + filename for filename in self.state_filenames]
-        result, _ = self.drned_run(fname_args + ["--unsorted", "-k", "test_template_set"])
+        end_op = [] if self.rollback else ["--end-op", ""]
+        result, _ = self.drned_run(fname_args + end_op + ["--unsorted", "-k", "test_template_set"])
         self.log.debug("DrNED completed: {0}".format(result))
         if result != 0:
             raise ActionError("drned failed")

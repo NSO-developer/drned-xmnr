@@ -93,20 +93,10 @@
            succeeded
        compare config
            succeeded
-       rollback
-       commit
-           succeeded
-       compare config
-           succeeded
     Test transition to subnet
        load subnet
        commit
-           (no modifications)
-       compare config
            succeeded
-       rollback
-       commit
-           (no modifications)
        compare config
            succeeded
     Test transition to time
@@ -115,13 +105,8 @@
            succeeded
        compare config
            succeeded
-       rollback
        commit
            succeeded
-       compare config
-           succeeded
-       commit
-           (no modifications)
        compare config
            succeeded
     success Completed successfully
