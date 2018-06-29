@@ -14,27 +14,37 @@ from .ex import ActionError
 
 class TransitionsOp(base_op.ActionBase):
     def perform(self):
-        self.run_with_trans(self.set_filters)
-        result = self.start_testing()
-        if self.uinfo.context == 'cli':
-            self.filter_cr.send(-1)  # indicate EOF
+        detail, redirect = self.run_with_trans(self.get_log_detail)
+        self.filter_cr = None
+        if redirect is not None:
+            with self.open_log_file(redirect) as rfile:
+                self.filter_cr = self.build_filter(detail, rfile.write)
+                result = self.perform_transitions()
+                self.filter_cr.close()
+        elif self.uinfo.context == 'cli':
+            self.filter_cr = self.build_filter(detail, self.cli_write)
+            result = self.perform_transitions()
+            self.filter_cr.close()
+        else:
+            result = self.perform_transitions()
         return result
 
-    def set_filters(self, trans):
+    def get_log_detail(self, trans):
         root = maagic.get_root(trans)
         detail = root.drned_xmnr.log_detail
-        self.log.debug('CLI detail: ', detail.cli)
-        self.filter_cr = self.build_filter(detail.cli)
+        self.log.debug('CLI detail: ', detail.cli, detail.redirect)
+        return detail.cli, detail.redirect
 
     def cli_filter(self, msg):
-        self.filter_cr.send(msg)
+        if self.filter_cr is not None:
+            self.filter_cr.send(msg)
 
-    def build_filter(self, level):
+    def build_filter(self, level, writer):
         if level == 'none':
             return filtering.drop()
         if level == 'all':
-            return filtering.filter_sink(self.cli_write)
-        return filtering.build_filter(self, level, self.cli_write)
+            return filtering.filter_sink(writer)
+        return filtering.build_filter(self, level, writer)
 
     def drned_run(self, drned_args, timeout=120):
         args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
@@ -75,7 +85,7 @@ class TransitionToStateOp(TransitionsOp):
     def event_processor(self, level, sink):
         return filtering.transition_output_filter(level, sink)
 
-    def start_testing(self):
+    def perform_transitions(self):
         msg = "config_transition_to_state() with device {0} to state {1}" \
               .format(self.dev_name, self.state_name)
         self.log.debug(msg)
@@ -116,7 +126,7 @@ class ExploreTransitionsOp(ExploringOp):
         self.stop_percent = int(self.param_default(stp, "percent", 0))
         self.stop_cases = int(self.param_default(stp, "cases", 0))
 
-    def start_testing(self):
+    def perform_transitions(self):
         self.log.debug("config_explore_transitions() with device {0} states {1}"
                        .format(self.dev_name, self.state_filenames))
         states = self.state_filenames
@@ -187,7 +197,7 @@ class WalkTransitionsOp(ExploringOp):
         super(WalkTransitionsOp, self)._init_params(params)
         self.rollback = params.rollback
 
-    def start_testing(self):
+    def perform_transitions(self):
         self.log.debug("walking states {0}"
                        .format([self.state_filename_to_name(filename)
                                 for filename in self.state_filenames]))

@@ -62,11 +62,10 @@ module drned-xmnr {
         type filter;
         default drned-overview;
       }
-      // leaf file {
-      //   tailf:info "File output detail level";
-      //   type filter;
-      //   default all;
-      // }
+      leaf redirect {
+        tailf:info "File where to redirect the CLI output";
+        type string;
+      }
     }
   }
 

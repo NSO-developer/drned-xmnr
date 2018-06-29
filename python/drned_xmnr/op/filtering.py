@@ -31,22 +31,36 @@ def filter_sink(writer):
             writer(item)
 
 
+class Closeable(object):
+    def __init__(self, coroutine, consumer):
+        self.coroutine = coroutine
+        self.consumer = consumer
+
+    def close(self):
+        self.consumer.close()
+        self.coroutine.close()
+
+    def send(self, data):
+        self.coroutine.send(data)
+
+
+class LineProducer(Closeable):
+    def __init__(self, line_processor):
+        cort = line_producer(line_processor)
+        super(LineProducer, self).__init__(cort, line_processor)
+
+
 @coroutine
 def line_producer(line_proc):
     buf = ''
     try:
         while True:
             data = yield
-            if isinstance(data, str):
-                lines = data.split('\n')
-                lines[0] = buf + lines[0]
-                for line in lines[:-1]:
-                    line_proc.send(line)
-                buf = lines[-1]
-            else:
-                if buf != '':
-                    line_proc.send(buf + '\n')
-                line_proc.send(data)
+            lines = data.split('\n')
+            lines[0] = buf + lines[0]
+            for line in lines[:-1]:
+                line_proc.send(line)
+            buf = lines[-1]
     except GeneratorExit:
         line_proc.close()
 
@@ -223,6 +237,17 @@ class TerminateEvent(LineOutputEvent):
         return ''
 
 
+class EventGenerator(Closeable):
+    def __init__(self, consumer):
+        cort = event_generator(consumer)
+        super(EventGenerator, self).__init__(cort, consumer)
+
+    def close(self):
+        self.consumer.send(TerminateEvent())
+        self.coroutine.close()
+
+
+
 line_regexp = re.compile('''\
 (?:\
 (?P<init_states>Found [0-9]* states recorded for device .*)|\
@@ -247,10 +272,6 @@ def event_generator(consumer):
     try:
         while True:
             line = yield
-            if line == -1:
-                consumer.send(TerminateEvent())
-                # nothing else should come after this
-                continue
             match = line_regexp.match(line)
             if match is None:
                 continue
@@ -448,5 +469,5 @@ def run_event_machine(machine, sink):
 def build_filter(op, level, write):
     sink = filter_sink(write)
     lines = op.event_processor(level, sink)
-    events = event_generator(lines)
-    return line_producer(events)
+    events = EventGenerator(lines)
+    return LineProducer(events)

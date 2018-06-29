@@ -7,6 +7,7 @@ import glob
 import socket
 import subprocess
 from datetime import datetime as dt
+from contextlib import contextmanager
 
 import _ncs
 
@@ -61,12 +62,16 @@ class ActionBase(XmnrBase):
         # Implement in subclasses
         pass
 
+    @contextmanager
+    def open_log_file(self, path):
+        with open(os.path.join(self.xmnr_directory, path), 'a') as lf:
+            msg = '{} - {}'.format(dt.now(), self.action_name)
+            lf.write('\n{}\n{}\n{}\n'.format('-'*len(msg), msg, '-'*len(msg)))
+            yield lf
+
     def perform_action(self):
         if self.log_filename is not None:
-            with open(os.path.join(self.xmnr_directory, self.log_filename), 'w+') as lf:
-                msg = '{} - {}'.format(dt.now(), self.action_name)
-                lf.write('\n{}\n{}\n{}\n'.format('-'*len(msg), msg, '-'*len(msg)))
-                self.log_file = lf
+            with self.open_log_file(self.log_filename) as self.log_file:
                 return self.perform()
         else:
             self.log_file = None
@@ -119,12 +124,12 @@ class ActionBase(XmnrBase):
         _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
 
     def cli_filter(self, msg):
-        self.cli_write(msg)
+        if self.uinfo.context == 'cli':
+            self.cli_write(msg)
 
     def progress_msg(self, msg):
         self.log.debug(msg)
-        if self.uinfo.context == 'cli':
-            self.cli_filter(msg)
+        self.cli_filter(msg)
         if self.log_file is not None:
             self.log_file.write(msg)
 

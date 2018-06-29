@@ -5,6 +5,7 @@ from .mocklib import mock, xtest_patch
 from drned_xmnr import action
 from drned_xmnr.op import config_op, base_op, coverage_op
 import os
+import re
 from random import randint
 import functools
 import itertools
@@ -658,11 +659,36 @@ class DrnedWalkOutput(DrnedOutput):
         yield ''.join(self.full_output())
 
 
-class TestTransitionsLogFilters(TransitionsTestBase):
-    def setup_filter(self, xpatch, level):
+class TransitionsLogFiltersTestBase(TransitionsTestBase):
+    def setup_filter(self, xpatch, level, redirect=None):
         root = xpatch.ncs.data['root']
         root.drned_xmnr.log_detail.cli = level
+        root.drned_xmnr.log_detail.redirect = redirect
 
+    def filter_test_run(self, xpatch, filter_type, output_data, state_data, action, **params):
+        self.setup_filter(xpatch, filter_type)
+        self.setup_states_data(xpatch.system)
+        drned_output = output_data(state_data, filter_type, xpatch.system)
+        self.invoke_action(action, **params)
+        calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
+        assert ''.join(drned_output.expected_output()) == \
+            ''.join(call[0][2] for call in calls)
+
+    def explore_filter_test_run(self, xpatch, filter_type):
+        self.filter_test_run(xpatch, filter_type, DrnedExploreOutput, self.states,
+                             'explore-transitions',
+                             states=self.states, stop_after=self.stop_params())
+
+    def transition_filter_test_run(self, xpatch, filter_type):
+        self.filter_test_run(xpatch, filter_type, DrnedTransitionOutput, 'state1',
+                             'transition-to-state', state_name='state1', rollback=True)
+
+    def walk_filter_test_run(self, xpatch, filter_type):
+        self.filter_test_run(xpatch, filter_type, DrnedWalkOutput, self.states,
+                             'walk-states', states=self.states, rollback=False)
+
+
+class TestTransitionsLogFilters(TransitionsLogFiltersTestBase):
     def action_uinfo(self):
         return mock.Mock(context='cli')
 
@@ -682,20 +708,6 @@ class TestTransitionsLogFilters(TransitionsTestBase):
     def test_filter_explore_none(self, xpatch):
         self.explore_filter_test_run(xpatch, 'none')
 
-    def explore_filter_test_run(self, xpatch, filter_type):
-        self.filter_test_run(xpatch, filter_type, DrnedExploreOutput, self.states,
-                             'explore-transitions',
-                             states=self.states, stop_after=self.stop_params())
-
-    def filter_test_run(self, xpatch, filter_type, output_data, state_data, action, **params):
-        self.setup_filter(xpatch, filter_type)
-        self.setup_states_data(xpatch.system)
-        drned_output = output_data(state_data, filter_type, xpatch.system)
-        self.invoke_action(action, **params)
-        calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
-        assert ''.join(drned_output.expected_output()) == \
-            ''.join(call[0][2] for call in calls)
-
     @xtest_patch
     def test_filter_transition_overview(self, xpatch):
         self.transition_filter_test_run(xpatch, 'overview')
@@ -711,10 +723,6 @@ class TestTransitionsLogFilters(TransitionsTestBase):
     @xtest_patch
     def test_filter_transition_drned(self, xpatch):
         self.transition_filter_test_run(xpatch, 'drned-overview')
-
-    def transition_filter_test_run(self, xpatch, filter_type):
-        self.filter_test_run(xpatch, filter_type, DrnedTransitionOutput, 'state1',
-                             'transition-to-state', state_name='state1', rollback=True)
 
     @xtest_patch
     def test_filter_walk_overview(self, xpatch):
@@ -732,9 +740,31 @@ class TestTransitionsLogFilters(TransitionsTestBase):
     def test_filter_walk_drned(self, xpatch):
         self.walk_filter_test_run(xpatch, 'drned-overview')
 
-    def walk_filter_test_run(self, xpatch, filter_type):
-        self.filter_test_run(xpatch, filter_type, DrnedWalkOutput, self.states,
-                             'walk-states', states=self.states, rollback=False)
+
+class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
+    @xtest_patch
+    def test_filter_redirect(self, xpatch):
+        self.setup_filter(xpatch, 'drned-overview', 'redirect.output')
+        self.setup_states_data(xpatch.system)
+        xmnr_dir = mocklib.XMNR_DIRECTORY
+        drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
+        self.invoke_action('walk-states', states=self.states, rollback=False)
+        with open(os.path.join(xmnr_dir, 'redirect.output')) as r_out:
+            assert r_out.readline() == '\n'
+            assert re.match('-+$', r_out.readline()) is not None
+            assert re.match('[0-9]{4}(-[0-9]{2}){2} [0-9]{2}(:[0-9]{2}){2}\.[0-9]* - walk states$',
+                            r_out.readline()) is not None
+            assert re.match('-+$', r_out.readline()) is not None
+            assert ''.join(drned_output.expected_output()) == r_out.read()
+
+    @xtest_patch
+    def test_filter_no_cli(self, xpatch):
+        self.setup_filter(xpatch, 'all')
+        self.setup_states_data(xpatch.system)
+        DrnedWalkOutput(self.states, 'none', xpatch.system)
+        self.invoke_action('walk-states', states=self.states, rollback=False)
+        calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
+        assert ''.join(call[0][2] for call in calls) == ''
 
 
 class TestCoverage(TestBase):
