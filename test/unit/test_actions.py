@@ -139,6 +139,21 @@ commit-queue {{
 --generic drned data--
 '''
 
+drned_walk_output_outro = '''\
+### TEARDOWN, RESTORE DEVICE ###
+--generic drned data--
+============================== sync_from()
+--generic drned data--
+============================== load(drned-work/before-session.xml)
+--generic drned data--
+============================== commit()
+--generic drned data--
+% No modifications to commit.
+--generic drned data--
+============================== compare_config()
+--generic drned data--
+'''
+
 
 drned_walk_output_filtered = '''\
    load {state_to}
@@ -157,6 +172,16 @@ drned_walk_output_filtered = '''\
 drned_walk_output_intro = '''\
 py.test -k test_template_set --fname=.../states/{state_to}.state.cfg \
 --op=load --op=commit --op=compare-config {end_op}--device=device
+'''
+
+
+drned_walk_output_outro_filtered = '''\
+Device cleanup
+   load before-session
+   commit
+       (no modifications)
+   compare config
+       succeeded
 '''
 
 
@@ -638,22 +663,29 @@ class DrnedWalkOutput(DrnedOutput):
             start_output = ''
             intro_output = drned_walk_output_intro
             trans_output = drned_walk_output
+            outro_output = drned_walk_output_outro
         else:
             start_output = 'Prepare the device\n'
             intro_output = 'Test transition to {state_to}\n'
             trans_output = drned_walk_output_filtered
+            outro_output = drned_walk_output_outro_filtered
         yield start_output
         for state in self.state_data:
             end_op = '--end-op= ' if state == 'otherstate1' else ''
             yield intro_output.format(state_to=state, end_op=end_op)
             if self.filter_type != 'overview':
                 yield trans_output.format(state_to=state)
+        if self.filter_type == 'overview':
+            yield 'Device cleanup\n'
+        else:
+            yield outro_output
 
     def full_output(self):
         for state in self.state_data:
             end_op = '--end-op= ' if state == 'otherstate1' else ''
             yield drned_walk_output_intro.format(state_to=state, end_op=end_op)
             yield drned_walk_output.format(state_to=state)
+        yield drned_walk_output_outro
 
     def output(self):
         yield ''.join(self.full_output())

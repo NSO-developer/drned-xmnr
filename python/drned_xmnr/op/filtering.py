@@ -226,6 +226,22 @@ class DrnedCompareEvent(DrnedEvent):
         return self.indent_line(line)
 
 
+class DrnedTeardown(LineOutputEvent):
+    def __init__(self):
+        super(DrnedTeardown, self).__init__('')
+
+    def __str__(self):
+        return 'Drned teardown event'
+
+    def produce_line(self):
+        return 'Device cleanup\n'
+
+
+class DrnedRestore(DrnedActionEvent):
+    def __init__(self):
+        super(DrnedRestore, self).__init__('restore', 'load before-session')
+
+
 class TerminateEvent(LineOutputEvent):
     def __init__(self):
         super(TerminateEvent, self).__init__('')
@@ -247,7 +263,6 @@ class EventGenerator(Closeable):
         self.coroutine.close()
 
 
-
 line_regexp = re.compile('''\
 (?:\
 (?P<init_states>Found [0-9]* states recorded for device .*)|\
@@ -261,7 +276,9 @@ line_regexp = re.compile('''\
 (?P<no_modifs>% No modifications to commit\.)|\
 (?P<commit_queue>commit-queue \{)|\
 (?P<commit_result> *status (?P<result>completed|failed))|\
-(?P<failure_reason> *reason (?P<reason>RPC error .*))\
+(?P<failure_reason> *reason (?P<reason>RPC error .*))|\
+(?P<teardown>### TEARDOWN, RESTORE DEVICE ###)|\
+(?P<restore>={30} load\(drned-work/before-session.xml\))\
 )$''')
 
 
@@ -300,6 +317,10 @@ def event_generator(consumer):
                                                 match.groupdict()['result'] == 'completed'))
             elif match.lastgroup == 'failure_reason':
                 consumer.send(DrnedFailureReason(match.groupdict()['reason']))
+            elif match.lastgroup == 'teardown':
+                consumer.send(DrnedTeardown())
+            elif match.lastgroup == 'restore':
+                consumer.send(DrnedRestore())
     except GeneratorExit:
         consumer.close()
 
@@ -375,7 +396,7 @@ class WalkLogState(LogState):
         event.mark_complete()
         if self.level == 'overview' and isinstance(event, DrnedEvent):
             return None
-        if isinstance(event, PyTest):
+        if isinstance(event, PyTest) or isinstance(event, DrnedTeardown):
             if self.level == 'overview':
                 return event.produce_line()
             return (event.produce_line(), DrnedLogState())
