@@ -105,6 +105,8 @@
            succeeded
        compare config
            succeeded
+    Device cleanup
+       load before-session
        commit
            succeeded
        compare config

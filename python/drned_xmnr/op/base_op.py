@@ -2,6 +2,7 @@
 
 import fcntl
 import os
+import sys
 import select
 import glob
 import socket
@@ -16,6 +17,14 @@ import _ncs.maapi as _maapi
 from ncs import maapi, maagic
 
 from .ex import ActionError
+
+
+if sys.version_info >= (3, 0):
+    def text_data(data):
+        return data.decode()
+else:
+    def text_data(data):
+        return data
 
 
 class XmnrBase(object):
@@ -109,10 +118,11 @@ class ActionBase(XmnrBase):
             rlist, wlist, xlist = select.select([fd], [], [fd], timeout)
             if rlist:
                 buf = proc.stdout.read()
-                if buf != "":
-                    self.log.debug("run_outputfun, output len=" + str(len(buf)))
-                    state = outputfun(state, buf)
-                    stdoutdata += buf
+                if buf is not None and len(buf) != 0:
+                    data = text_data(buf)
+                    self.log.debug("run_outputfun, output len=" + str(len(data)))
+                    state = outputfun(state, data)
+                    stdoutdata += data
             else:
                 self.progress_msg("Silence timeout, terminating process\n")
                 proc.kill()
@@ -157,6 +167,7 @@ class ActionBase(XmnrBase):
             env['PYTHONPATH'] += os.pathsep + env['NCS_DIR'] + '/lib/pyang'
         except KeyError:
             raise ActionError('NCS_DIR not set')
+        env['PYTHONUNBUFFERED'] = '1'
         path = env['PATH']
         # need to remove exec path inserted by NSO
         env['PATH'] = os.pathsep.join(ppart for ppart in path.split(os.pathsep)
@@ -169,9 +180,7 @@ class ActionBase(XmnrBase):
         self.log.debug("running", args)
         try:
             proc = subprocess.Popen(args,
-                                    universal_newlines=True,
                                     env=env,
-                                    bufsize=1,
                                     cwd=self.drned_run_directory,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)

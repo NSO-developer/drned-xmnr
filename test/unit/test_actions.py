@@ -5,10 +5,18 @@ from .mocklib import mock, xtest_patch
 from drned_xmnr import action
 from drned_xmnr.op import config_op, base_op, coverage_op
 import os
+import sys
 import re
 from random import randint
 import functools
 import itertools
+
+if sys.version_info >= (3, 0):
+    def bytestream(data):
+        return data.encode()
+else:
+    def bytestream(data):
+        return data
 
 device_data = '''\
     <config xmlns="http://tail-f.com/ns/config/1.0">
@@ -582,7 +590,7 @@ class DrnedOutput(object):
 
     def popen_effect(self, *args, **kwargs):
         next_data = next(self.output_iter)
-        self.system.proc_data(next_data)
+        self.system.proc_data(bytestream(next_data))
         if self.failure:
             self.failure = False
             self.popen_mock.return_value.wait = mock.Mock(return_value=-1)
@@ -823,7 +831,7 @@ class TestCoverage(TestBase):
             collect_dict[group] = {}
             for entry in entries:
                 collect_dict[group][entry] = self.line_entry(randint(0, 1000), randint(0, 100))
-        xpatch.system.proc_data(drned_collect_output.format(**collect_dict))
+        xpatch.system.proc_data(bytestream(drned_collect_output.format(**collect_dict)))
         output = self.invoke_action('collect', yang_patterns=['pat1', 'pat2'])
         self.check_output(output)
         log = mock.Mock()

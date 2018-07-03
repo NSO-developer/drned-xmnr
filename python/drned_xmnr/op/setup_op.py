@@ -88,7 +88,6 @@ class SetupOp(base_op.ActionBase):
         env = self.run_with_trans(self.setup_drned_env)
         proc = subprocess.Popen(['make', 'env.sh'],
                                 env=env,
-                                universal_newlines=True,
                                 cwd=self.drned_run_directory,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)

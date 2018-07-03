@@ -383,6 +383,10 @@ class ExploreLogState(LogState):
         if self.level == 'overview' and (isinstance(event, DrnedPrepare) or
                                          isinstance(event, DrnedEvent)):
             return None
+        if isinstance(event, DrnedTeardown):
+            if self.level == 'overview':
+                return None
+            return (event.produce_line(), DrnedLogState())
         if isinstance(event, DrnedPrepare):
             return (event.produce_line(), DrnedLogState())
         return event.produce_line()
