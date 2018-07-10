@@ -74,6 +74,10 @@ DEVICE_NAME = 'mock-device'
 XMNR_INSTALL = 'xmnr-install'
 
 
+class MockException(Exception):
+    pass
+
+
 @contextmanager
 def ncs_mock():
     device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'))
@@ -86,14 +90,15 @@ def ncs_mock():
     ncs_items = ['_ncs.stream_connect', '_ncs.dp.action_set_timeout', '_ncs.maapi.cli_write']
     with patch('ncs.maapi.Maapi', return_value=MaapiMock()) as maapi:
         with patch('ncs.maagic.get_root', return_value=rootmock):
-            with nest_mgrs([patch(ncs_item) for ncs_item in ncs_items]) as ncs_patches:
-                mock_inst = XtestMock('ncs')
-                items = [it.split('.')[-1] for it in ncs_items]
-                mock_inst.data = dict(maapi=maapi,
-                                      root=rootmock,
-                                      device=device,
-                                      ncs=dict(zip(items, reversed(ncs_patches))))
-                yield mock_inst
+            with patch('_ncs.error', Error=MockException):
+                with nest_mgrs([patch(ncs_item) for ncs_item in ncs_items]) as ncs_patches:
+                    mock_inst = XtestMock('ncs')
+                    items = [it.split('.')[-1] for it in ncs_items]
+                    mock_inst.data = dict(maapi=maapi,
+                                          root=rootmock,
+                                          device=device,
+                                          ncs=dict(zip(items, reversed(ncs_patches))))
+                    yield mock_inst
 
 
 class FileData(object):

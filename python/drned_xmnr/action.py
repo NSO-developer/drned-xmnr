@@ -44,6 +44,7 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_list_states_: config_op.ListStatesOp,
         ns.ns.drned_xmnr_record_state_: config_op.RecordStateOp,
         ns.ns.drned_xmnr_import_state_files_: config_op.ImportStateFiles,
+        ns.ns.drned_xmnr_check_states_: config_op.CheckStates,
         ns.ns.drned_xmnr_transition_to_state_: transitions_op.TransitionToStateOp,
         ns.ns.drned_xmnr_explore_transitions_: transitions_op.ExploreTransitionsOp,
         ns.ns.drned_xmnr_walk_states_: transitions_op.WalkTransitionsOp,

@@ -152,6 +152,31 @@ class ImportStateFiles(ConfigOp):
         return base
 
 
+class CheckStates(ConfigOp):
+    action_name = 'check states'
+
+    def perform(self):
+        states = self.get_states()
+        self.log.debug('checking states: {}'.format(states))
+        failures = []
+        for filename in [self.state_name_to_filename(state) for state in states]:
+            if not self.run_with_trans(lambda trans: self.test_filename_load(trans, filename),
+                                       write=True):
+                failures.append(self.state_filename_to_name(filename))
+        if failures == []:
+            return {'success': 'all states are consistent'}
+        else:
+            msg = 'states not consistent with the device model: {}'
+            return {'failure': msg.format(', '.join(failures))}
+
+    def test_filename_load(self, trans, filename):
+        try:
+            trans.load_config(_ncs.maapi.CONFIG_C, filename)
+            return True
+        except _ncs.error.Error:
+            return False
+
+
 class StatesProvider(object):
     def __init__(self, log):
         self.log = log

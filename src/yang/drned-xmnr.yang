@@ -170,6 +170,15 @@ module drned-xmnr {
             uses action-output-common;
           }
         }
+        tailf:action check-states {
+          tailf:info
+            "Check if all configuration files can be still applied
+             (e.g. after a device model update).";
+          tailf:actionpoint drned-xmnr;
+          output {
+            uses action-output-common;
+          }
+        }
       }
       container transitions {
         tailf:action transition-to-state {

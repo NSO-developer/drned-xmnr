@@ -301,6 +301,23 @@ class TestSetup(TestBase):
         assert popen_mock.call_args[0] == (['make', 'env.sh'],)
 
 
+class LoadConfig(object):
+    def __init__(self, ncs, fail_states=[]):
+        self.fail_states = fail_states
+        tcx_mock = mock.Mock(load_config=mock.Mock(side_effect=self.load_config))
+        tcx_class_mock = mock.Mock(return_value=tcx_mock)
+        ncs.data['maapi'].return_value = mock.Mock(attach=tcx_class_mock)
+        states_dir = os.path.join(TestBase.test_run_dir, 'states')
+        self.sub_rx = re.compile(r'{}/(.*)\.state\.cfg'.format(states_dir))
+        self.loaded_states = []
+
+    def load_config(self, _flags, filename):
+        state = self.sub_rx.sub(r'\1', filename)
+        self.loaded_states.append(state)
+        if state in self.fail_states:
+            raise mocklib.MockException
+
+
 class TestStates(TestBase):
     def state_files(self, states):
         return sorted(itertools.chain(*((st + '.state.cfg', st + '.state.cfg.load')
@@ -392,6 +409,26 @@ class TestStates(TestBase):
                                     state_name='no-such-state')
         assert output.failure is not None
         self.check_states(self.states)
+
+    @xtest_patch
+    def test_check_states(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        load_calls = LoadConfig(xpatch.ncs)
+        output = self.invoke_action('check-states', state_name_pattern=None)
+        self.check_output(output)
+        assert sorted(self.states) == sorted(load_calls.loaded_states)
+
+    @xtest_patch
+    def test_check_failed_states(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        failures = ['state1', 'state2']
+        load_calls = LoadConfig(xpatch.ncs, failures)
+        output = self.invoke_action('check-states', state_name_pattern=None)
+        assert sorted(self.states) == sorted(load_calls.loaded_states)
+        fail_msg = 'states not consistent with the device model: '
+        assert output.failure.startswith(fail_msg)
+        rest_msg = output.failure[len(fail_msg):]
+        assert sorted(failures) == sorted(rest_msg.split(', '))
 
 
 class StopTestTimer(object):
