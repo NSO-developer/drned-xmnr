@@ -161,6 +161,15 @@ module drned-xmnr {
               type string;
               mandatory true;
             }
+            leaf format {
+              type enumeration {
+                enum xml;
+                enum c-style;
+                enum nso-xml;
+                enum nso-c-style;
+              }
+              default xml;
+            }
             leaf overwrite {
               type boolean;
               default false;
