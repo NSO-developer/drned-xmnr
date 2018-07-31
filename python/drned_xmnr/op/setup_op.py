@@ -3,7 +3,7 @@ import sys
 import shutil
 import errno
 import subprocess
-from xml.etree import ElementTree as ET
+from lxml import etree
 
 import _ncs
 from ncs import maagic
@@ -13,9 +13,9 @@ from .ex import ActionError
 
 if sys.version_info >= (3, 3):
     import functools
-    et_tostring = functools.partial(ET.tostring, encoding='unicode')
+    et_tostring = functools.partial(etree.tostring, encoding='unicode')
 else:
-    et_tostring = ET.tostring
+    et_tostring = etree.tostring
 
 
 class SetupOp(base_op.ActionBase):
@@ -75,11 +75,11 @@ class SetupOp(base_op.ActionBase):
         return os.path.join(package.directory, 'package-meta-data.xml')
 
     def find_ned_package(self, root, ned_id, ned_type):
-        for package in root.package.packages:
+        for package in root.packages.package:
             for component in package.component:
                 try:
                     if getattr(component.ned, ned_type).ned_id == ned_id:
-                        return package.name
+                        return package
                 except AttributeError:
                     continue
         return None
@@ -113,7 +113,7 @@ class SetupOp(base_op.ActionBase):
         cfg_iter = self.save_config(trans,
                                     _ncs.maapi.CONFIG_XML_PRETTY,
                                     '/devices/device{{{0}}}'.format(self.dev_name))
-        config_tree = ET.fromstring(b''.join(cfg_iter))
+        config_tree = etree.fromstring(b''.join(cfg_iter))
         # need to delete some elements
         devices = config_tree[0]
         dev = devices[0]

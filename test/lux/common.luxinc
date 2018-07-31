@@ -1,0 +1,73 @@
+[config timeout=2000]
+
+[macro shell-check]
+    !echo ==$?==
+    ?==0==
+[endmacro]
+
+[macro ned-test-setup]
+    !rm -rf ncs-run
+    [progress prepare ncs-run and packages]
+    !ncs-project create ncs-run
+    [invoke shell-check]
+    !cd ncs-run/packages
+    [invoke shell-check]
+    !ln -s ../../../../ drned-xmnr
+    !file drned-xmnr
+    ?drned-xmnr: symbolic link to .*
+    !file drned-xmnr/python
+    ?drned-xmnr/python: directory
+    !make -C drned-xmnr/src all
+    [invoke shell-check]
+[endmacro]
+
+[macro prepare-test device type port]
+    -[Ee][Rr][Rr][Oo][Rr]
+    !ncs_cli -u admin -C
+    ???admin@ncs#
+    !config
+    [progress set up the NCS device]
+    # clean up, if there is anything left from previous runs
+    !no devices device $device
+    # set up python-vm logging to see any problems
+    !python-vm logging level level-debug
+    !commit
+    ?Commit complete|No modifications.
+    !devices device $device
+    ??admin@ncs(config-device-$device)#
+    """!
+    address 127.0.0.1
+    port $port
+    device-type $type
+    authgroup default
+    state admin-state unlocked
+    """
+    !commit
+    ???Commit complete.
+    !ssh fetch-host-keys
+    ???result updated
+    !sync-from
+    !no config
+    !commit
+    [timeout 10]
+    ?Commit complete|No modifications to commit
+    # watch for autoconfigs
+    !sync-from
+    ?result true
+    [timeout]
+    [progress setup xmnr]
+    !drned-xmnr setup setup-xmnr overwrite true
+    ???success
+    [progress record states]
+    !drned-xmnr state record-state state-name empty
+    ???success
+[endmacro]
+
+[macro cleanup]
+    !cd ncs-run
+    ?SH-PROMPT:
+    !ncs --stop
+    ?SH-PROMPT:
+    !ncs-netsim stop
+    ?SH-PROMPT:
+[endmacro]
