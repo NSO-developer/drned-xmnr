@@ -93,6 +93,8 @@ commit-queue {{
 Commit complete.
 ============================== compare_config()
 --generic drned data--
+{compare_result}
+--generic drned data--
 ============================== rollback()
 --generic drned data--
 ============================== commit()
@@ -111,7 +113,7 @@ drned_transition_output_filtered = '''\
    commit
        failed (RPC error towards test device)
    compare config
-       succeeded
+       {compare_result}
    rollback
    commit
        succeeded
@@ -638,16 +640,26 @@ class DrnedOutput(object):
 
 class DrnedTransitionOutput(DrnedOutput):
     def expected_output(self):
+        compare_success = 'succeeded'
         if self.filter_type == 'all':
             transition_output = drned_transition_output
+            compare_success = ''
         elif self.filter_type == 'drned-overview':
             transition_output = drned_transition_output_filtered
         else:
             transition_output = ''
-        yield transition_output.format(state_to=self.state_data)
+        yield transition_output.format(state_to=self.state_data, compare_result=compare_success)
 
     def output(self):
-        yield drned_transition_output.format(state_to=self.state_data)
+        yield drned_transition_output.format(state_to=self.state_data, compare_result='')
+
+
+class DrnedTransitionOutputFailure(DrnedOutput):
+    def expected_output(self):
+        yield drned_transition_output_filtered.format(state_to=self.state_data, compare_result='failed')
+
+    def output(self):
+        yield drned_transition_output.format(state_to=self.state_data, compare_result='diff ')
 
 
 class DrnedExploreOutput(DrnedOutput):
@@ -662,9 +674,11 @@ class DrnedExploreOutput(DrnedOutput):
         if self.filter_type == 'all':
             start_output = drned_explore_start_output
             transition_output = drned_transition_output
+            compare_success = ''
         elif self.filter_type == 'drned-overview':
             start_output = drned_explore_start_output_filtered
             transition_output = drned_transition_output_filtered
+            compare_success = 'succeeded'
         else:
             start_output = transition_output = ''
         for from_state in self.state_data:
@@ -681,7 +695,8 @@ class DrnedExploreOutput(DrnedOutput):
                 yield 'Transition {}/{}: {} ==> {}\n'.format(
                     index, num_transitions, from_state, to_state)
                 if self.filter_type != 'overview':
-                    yield transition_output.format(state_to=to_state)
+                    yield transition_output.format(state_to=to_state,
+                                                   compare_result=compare_success)
                 if to_state == 'otherstate1':
                     yield drned_transition_failed
 
@@ -697,7 +712,7 @@ class DrnedExploreOutput(DrnedOutput):
                     continue
                 if to_state == 'otherstate1':
                     self.failure = True
-                yield drned_transition_output.format(state_to=to_state)
+                yield drned_transition_output.format(state_to=to_state, compare_result='')
 
 
 class DrnedWalkOutput(DrnedOutput):
@@ -800,6 +815,11 @@ class TestTransitionsLogFilters(TransitionsLogFiltersTestBase):
     @xtest_patch
     def test_filter_transition_drned(self, xpatch):
         self.transition_filter_test_run(xpatch, 'drned-overview')
+
+    @xtest_patch
+    def test_filter_transition_failure(self, xpatch):
+        self.filter_test_run(xpatch, 'drned-overview', DrnedTransitionOutputFailure, 'state1',
+                             'transition-to-state', state_name='state1', rollback=True)
 
     @xtest_patch
     def test_filter_walk_overview(self, xpatch):

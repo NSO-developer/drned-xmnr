@@ -278,7 +278,8 @@ line_regexp = re.compile('''\
 (?P<commit_result> *status (?P<result>completed|failed))|\
 (?P<failure_reason> *reason (?P<reason>RPC error .*))|\
 (?P<teardown>### TEARDOWN, RESTORE DEVICE ###)|\
-(?P<restore>={30} load\(drned-work/before-session.xml\))\
+(?P<restore>={30} load\(drned-work/before-session.xml\))|\
+(?P<diff>diff *)\
 )$''')
 
 
@@ -321,6 +322,8 @@ def event_generator(consumer):
                 consumer.send(DrnedTeardown())
             elif match.lastgroup == 'restore':
                 consumer.send(DrnedRestore())
+            elif match.lastgroup == 'diff':
+                consumer.send(DrnedCompareEvent(False))
     except GeneratorExit:
         consumer.close()
 
@@ -458,9 +461,13 @@ class DrnedFailureState(LogState):
 
 class DrnedCompareState(LogState):
     def handle(self, event):
-        # need to produce a line, but the event is not handled yet
-        art_event = DrnedCompareEvent(True)
-        return (art_event.produce_line(), TERMINATED)
+        if isinstance(event, DrnedCompareEvent):
+            event.mark_complete()
+            return (event.produce_line(), TERMINATED)
+        else:
+            # need to produce a line, but the event is not handled yet
+            art_event = DrnedCompareEvent(True)
+            return (art_event.produce_line(), TERMINATED)
 
 
 def transition_output_filter(level, sink):
