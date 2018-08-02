@@ -161,6 +161,15 @@ module drned-xmnr {
               type string;
               mandatory true;
             }
+            leaf format {
+              type enumeration {
+                enum xml;
+                enum c-style;
+                enum nso-xml;
+                enum nso-c-style;
+              }
+              default xml;
+            }
             leaf overwrite {
               type boolean;
               default false;
@@ -175,6 +184,14 @@ module drned-xmnr {
             "Check if all configuration files can be still applied
              (e.g. after a device model update).";
           tailf:actionpoint drned-xmnr;
+          input {
+            leaf validate {
+              tailf:info
+                "In addition to checking against the device model.
+                  validate with the current configuration.";
+              type empty;
+            }
+          }
           output {
             uses action-output-common;
           }

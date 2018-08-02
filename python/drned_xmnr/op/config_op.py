@@ -3,6 +3,9 @@
 import os
 import glob
 import shutil
+from lxml import etree
+import sys
+import traceback
 
 import _ncs
 
@@ -118,6 +121,7 @@ class ImportStateFiles(ConfigOp):
 
     def _init_params(self, params):
         self.pattern = params.file_path_pattern
+        self.file_format = self.param_default(params, "format", "")
         self.overwrite = params.overwrite
 
     def perform(self):
@@ -136,6 +140,41 @@ class ImportStateFiles(ConfigOp):
         return {"success": "Imported states: " + ", ".join(states)}
 
     def import_file(self, source_file, state):
+        if self.file_format == "c-style":
+            tmpfile = "/tmp/" + os.path.basename(source_file)
+            with open(tmpfile, "w+") as outfile:
+                outfile.write("devices device " + self.dev_name + " config\r\n")
+                with open(source_file, "r") as infile:
+                    for line in infile:
+                        outfile.write(line)
+            source_file = tmpfile
+        elif self.file_format == "xml":
+            tmpxmlfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
+            tmpfile = "/tmp/" + os.path.basename(source_file)
+            log_name = tmpxmlfile + ".log"
+            log = self.run_xslt(tmpxmlfile, source_file)
+            try:
+                self.run_with_trans(lambda trans: self.xml_to_state(trans, tmpxmlfile, tmpfile),
+                                    write=True, no_commit=True)
+            except Exception:
+                raise ActionError(os.path.basename(source_file) + " " +
+                                  repr(traceback.format_exception(*sys.exc_info()))
+                                  .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
+                sys.exc_clear()
+            source_file = tmpfile
+        elif self.file_format == "nso-xml":
+            tmpfile = "/tmp/" + os.path.basename(source_file)
+            try:
+                self.run_with_trans(lambda trans: self.xml_to_state(trans, source_file, tmpfile),
+                                    write=True, no_commit=True)
+            except Exception:
+                raise ActionError(os.path.basename(source_file) + " " +
+                                  repr(traceback.format_exception(*sys.exc_info()))
+                                  .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
+                sys.exc_clear()
+            source_file = tmpfile
+        # elif self.file_format == "nso-c-style":
+            # file(s) already in state format (== nso-c-style format)
         dirname = os.path.dirname(source_file)
         if dirname == self.states_dir:
             tmpfile = source_file
@@ -151,18 +190,69 @@ class ImportStateFiles(ConfigOp):
             (base, ext) = os.path.splitext(base)
         return base
 
+    def run_xslt(self, nso_xml_file, xml_file):
+        xslt_root = etree.XML('''\
+        <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+          <xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>
+          <xsl:strip-space elements="*"/>
+          <xsl:param name="device_name"/>
+          <xsl:template match="/">
+              <config xmlns="http://tail-f.com/ns/config/1.0">
+                <devices xmlns="http://tail-f.com/ns/ncs">
+                  <device>
+                    <name><xsl:value-of select="$device_name"/></name>
+                    <config>
+                      <xsl:apply-templates select="@*|node()"/>
+                    </config>
+                  </device>
+                </devices>
+              </config>
+          </xsl:template>
+          <xsl:template match="@*|node()">
+            <xsl:copy>
+              <xsl:apply-templates select="@*|node()"/>
+            </xsl:copy>
+          </xsl:template>
+          <!-- If in the XML file, omit the confd config tag from the results -->
+          <xsl:template match="*[local-name()='config' and
+                                 namespace-uri()='http://tail-f.com/ns/config/1.0']">
+            <xsl:apply-templates select="@*|node()"/>
+          </xsl:template>
+        </xsl:stylesheet>''')
+        tree = etree.parse(xml_file)
+        transform = etree.XSLT(xslt_root)
+        nso_xml = transform(tree,  device_name=etree.XSLT.strparam(self.dev_name))
+        with open(nso_xml_file, "w+") as outfile:
+            nso_xml.write(outfile)
+
+    def xml_to_state(self, trans, xml_file, state_file):
+        trans.load_config(_ncs.maapi.CONFIG_XML, xml_file)
+        with open(state_file, "w+") as state_file:
+            for data in self.save_config(trans,
+                                         _ncs.maapi.CONFIG_C,
+                                         "/ncs:devices/device{"+self.dev_name+"}/config"):
+                state_file.write(data)
+
 
 class CheckStates(ConfigOp):
     action_name = 'check states'
+
+    def _init_params(self, params):
+        self.validate = self.param_default(params, "validate", "")
 
     def perform(self):
         states = self.get_states()
         self.log.debug('checking states: {}'.format(states))
         failures = []
         for filename in [self.state_name_to_filename(state) for state in states]:
-            if not self.run_with_trans(lambda trans: self.test_filename_load(trans, filename),
-                                       write=True):
-                failures.append(self.state_filename_to_name(filename))
+            try:
+                self.run_with_trans(lambda trans: self.test_filename_load(trans, filename),
+                                    write=True, no_commit=True)
+            except Exception:
+                failures.append("\n"+self.state_filename_to_name(filename) + " " +
+                                repr(traceback.format_exception(*sys.exc_info()))
+                                .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
+                sys.exc_clear()
         if failures == []:
             return {'success': 'all states are consistent'}
         else:
@@ -170,11 +260,9 @@ class CheckStates(ConfigOp):
             return {'failure': msg.format(', '.join(failures))}
 
     def test_filename_load(self, trans, filename):
-        try:
-            trans.load_config(_ncs.maapi.CONFIG_C, filename)
-            return True
-        except _ncs.error.Error:
-            return False
+        trans.load_config(_ncs.maapi.CONFIG_C + _ncs.maapi.CONFIG_MERGE, filename)
+        if self.validate:
+            trans.validate(True)
 
 
 class StatesProvider(object):
