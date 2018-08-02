@@ -33,6 +33,8 @@
     ???Commit complete.
     !drned-xmnr state record-state state-name subnet
     ???success
+    !drned-xmnr state check-states validate
+    ???success all states are consistent
     [progress walk states]
     [timeout 10]
     !drned-xmnr transitions walk-states states [ empty subnet time ]
