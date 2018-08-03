@@ -30,14 +30,14 @@ class SetupOp(base_op.ActionBase):
         try:
             shutil.copy(self.pkg_file,
                         os.path.join(os.path.dirname(self.dev_test_dir), 'package-meta-data.xml'))
-        except:
+        except OSError:
             raise ActionError("Failed to copy package-meta-data file.")
         target = os.path.join(self.dev_test_dir, "drned")
         if self.overwrite and os.path.exists(target):
             try:
                 shutil.rmtree(target, ignore_errors=True)
                 os.remove(target)
-            except:
+            except OSError:
                 pass
         try:
             shutil.copytree(self.drned_skeleton, target)
@@ -101,7 +101,7 @@ class SetupOp(base_op.ActionBase):
         if self.overwrite or not os.path.exists(ncs_target):
             try:
                 os.remove(ncs_target)
-            except:
+            except OSError:
                 pass
             os.symlink(os.getcwd(), ncs_target)
 

@@ -49,7 +49,7 @@ class DeleteStateOp(ConfigOp):
                     os.remove(state_filename + ".load")
                 except OSError:
                     pass
-            except:
+            except OSError:
                 return {'failure': "Could not delete " + state_filename}
         return {'success': "Deleted: " + ', '.join(self.state_filename_to_name(state_filename)
                                                    for state_filename in state_filenames)}
@@ -89,7 +89,7 @@ class RecordStateOp(ConfigOp):
             # i.e. send 2 to get 1 rollback. Therefore the +1
             rollbacks = _ncs.maapi.list_rollbacks(trans.maapi.msock, int(self.include_rollbacks)+1)
             # rollbacks are returned 'most recent first', i.e. reverse chronological order
-        except:
+        except _ncs.error.Error:
             rollbacks = []
         self.log.debug("rollbacks="+str([r.fixed_nr for r in rollbacks]))
         index = 0
@@ -185,8 +185,7 @@ class ImportStateFiles(ConfigOp):
         elif self.file_format == "xml":
             tmpxmlfile = "/tmp/" + os.path.basename(source_file) + ".xmltmp"
             tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
-            log_name = tmpxmlfile + ".log"
-            log = self.run_xslt(tmpxmlfile, source_file)
+            self.run_xslt(tmpxmlfile, source_file)
             flags = _ncs.maapi.CONFIG_XML
             if self.merge:
                 flags += _ncs.maapi.CONFIG_MERGE

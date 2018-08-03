@@ -43,7 +43,7 @@ class XmnrBase(object):
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
         try:
             os.makedirs(self.states_dir)
-        except:
+        except OSError:
             pass
 
     def state_name_to_filename(self, statename):
