@@ -122,8 +122,8 @@ class ImportStateFiles(ConfigOp):
     def _init_params(self, params):
         self.pattern = params.file_path_pattern
         self.file_format = self.param_default(params, "format", "")
-        self.overwrite =  self.param_default(params, "overwrite", "")
-        self.merge =  self.param_default(params, "merge", "")
+        self.overwrite = params.overwrite
+        self.merge = params.merge
 
     def perform(self):
         filenames = glob.glob(self.pattern)
@@ -230,8 +230,8 @@ class ImportStateFiles(ConfigOp):
     def create_state(self, source_file, state_file, flags):
         try:
             self.run_with_trans(lambda trans: self.run_create_state(trans, source_file, state_file,
-                                                                flags),
-                                write=True, no_commit=True)
+                                                                    flags), write=True,
+                                no_commit=True)
         except Exception:
             raise ActionError(os.path.basename(source_file) + " " +
                               repr(traceback.format_exception(*sys.exc_info()))
@@ -251,7 +251,7 @@ class CheckStates(ConfigOp):
     action_name = 'check states'
 
     def _init_params(self, params):
-        self.validate = self.param_default(params, "validate", "")
+        self.validate = params.validate
 
     def perform(self):
         states = self.get_states()
