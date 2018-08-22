@@ -236,7 +236,6 @@ class ImportStateFiles(ConfigOp):
             raise ActionError(os.path.basename(source_file) + " " +
                               repr(traceback.format_exception(*sys.exc_info()))
                               .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
-        sys.exc_clear()
 
     def run_create_state(self, trans, source_file, state_file, flags):
         trans.load_config(flags, source_file)
@@ -265,7 +264,6 @@ class CheckStates(ConfigOp):
                 failures.append("\n"+self.state_filename_to_name(filename) + " " +
                                 repr(traceback.format_exception(*sys.exc_info()))
                                 .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
-                sys.exc_clear()
         if failures == []:
             return {'success': 'all states are consistent'}
         else:
