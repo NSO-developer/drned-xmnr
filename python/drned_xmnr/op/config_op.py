@@ -123,6 +123,7 @@ class ImportStateFiles(ConfigOp):
         self.pattern = params.file_path_pattern
         self.file_format = self.param_default(params, "format", "")
         self.overwrite = params.overwrite
+        self.merge = params.merge
 
     def perform(self):
         filenames = glob.glob(self.pattern)
@@ -141,40 +142,41 @@ class ImportStateFiles(ConfigOp):
 
     def import_file(self, source_file, state):
         if self.file_format == "c-style":
-            tmpfile = "/tmp/" + os.path.basename(source_file)
+            tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
             with open(tmpfile, "w+") as outfile:
                 outfile.write("devices device " + self.dev_name + " config\r\n")
                 with open(source_file, "r") as infile:
                     for line in infile:
                         outfile.write(line)
+            if self.merge:
+                tmpfile2 = tmpfile + ".tmp2"
+                flags = _ncs.maapi.CONFIG_C + _ncs.maapi.CONFIG_MERGE
+                self.create_state(tmpfile, tmpfile2, flags)
+                tmpfile = tmpfile2
             source_file = tmpfile
         elif self.file_format == "xml":
-            tmpxmlfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
-            tmpfile = "/tmp/" + os.path.basename(source_file)
+            tmpxmlfile = "/tmp/" + os.path.basename(source_file) + ".xmltmp"
+            tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
             log_name = tmpxmlfile + ".log"
             log = self.run_xslt(tmpxmlfile, source_file)
-            try:
-                self.run_with_trans(lambda trans: self.xml_to_state(trans, tmpxmlfile, tmpfile),
-                                    write=True, no_commit=True)
-            except Exception:
-                raise ActionError(os.path.basename(source_file) + " " +
-                                  repr(traceback.format_exception(*sys.exc_info()))
-                                  .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
-                sys.exc_clear()
+            flags = _ncs.maapi.CONFIG_XML
+            if self.merge:
+                flags += _ncs.maapi.CONFIG_MERGE
+            self.create_state(tmpxmlfile, tmpfile, flags)
             source_file = tmpfile
         elif self.file_format == "nso-xml":
-            tmpfile = "/tmp/" + os.path.basename(source_file)
-            try:
-                self.run_with_trans(lambda trans: self.xml_to_state(trans, source_file, tmpfile),
-                                    write=True, no_commit=True)
-            except Exception:
-                raise ActionError(os.path.basename(source_file) + " " +
-                                  repr(traceback.format_exception(*sys.exc_info()))
-                                  .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
-                sys.exc_clear()
+            tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
+            flags = _ncs.maapi.CONFIG_XML
+            if self.merge:
+                flags += _ncs.maapi.CONFIG_MERGE
+            self.create_state(source_file, tmpfile, flags)
             source_file = tmpfile
-        # elif self.file_format == "nso-c-style":
+        elif self.file_format == "nso-c-style":
             # file(s) already in state format (== nso-c-style format)
+            if self.merge:
+                tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
+                flags = _ncs.maapi.CONFIG_C + _ncs.maapi.CONFIG_MERGE
+                self.create_state(source_file, tmpfile, flags)
         dirname = os.path.dirname(source_file)
         if dirname == self.states_dir:
             tmpfile = source_file
@@ -225,8 +227,18 @@ class ImportStateFiles(ConfigOp):
         with open(nso_xml_file, "w+") as outfile:
             nso_xml.write(outfile)
 
-    def xml_to_state(self, trans, xml_file, state_file):
-        trans.load_config(_ncs.maapi.CONFIG_XML, xml_file)
+    def create_state(self, source_file, state_file, flags):
+        try:
+            self.run_with_trans(lambda trans: self.run_create_state(trans, source_file, state_file,
+                                                                    flags), write=True,
+                                no_commit=True)
+        except Exception:
+            raise ActionError(os.path.basename(source_file) + " " +
+                              repr(traceback.format_exception(*sys.exc_info()))
+                              .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
+
+    def run_create_state(self, trans, source_file, state_file, flags):
+        trans.load_config(flags, source_file)
         with open(state_file, "w+") as state_file:
             for data in self.save_config(trans,
                                          _ncs.maapi.CONFIG_C,
@@ -238,7 +250,7 @@ class CheckStates(ConfigOp):
     action_name = 'check states'
 
     def _init_params(self, params):
-        self.validate = self.param_default(params, "validate", "")
+        self.validate = params.validate
 
     def perform(self):
         states = self.get_states()
@@ -252,7 +264,6 @@ class CheckStates(ConfigOp):
                 failures.append("\n"+self.state_filename_to_name(filename) + " " +
                                 repr(traceback.format_exception(*sys.exc_info()))
                                 .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
-                sys.exc_clear()
         if failures == []:
             return {'success': 'all states are consistent'}
         else:
