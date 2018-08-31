@@ -70,7 +70,7 @@ class ActionHandler(dp.Action):
             self.log.debug("ActionError exception")
             return self.action_response(uinfo, ae.get_info(), output)
 
-        except:
+        except Exception:
             self.log.debug("Other exception: " + repr(traceback.format_exception(*sys.exc_info())))
             output.failure = "Operation failed"
 

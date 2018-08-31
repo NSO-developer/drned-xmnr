@@ -4,8 +4,6 @@ import os
 import glob
 import shutil
 from lxml import etree
-import sys
-import traceback
 
 import _ncs
 
@@ -172,7 +170,7 @@ class ImportStateFiles(ConfigOp):
         if self.file_format == "c-style":
             tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
             with open(tmpfile, "w+") as outfile:
-                outfile.write("devices device " + self.dev_name + " config\r\n")
+                outfile.write("devices device " + self.dev_name + " config\n")
                 with open(source_file, "r") as infile:
                     for line in infile:
                         outfile.write(line)
@@ -259,10 +257,9 @@ class ImportStateFiles(ConfigOp):
             self.run_with_trans(lambda trans: self.run_create_state(trans, source_file, state_file,
                                                                     flags), write=True,
                                 no_commit=True)
-        except Exception:
+        except _ncs.error.Error as err:
             raise ActionError(os.path.basename(source_file) + " " +
-                              repr(traceback.format_exception(*sys.exc_info()))
-                              .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
+                              str(err).replace("\n", ""))
 
     def run_create_state(self, trans, source_file, state_file, flags):
         trans.load_config(flags, source_file)
@@ -286,16 +283,15 @@ class CheckStates(ConfigOp):
         for filename in [self.state_name_to_filename(state) for state in states]:
             try:
                 self.run_with_trans(lambda trans: self.test_filename_load(trans, filename),
-                                    write=True, no_commit=True)
-            except Exception:
-                failures.append("\n"+self.state_filename_to_name(filename) + " " +
-                                repr(traceback.format_exception(*sys.exc_info()))
-                                .split("Error:", 1)[1].replace("\\n", "").replace("']", ""))
+                                    write=True)
+            except _ncs.error.Error as err:
+                failures.append("\n{}: {}".format(self.state_filename_to_name(filename),
+                                                  str(err).replace("\n", " ")))
         if failures == []:
             return {'success': 'all states are consistent'}
         else:
             msg = 'states not consistent with the device model: {}'
-            return {'failure': msg.format(', '.join(failures))}
+            return {'failure': msg.format(''.join(failures))}
 
     def test_filename_load(self, trans, filename):
         trans.load_config(_ncs.maapi.CONFIG_C + _ncs.maapi.CONFIG_MERGE, filename)

@@ -10,6 +10,7 @@ import re
 from random import randint
 import functools
 import itertools
+import _ncs
 
 if sys.version_info >= (3, 0):
     def bytestream(data):
@@ -304,11 +305,12 @@ class TestSetup(TestBase):
 
 
 class LoadConfig(object):
+    exc_message = 'Error: {} cannot be loaded'
+
     def __init__(self, ncs, fail_states=[]):
         self.fail_states = fail_states
-        tcx_mock = mock.Mock(load_config=mock.Mock(side_effect=self.load_config))
-        tcx_class_mock = mock.Mock(return_value=tcx_mock)
-        ncs.data['maapi'].return_value = mock.Mock(attach=tcx_class_mock)
+        self.tcx_mock = mocklib.CxMgrMock(load_config=mock.Mock(side_effect=self.load_config))
+        ncs.data['maapi'].start_write_trans = lambda *args, **dargs: self.tcx_mock
         states_dir = os.path.join(TestBase.test_run_dir, 'states')
         self.sub_rx = re.compile(r'{}/(.*)\.state\.cfg'.format(states_dir))
         self.loaded_states = []
@@ -317,7 +319,7 @@ class LoadConfig(object):
         state = self.sub_rx.sub(r'\1', filename)
         self.loaded_states.append(state)
         if state in self.fail_states:
-            raise mocklib.MockException
+            raise _ncs.error.Error(self.exc_message.format(state))
 
 
 class TestStates(TestBase):
@@ -371,15 +373,18 @@ class TestStates(TestBase):
         self.setup_states_data(xpatch.system, state_path=path)
         output = self.invoke_action('import-state-files',
                                     file_path_pattern=os.path.join(path, '*1.state.cfg'),
+                                    format="c-style",
+                                    merge=False,
                                     overwrite=None)
         self.check_output(output)
         destdir = os.path.join(self.test_run_dir, 'states')
         states = sorted(state for state in self.states if state.endswith('1'))
         self.check_states(states)
+        test_data_p = 'devices device {} config\n{{}} test data'.format(mocklib.DEVICE_NAME)
         for state in states:
             filename = os.path.join(destdir, state + '.state.cfg')
             with open(filename) as state_file:
-                assert state_file.read() == '{} test data'.format(state)
+                assert state_file.read() == test_data_p.format(state)
             with open(filename + '.load') as metadata:
                 assert metadata.read() == config_op.state_metadata
 
@@ -416,7 +421,7 @@ class TestStates(TestBase):
     def test_check_states(self, xpatch):
         self.setup_states_data(xpatch.system)
         load_calls = LoadConfig(xpatch.ncs)
-        output = self.invoke_action('check-states', state_name_pattern=None)
+        output = self.invoke_action('check-states', state_name_pattern=None, validate=True)
         self.check_output(output)
         assert sorted(self.states) == sorted(load_calls.loaded_states)
 
@@ -425,12 +430,13 @@ class TestStates(TestBase):
         self.setup_states_data(xpatch.system)
         failures = ['state1', 'state2']
         load_calls = LoadConfig(xpatch.ncs, failures)
-        output = self.invoke_action('check-states', state_name_pattern=None)
+        output = self.invoke_action('check-states', state_name_pattern=None, validate=True)
         assert sorted(self.states) == sorted(load_calls.loaded_states)
-        fail_msg = 'states not consistent with the device model: '
+        fail_msg = 'states not consistent with the device model: \n'
         assert output.failure.startswith(fail_msg)
-        rest_msg = output.failure[len(fail_msg):]
-        assert sorted(failures) == sorted(rest_msg.split(', '))
+        rest_msgs = output.failure[len(fail_msg):].split('\n')
+        assert ['{}: {}'.format(state, load_calls.exc_message.format(state))
+                for state in sorted(failures)] == sorted(rest_msgs)
 
 
 class StopTestTimer(object):
@@ -656,7 +662,8 @@ class DrnedTransitionOutput(DrnedOutput):
 
 class DrnedTransitionOutputFailure(DrnedOutput):
     def expected_output(self):
-        yield drned_transition_output_filtered.format(state_to=self.state_data, compare_result='failed')
+        yield drned_transition_output_filtered.format(state_to=self.state_data,
+                                                      compare_result='failed')
 
     def output(self):
         yield drned_transition_output.format(state_to=self.state_data, compare_result='diff ')
