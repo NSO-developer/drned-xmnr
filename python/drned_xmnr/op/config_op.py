@@ -74,6 +74,7 @@ class RecordStateOp(ConfigOp):
     def _init_params(self, params):
         self.state_name = self.param_default(params, "state_name", "")
         self.include_rollbacks = self.param_default(params, "including_rollbacks", 0)
+        self.style_format = self.param_default(params, "format", "c-style")
 
     def perform(self):
         return self.run_with_trans(self._perform, write=True)
@@ -82,6 +83,7 @@ class RecordStateOp(ConfigOp):
         self.log.debug("config_record_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
         self.log.debug("incl_rollbacks="+str(self.include_rollbacks))
+        self.log.debug("style_format="+str(self.style_format))
         try:
             # list_rollbacks() returns one less rollback than the second argument,
             # i.e. send 2 to get 1 rollback. Therefore the +1
@@ -104,11 +106,37 @@ class RecordStateOp(ConfigOp):
             if index > 0:
                 state_name_index = state_name+"-"+str(index)
             state_filename = self.state_name_to_filename(state_name_index)
+            device_path = "/ncs:devices/device{"+self.dev_name+"}/config"
+            is_xml = "xml" == str(self.style_format)
+            format = _ncs.maapi.CONFIG_C
+            if is_xml:
+                format = _ncs.maapi.CONFIG_XML
             with open(state_filename, "wb") as state_file:
-                for data in self.save_config(trans,
-                                             _ncs.maapi.CONFIG_C,
-                                             "/ncs:devices/device{"+self.dev_name+"}/config"):
-                    state_file.write(data)
+                save_data = self.save_config(trans,format, device_path)
+                if is_xml:
+                    xslt_root = etree.XML('''\
+        <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+           <xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>
+           <xsl:strip-space elements="*"/>
+           <xsl:template xmlns:config="http://tail-f.com/ns/config/1.0" xmlns:ncs="http://tail-f.com/ns/ncs"
+                         match="/config:config/ncs:devices/ncs:device">
+              <xsl:apply-templates select="ncs:config"/>
+           </xsl:template>
+
+           <xsl:template xmlns:ncs="http://tail-f.com/ns/ncs" match="ncs:config">
+              <config xmlns="http://tail-f.com/ns/config/1.0">
+                <xsl:copy-of select="*"/>
+              </config>
+           </xsl:template>                                                                                                    
+        </xsl:stylesheet>''')
+                    tree = etree.fromstringlist(save_data)
+                    #run XSLT to remove /config/devices/device and wrap child elements in /config
+                    transform = etree.XSLT(xslt_root)
+                    xml_data = transform(tree)
+                    state_file.write(etree.tostring(xml_data, pretty_print=True))
+                else:
+                    for data in save_data:
+                        state_file.write(data)
             self.write_metadata(state_filename)
             state_filenames += [state_name_index]
             index += 1
