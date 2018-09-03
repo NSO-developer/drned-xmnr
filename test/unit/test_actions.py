@@ -36,6 +36,44 @@ device_data = '''\
     </config>
 '''
 
+test_state_data_xml = '''\
+    <config xmlns="http://tail-f.com/ns/config/1.0">
+      <devices xmlns="http://tail-f.com/ns/ncs">
+        <device>
+          <name>mock-device</name>
+          <address>127.0.0.1</address>
+          <port>2022</port>
+          <ssh/>
+          <connect-timeout/>
+          <read-timeout/>
+          <trace/>
+          <config>
+             <aaa xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-lib-cfg">
+              <diameter xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-diameter-cfg">
+                <origin>
+                  <realm>cisco.com</realm>
+                  <host>iotbng.cisco.com</host>
+                </origin>
+              </diameter>
+            </aaa>
+          </config>
+        </device>
+      </devices>
+    </config>
+'''
+
+test_state_data_xml_transformed = '''\
+<config xmlns="http://tail-f.com/ns/config/1.0" xmlns:ncs="http://tail-f.com/ns/ncs">
+  <aaa xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-lib-cfg">
+    <diameter xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-diameter-cfg">
+      <origin>
+        <realm>cisco.com</realm>
+        <host>iotbng.cisco.com</host>
+      </origin>
+    </diameter>
+  </aaa>
+</config>
+'''
 
 test_state_data = '''\
 test state data
@@ -357,6 +395,7 @@ class TestStates(TestBase):
         xpatch.system.socket_data(test_state_data.encode())
         output = self.invoke_action('record-state',
                                     state_name='test_state',
+                                    format="c-style",
                                     including_rollbacks=None)
         self.check_output(output)
         state_path = 'states/test_state' + base_op.XmnrBase.statefile_extension
@@ -365,6 +404,21 @@ class TestStates(TestBase):
             assert metadata.read() == config_op.state_metadata
         with open(os.path.join(self.test_run_dir, state_path)) as state_data:
             assert state_data.read() == test_state_data
+
+    @xtest_patch
+    def test_record_state_xml(self, xpatch):
+        xpatch.system.socket_data(test_state_data_xml.encode())
+        output = self.invoke_action('record-state',
+                                    state_name='test_state_xml',
+                                    format="xml",
+                                    including_rollbacks=None)
+        self.check_output(output)
+        state_path = 'states/test_state_xml' + base_op.XmnrBase.statefile_extension
+        assert os.path.exists(os.path.join(self.test_run_dir, state_path))
+        with open(os.path.join(self.test_run_dir, state_path + '.load')) as metadata:
+            assert metadata.read() == config_op.state_metadata
+        with open(os.path.join(self.test_run_dir, state_path)) as state_data:
+            assert state_data.read() == test_state_data_xml_transformed
 
     @xtest_patch
     def test_import_states(self, xpatch):

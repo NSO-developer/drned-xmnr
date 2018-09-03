@@ -106,11 +106,11 @@ class RecordStateOp(ConfigOp):
             state_filename = self.state_name_to_filename(state_name_index)
             device_path = "/ncs:devices/device{"+self.dev_name+"}/config"
             is_xml = "xml" == str(self.style_format)
-            format = _ncs.maapi.CONFIG_C
+            config_type = _ncs.maapi.CONFIG_C
             if is_xml:
-                format = _ncs.maapi.CONFIG_XML
+                config_type = _ncs.maapi.CONFIG_XML
             with open(state_filename, "wb") as state_file:
-                save_data = self.save_config(trans,format, device_path)
+                save_data = self.save_config(trans, config_type, device_path)
                 if is_xml:
                     xslt_root = etree.XML('''\
         <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
@@ -125,10 +125,10 @@ class RecordStateOp(ConfigOp):
               <config xmlns="http://tail-f.com/ns/config/1.0">
                 <xsl:copy-of select="*"/>
               </config>
-           </xsl:template>                                                                                                    
+           </xsl:template>
         </xsl:stylesheet>''')
                     tree = etree.fromstringlist(save_data)
-                    #run XSLT to remove /config/devices/device and wrap child elements in /config
+                    # run XSLT to remove /config/devices/device and wrap child elements in /config
                     transform = etree.XSLT(xslt_root)
                     xml_data = transform(tree)
                     state_file.write(etree.tostring(xml_data, pretty_print=True))
