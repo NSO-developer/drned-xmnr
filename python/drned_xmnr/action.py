@@ -12,6 +12,7 @@
 
 from __future__ import print_function
 
+import glob
 import sys
 import traceback
 
@@ -84,6 +85,39 @@ class ActionHandler(dp.Action):
             output.failure = result['failure']
 
 
+class CompletionHandler(dp.Action):
+
+    # @dp.Action.completion
+    # wrapper does not exist in PyAPI at the time of this implementation
+    def cb_completion(self, uinfo, cli_style, token, completion_char,
+                      kp, cmdpath, cmdparam_id, simpleType, extra):
+        self.log.debug("========== drned_xmnr cb_completion() ==========")
+        self.log.debug("thandle={0} usid={1}".format(uinfo.actx_thandle,
+                                                     uinfo.usid))
+        try:
+            # TODO - escape/sanitize input "token"
+            pattern_to_match = str(token)
+            if '*' not in pattern_to_match:
+                pattern_to_match += '*'
+            self.log.debug('Find completions for: \"' + pattern_to_match + '\"')
+            matched_paths = glob.glob(pattern_to_match)
+            tv = []
+            for path in matched_paths:
+                tv.append((dp.COMPLETION, str(path), None))
+            self.log.debug('Found matches:' + str(tv))
+            if tv:
+                _ncs.dp.action_reply_completion(uinfo, tv)
+            return _ncs.CONFD_OK
+
+        except Exception as e:
+            self.log.error(e)
+            self.log.error(traceback.format_exc())
+            raise
+        finally:
+            # cleanup from @.action wrapper
+            dp.return_worker_socket(self._state, self._make_key(uinfo))
+
+
 class XmnrDataHandler(object):
     def __init__(self, daemon, actionpoint, log=None, init_args=None):
         # FIXME: really experimental
@@ -110,6 +144,7 @@ class Xmnr(application.Application):
 
     def setup(self):
         self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler)
+        self.register_action('drned-xmnr-completion', CompletionHandler)
         self.register_service(ns.ns.callpoint_coverage_data, XmnrDataHandler)
         self.register_service(ns.ns.callpoint_xmnr_states, XmnrDataHandler)
 

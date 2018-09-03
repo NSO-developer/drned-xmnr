@@ -1,0 +1,43 @@
+<clispec xmlns="http://tail-f.com/ns/clispec/1.0" style="c">
+  <operationalMode>
+    <modifications>
+      <simpleType namespace="http://cisco.com/ns/drned-xmnr"
+                  name="filepath-pattern-type">
+        <callback>
+          <capi>
+            <completionpoint>drned-xmnr-completion</completionpoint>
+          </capi>
+        </callback>
+      </simpleType>
+      <simpleType namespace="http://cisco.com/ns/drned-xmnr"
+                  name="dirpath-type">
+        <callback>
+          <capi>
+            <completionpoint>drned-xmnr-completion</completionpoint>
+          </capi>
+        </callback>
+      </simpleType>
+    </modifications>
+  </operationalMode>
+
+  <configureMode>
+    <modifications>
+      <simpleType namespace="http://cisco.com/ns/drned-xmnr"
+                  name="filepath-pattern-type">
+        <callback>
+          <capi>
+            <completionpoint>drned-xmnr-completion</completionpoint>
+          </capi>
+        </callback>
+      </simpleType>
+      <simpleType namespace="http://cisco.com/ns/drned-xmnr"
+                  name="dirpath-type">
+        <callback>
+          <capi>
+            <completionpoint>drned-xmnr-completion</completionpoint>
+          </capi>
+        </callback>
+      </simpleType>
+    </modifications>
+  </configureMode>
+</clispec>
