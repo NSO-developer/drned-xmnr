@@ -99,12 +99,8 @@ class CompletionHandler(dp.Action):
             pattern_to_match = str(token)
             if '*' not in pattern_to_match:
                 pattern_to_match += '*'
-            self.log.debug('Find completions for: \"' + pattern_to_match + '\"')
             matched_paths = glob.glob(pattern_to_match)
-            tv = []
-            for path in matched_paths:
-                tv.append((dp.COMPLETION, str(path), None))
-            self.log.debug('Found matches:' + str(tv))
+            tv = [(dp.COMPLETION, str(path), None) for path in matched_paths]
             if tv:
                 _ncs.dp.action_reply_completion(uinfo, tv)
             return _ncs.CONFD_OK
