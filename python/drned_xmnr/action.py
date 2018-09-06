@@ -42,6 +42,7 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_setup_xmnr_: setup_op.SetupOp,
         ns.ns.drned_xmnr_delete_state_: config_op.DeleteStateOp,
         ns.ns.drned_xmnr_list_states_: config_op.ListStatesOp,
+        ns.ns.drned_xmnr_view_state_: config_op.ViewStateOp,
         ns.ns.drned_xmnr_record_state_: config_op.RecordStateOp,
         ns.ns.drned_xmnr_import_state_files_: config_op.ImportStateFiles,
         ns.ns.drned_xmnr_check_states_: config_op.CheckStates,

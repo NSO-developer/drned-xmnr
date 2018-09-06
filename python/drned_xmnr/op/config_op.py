@@ -80,15 +80,10 @@ class ViewStateOp(ConfigOp):
         state_filename = self.state_name_to_filename(state_name)
         if state_filename == []:
             raise ActionError('no such state: ' + self.state_name)
-        try:
-            f = open(state_filename, 'r')
-            try:
-                state_str = f.read()
-            except OSError:
-                pass
-        except:
-            return {'failure': "Could not view " + state_name}
-        return {'success': state_str}
+        with open(state_filename, 'r') as f:
+            state_str = f.read()
+            return {'success': state_str}
+        return {'failure': "Could not view " + state_name}
 
 
 class RecordStateOp(ConfigOp):
