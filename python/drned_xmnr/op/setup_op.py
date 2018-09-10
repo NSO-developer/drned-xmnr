@@ -32,7 +32,7 @@ class SetupOp(base_op.ActionBase):
                         os.path.join(os.path.dirname(self.dev_test_dir), 'package-meta-data.xml'))
         except OSError:
             raise ActionError("Failed to copy package-meta-data file.")
-        target = os.path.join(self.dev_test_dir, "drned")
+        target = os.path.join(self.dev_test_dir, "drned-skeleton")
         if self.overwrite and os.path.exists(target):
             try:
                 shutil.rmtree(target, ignore_errors=True)
@@ -41,6 +41,22 @@ class SetupOp(base_op.ActionBase):
                 pass
         try:
             shutil.copytree(self.drned_skeleton, target)
+        except OSError as ose:
+            if ose.errno == errno.EEXIST:
+                msg = "The target {0} already exists. Did you use `overwrite' parameter?" \
+                      .format(target)
+            else:
+                msg = "Failed to copy the `drned-skeleton' directory."
+            raise ActionError(msg)
+        target = os.path.join(self.dev_test_dir, "drned")
+        if self.overwrite and os.path.exists(target):
+            try:
+                shutil.rmtree(target, ignore_errors=True)
+                os.remove(target)
+            except OSError:
+                pass
+        try:
+            shutil.copytree(self.drned_submod, target)
         except OSError as ose:
             if ose.errno == errno.EEXIST:
                 msg = "The target {0} already exists. Did you use `overwrite' parameter?" \
@@ -56,7 +72,7 @@ class SetupOp(base_op.ActionBase):
         self.pkg_file = self.get_package(root)
         xmnr_pkg = root.packages.package['drned-xmnr'].directory
         self.drned_skeleton = os.path.join(xmnr_pkg, 'drned-skeleton')
-
+        self.drned_submod = os.path.join(xmnr_pkg, 'drned')
     def get_package(self, root):
         devtype = root.devices.device[self.dev_name].device_type
         if devtype.ne_type in (devtype.netconf, devtype.snmp):

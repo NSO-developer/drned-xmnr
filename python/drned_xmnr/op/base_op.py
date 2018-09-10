@@ -39,7 +39,7 @@ class XmnrBase(object):
         self.xmnr_directory = root.drned_xmnr.xmnr_directory
         self.log_filename = root.drned_xmnr.xmnr_log_file
         self.dev_test_dir = os.path.join(self.xmnr_directory, self.dev_name, 'test')
-        self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned')
+        self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
         try:
             os.makedirs(self.states_dir)
@@ -150,17 +150,20 @@ class ActionBase(XmnrBase):
         env = dict(os.environ)
         root = maagic.get_root(trans)
         drdir = root.drned_xmnr.drned_directory
-        if drdir is None:
+        if drdir == "env":
             try:
                 drdir = env['DRNED']
             except KeyError:
                 raise ActionError('DrNED installation directory not set; ' +
                                   'set /drned-xmnr/drned-directory or the ' +
                                   'environment variable DRNED')
+        elif drdir == "builtin" or drdir is None:
+            env['DRNED'] = os.path.join(self.dev_test_dir, 'drned')
+            drdir = env['DRNED']
         else:
             env['DRNED'] = drdir
         if 'PYTHONPATH' in env:
-            env['PYTHONPATH'] += os.pathsep + drdir
+            env['PYTHONPATH'] += os.pathsep + str(drdir)
         else:
             env['PYTHONPATH'] = drdir
         try:
@@ -177,7 +180,8 @@ class ActionBase(XmnrBase):
     def run_in_drned_env(self, args, timeout=120, outputfun=None):
         env = self.run_with_trans(self.setup_drned_env)
         self.log.debug("using env {0}\n".format(env))
-        self.log.debug("running", args)
+        self.log.debug("running args", args)
+        self.log.debug("drned_run_directory {0}\n".format(self.drned_run_directory))
         try:
             proc = subprocess.Popen(args,
                                     env=env,

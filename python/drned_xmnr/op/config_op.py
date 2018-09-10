@@ -255,8 +255,7 @@ class ImportStateFiles(ConfigOp):
     def create_state(self, source_file, state_file, flags):
         try:
             self.run_with_trans(lambda trans: self.run_create_state(trans, source_file, state_file,
-                                                                    flags), write=True,
-                                no_commit=True)
+                                                                    flags), write=True)
         except _ncs.error.Error as err:
             raise ActionError(os.path.basename(source_file) + " " +
                               str(err).replace("\n", ""))
