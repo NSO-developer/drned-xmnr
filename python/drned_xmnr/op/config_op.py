@@ -78,12 +78,12 @@ class ViewStateOp(ConfigOp):
         self.log.debug("config_view_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
         state_filename = self.state_name_to_filename(state_name)
-        if state_filename == []:
-            raise ActionError('no such state: ' + self.state_name)
-        with open(state_filename, 'r') as f:
-            state_str = f.read()
-            return {'success': state_str}
-        return {'failure': "Could not view " + state_name}
+        try:
+            with open(state_filename, 'r') as f:
+                state_str = f.read()
+                return {'success': state_str}
+        except:
+            return {'failure': "Could not view " + state_name}
 
 
 class RecordStateOp(ConfigOp):
