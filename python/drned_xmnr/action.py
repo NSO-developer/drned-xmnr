@@ -12,6 +12,7 @@
 
 from __future__ import print_function
 
+import os
 import glob
 import sys
 import traceback
@@ -94,19 +95,32 @@ class CompletionHandler(dp.Action):
         self.log.debug("========== drned_xmnr cb_completion() ==========")
         self.log.debug("thandle={0} usid={1}".format(uinfo.actx_thandle,
                                                      uinfo.usid))
+
+        def prep_path_str(path):
+            """ Add trailing '/' to an input path it is a directory. """
+            output = os.path.join(path, '') if os.path.isdir(path) else path
+            return str(output)
+
+        def hack_completions_list(completion_char, values):
+            """ Hack preventing CLI to add whitespace after the only
+                completion value (would end file path completion).
+                We don't want to see the '/CLONE' in '?' completions... """
+            # TAB or space pressed for completion, and there's only one directory
+            if completion_char in [9, 32] and len(values) == 1:
+                the_only_one = values[0]
+                if the_only_one.endswith('/'):
+                    values.append(the_only_one + '/CLONE')
+
         try:
-            # TODO - escape/sanitize input "token"
-            pattern_to_match = str(token)
-            if '*' not in pattern_to_match:
-                pattern_to_match += '*'
-            matched_paths = glob.glob(pattern_to_match)
-            tv = [(dp.COMPLETION, str(path), None) for path in matched_paths]
-            if tv:
+            matched_paths = glob.glob(str(token) + '*')
+            output_strings = [prep_path_str(path) for path in matched_paths]
+            if output_strings:
+                hack_completions_list(completion_char, output_strings)
+                tv = [(_ncs.dp.COMPLETION, item, None) for item in output_strings]
                 _ncs.dp.action_reply_completion(uinfo, tv)
             return _ncs.CONFD_OK
 
         except Exception as e:
-            self.log.error(e)
             self.log.error(traceback.format_exc())
             raise
         finally:
