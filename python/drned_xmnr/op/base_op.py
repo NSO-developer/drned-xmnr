@@ -163,7 +163,7 @@ class ActionBase(XmnrBase):
         else:
             env['DRNED'] = drdir
         if 'PYTHONPATH' in env:
-            env['PYTHONPATH'] += os.pathsep + str(drdir)
+            env['PYTHONPATH'] += os.pathsep + drdir
         else:
             env['PYTHONPATH'] = drdir
         try:
@@ -180,8 +180,7 @@ class ActionBase(XmnrBase):
     def run_in_drned_env(self, args, timeout=120, outputfun=None):
         env = self.run_with_trans(self.setup_drned_env)
         self.log.debug("using env {0}\n".format(env))
-        self.log.debug("running args", args)
-        self.log.debug("drned_run_directory {0}\n".format(self.drned_run_directory))
+        self.log.debug("running", args)
         try:
             proc = subprocess.Popen(args,
                                     env=env,
