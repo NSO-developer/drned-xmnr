@@ -160,6 +160,20 @@ module drned-xmnr {
             uses action-output-common;
           }
         }
+        tailf:action view-state {
+          tailf:info "View a saved state for this device.";
+          tailf:actionpoint drned-xmnr;
+          input {
+            leaf state-name {
+              type leafref {
+                path ../../states/state;
+              }
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
         tailf:action import-state-files {
           tailf:info "Convert a configuration file or files to a XMNR state file.";
           tailf:actionpoint drned-xmnr;

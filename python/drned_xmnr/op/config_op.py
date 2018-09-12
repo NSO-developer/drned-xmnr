@@ -66,6 +66,24 @@ class ListStatesOp(ConfigOp):
                 str([self.state_filename_to_name(st) for st in state_files])}
 
 
+class ViewStateOp(ConfigOp):
+    action_name = 'view state'
+
+    def _init_params(self, params):
+        self.state_name = params.state_name
+
+    def perform(self):
+        self.log.debug("config_view_state() with device {0}".format(self.dev_name))
+        state_name = self.state_name
+        state_filename = self.state_name_to_filename(state_name)
+        try:
+            with open(state_filename, 'r') as f:
+                state_str = f.read()
+                return {'success': state_str}
+        except:
+            return {'failure': "Could not view " + state_name}
+
+
 class RecordStateOp(ConfigOp):
     action_name = 'record state'
 
