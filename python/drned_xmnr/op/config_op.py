@@ -39,7 +39,7 @@ class DeleteStateOp(ConfigOp):
         state_filename_pattern = self.state_name_to_filename(name_or_pattern)
         state_filenames = glob.glob(state_filename_pattern)
         if state_filenames == []:
-            raise ActionError('no such states: ' + self.state_name)
+            raise ActionError("no such states: {0}".format(self.state_name))
         for state_filename in state_filenames:
             try:
                 os.remove(state_filename)

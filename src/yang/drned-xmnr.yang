@@ -72,7 +72,7 @@ module drned-xmnr {
       leaf cli {
         tailf:info "CLI output detail level";
         type filter;
-        default all;
+        default drned-overview;
       }
       leaf redirect {
         tailf:info "File where to redirect the CLI output";
