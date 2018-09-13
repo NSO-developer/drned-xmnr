@@ -25,8 +25,20 @@ module drned-xmnr {
 
   container drned-xmnr {
     leaf drned-directory {
-      tailf:info "DrNED installation directory; if unset, environment variable is used";
-      type string;
+      tailf:info "DrNED installation directory; if unset, the built-in DrNED 
+                  submodule is used";
+      type union {
+        type enumeration {
+          enum builtin {
+            tailf:info "Use the built-in DrNED submodule";
+          }
+          enum env {
+            tailf:info "Use the DRNED environment variable";
+          }
+        }
+        type string;
+      }
+      default builtin;
     }
     leaf xmnr-directory {
       tailf:info "Directory where XMNR data is stored";

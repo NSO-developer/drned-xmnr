@@ -30,17 +30,40 @@ class SetupOp(base_op.ActionBase):
         try:
             shutil.copy(self.pkg_file,
                         os.path.join(os.path.dirname(self.dev_test_dir), 'package-meta-data.xml'))
-        except OSError:
-            raise ActionError("Failed to copy package-meta-data file.")
+        except OSError as ose:
+            msg = "Failed to copy package-meta-data file {0}".format(os.strerror(ose.errno))
+            raise ActionError(msg)
+        target = os.path.join(self.dev_test_dir, "drned-skeleton")
+        if self.overwrite and os.path.exists(target):
+            try:
+                shutil.rmtree(target, ignore_errors=True)
+                os.remove(target)
+            except OSError as ose:
+                if ose.errno != errno.ENOENT:
+                    msg = "Failed to remove the old drned-skeleton directory {0}" \
+                          .format(os.strerror(ose.errno))
+                    raise ActionError(msg)
+        try:
+            shutil.copytree(self.drned_skeleton, target)
+        except OSError as ose:
+            if ose.errno == errno.EEXIST:
+                msg = "The target {0} already exists. Did you use `overwrite' parameter?" \
+                      .format(target)
+            else:
+                msg = "Failed to copy the `drned-skeleton' directory."
+            raise ActionError(msg)
         target = os.path.join(self.dev_test_dir, "drned")
         if self.overwrite and os.path.exists(target):
             try:
                 shutil.rmtree(target, ignore_errors=True)
                 os.remove(target)
-            except OSError:
-                pass
+            except OSError as ose:
+                if ose.errno != errno.ENOENT:		
+                    msg = "Failed to remove the old drned directory {0}" \
+                          .format(os.strerror(ose.errno))
+                    raise ActionError(msg)
         try:
-            shutil.copytree(self.drned_skeleton, target)
+            shutil.copytree(self.drned_submod, target)
         except OSError as ose:
             if ose.errno == errno.EEXIST:
                 msg = "The target {0} already exists. Did you use `overwrite' parameter?" \
@@ -56,7 +79,7 @@ class SetupOp(base_op.ActionBase):
         self.pkg_file = self.get_package(root)
         xmnr_pkg = root.packages.package['drned-xmnr'].directory
         self.drned_skeleton = os.path.join(xmnr_pkg, 'drned-skeleton')
-
+        self.drned_submod = os.path.join(xmnr_pkg, 'drned')
     def get_package(self, root):
         devtype = root.devices.device[self.dev_name].device_type
         if devtype.ne_type in (devtype.netconf, devtype.snmp):
@@ -98,12 +121,23 @@ class SetupOp(base_op.ActionBase):
         if self.overwrite or not os.path.exists(self.cfg_file):
             self.run_with_trans(self.format_device_cfg)
         ncs_target = os.path.join(self.drned_run_directory, 'drned-ncs')
-        if self.overwrite or not os.path.exists(ncs_target):
+        if self.overwrite and os.path.exists(ncs_target):
             try:
                 os.remove(ncs_target)
-            except OSError:
-                pass
+            except OSError as ose:
+                if ose.errno != errno.ENOENT:
+                    msg = "Failed to remove the old drned-ncs directory {0}" \
+                          .format(os.strerror(ose.errno))
+                    raise ActionError(msg)
+        try:
             os.symlink(os.getcwd(), ncs_target)
+        except OSError as ose:
+            if ose.errno == errno.EEXIST:
+                msg = "The target {0} already exists. Did you use `overwrite' parameter?" \
+                      .format(ncs_target)
+            else:
+                msg = "Failed to symlink the the target {}".format(ncs_target)
+            raise ActionError(msg)
 
     def format_device_cfg(self, trans):
         def del_element(elem, name):

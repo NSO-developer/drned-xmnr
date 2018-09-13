@@ -39,7 +39,7 @@ class DeleteStateOp(ConfigOp):
         state_filename_pattern = self.state_name_to_filename(name_or_pattern)
         state_filenames = glob.glob(state_filename_pattern)
         if state_filenames == []:
-            raise ActionError('no such states: ' + self.state_name)
+            raise ActionError("no such states: {0}".format(self.state_name))
         for state_filename in state_filenames:
             try:
                 os.remove(state_filename)
@@ -273,8 +273,7 @@ class ImportStateFiles(ConfigOp):
     def create_state(self, source_file, state_file, flags):
         try:
             self.run_with_trans(lambda trans: self.run_create_state(trans, source_file, state_file,
-                                                                    flags), write=True,
-                                no_commit=True)
+                                                                    flags), write=True)
         except _ncs.error.Error as err:
             raise ActionError(os.path.basename(source_file) + " " +
                               str(err).replace("\n", ""))
