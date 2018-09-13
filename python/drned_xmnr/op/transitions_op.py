@@ -47,7 +47,9 @@ class TransitionsOp(base_op.ActionBase):
         return filtering.build_filter(self, level, writer)
 
     def drned_run(self, drned_args, timeout=120):
-        args = ["-s", "--tb=short", "--device="+self.dev_name, "--unreserved"] + drned_args
+        args = ["-s", "--tb=short", "--device="+self.dev_name] + drned_args
+        if not self.using_builtin_drned:
+            args.append("--unreserved")
         args.insert(0, "py.test")
         self.log.debug("drned: {0}".format(args))
         return self.run_in_drned_env(args, timeout)

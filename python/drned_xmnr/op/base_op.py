@@ -40,6 +40,7 @@ class XmnrBase(object):
         self.log_filename = root.drned_xmnr.xmnr_log_file
         self.dev_test_dir = os.path.join(self.xmnr_directory, self.dev_name, 'test')
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
+        self.using_builtin_drned = root.drned_xmnr.drned_directory == "builtin"
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
         try:
             os.makedirs(self.states_dir)
