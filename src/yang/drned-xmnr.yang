@@ -23,6 +23,13 @@ module drned-xmnr {
     }
   }
 
+  typedef filepath-pattern-type {
+    type string;
+  }
+  typedef dirpath-type {
+    type string;
+  }
+
   container drned-xmnr {
     leaf drned-directory {
       tailf:info "DrNED installation directory; if unset, the built-in DrNED 
@@ -36,13 +43,13 @@ module drned-xmnr {
             tailf:info "Use the DRNED environment variable";
           }
         }
-        type string;
+        type dirpath-type;
       }
       default builtin;
     }
     leaf xmnr-directory {
       tailf:info "Directory where XMNR data is stored";
-      type string;
+      type dirpath-type;
       default "/tmp/xmnr";
     }
     leaf xmnr-log-file {
@@ -191,7 +198,7 @@ module drned-xmnr {
           tailf:actionpoint drned-xmnr;
           input {
             leaf file-path-pattern {
-              type string;
+              type filepath-pattern-type;
               mandatory true;
             }
             leaf format {
