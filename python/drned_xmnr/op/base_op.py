@@ -158,10 +158,11 @@ class ActionBase(XmnrBase):
                                   'set /drned-xmnr/drned-directory or the ' +
                                   'environment variable DRNED')
         elif drdir == "builtin" or drdir is None:
-            env['DRNED'] = os.path.join(self.dev_test_dir, 'drned')
-            drdir = env['DRNED']
+            drdir = os.path.join(self.dev_test_dir, 'drned')
         else:
-            env['DRNED'] = drdir
+            pass
+        drdir = os.path.abspath(drdir)
+        env['DRNED'] = drdir
         if 'PYTHONPATH' in env:
             env['PYTHONPATH'] += os.pathsep + drdir
         else:
