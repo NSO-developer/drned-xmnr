@@ -159,8 +159,6 @@ class ActionBase(XmnrBase):
                                   'environment variable DRNED')
         elif drdir == "builtin" or drdir is None:
             drdir = os.path.join(self.dev_test_dir, 'drned')
-        else:
-            pass
         drdir = os.path.abspath(drdir)
         env['DRNED'] = drdir
         if 'PYTHONPATH' in env:

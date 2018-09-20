@@ -32,8 +32,8 @@ module drned-xmnr {
 
   container drned-xmnr {
     leaf drned-directory {
-      tailf:info "DrNED installation directory; if unset, the built-in DrNED 
-                  submodule is used";
+      tailf:info "DrNED installation directory; either absolute or relative
+                  path.  If unset, the built-in DrNED submodule is used";
       type union {
         type enumeration {
           enum builtin {
@@ -48,7 +48,8 @@ module drned-xmnr {
       default builtin;
     }
     leaf xmnr-directory {
-      tailf:info "Directory where XMNR data is stored";
+      tailf:info "Directory where XMNR data is stored; either absolute or
+                  relative path.";
       type dirpath-type;
       default "/tmp/xmnr";
     }
