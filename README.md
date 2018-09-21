@@ -76,7 +76,12 @@ more details about the problem in case of failure).
 Your main tools for debugging issues are logs. 
 
   * First you have the DrNED log that you control the filtering of via
-    `/drned-xmnr/log-detail/cli`. Set it to `all` when debugging issues. 
+    `/drned-xmnr/log-detail/cli` and output via `/drned-xmnr/log-detail/redirect`. 
+    In an automated test environment, you would normally set the cli detail to 
+    `drned-overview` to get the DrNED reports, and you would likely want to
+    redirect the output to a file. When debugging issues, you may want to remove
+    the redirect to file and output everything to your CLI console with the 
+    log-detail set to `all`. 
   * Equally useful is the ncs-python-vm-drned-xmnr.log that you control through
     `/python-vm/logging/vm-levels/drned-xmnr/level/`. To maximize the information
     captured by this log, set to `level-debug`. The log can be found in the
