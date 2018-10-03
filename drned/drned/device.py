@@ -14,6 +14,12 @@ from lxml import etree
 
 INDENT = "=" * 30 + " "
 
+COMMIT_MSG = re.compile(r"""\s*
+System message at ....-..-.. ..:..:..\.\.\.\s*
+Commit performed by .* via .* using .*
+""")
+
+
 class Device(object):
     """The abstraction of a NCS/NED device.
 
@@ -764,6 +770,9 @@ class Device(object):
                 self.last_prompt = found_prompt.group(1)
             # Alarms give an extra prompt and must be ignored
             if self.ncs.before.find("ALARM") >= 0:
+                continue
+            # Commit messages in parallel sessions must be ignored too
+            if COMMIT_MSG.search(self.ncs.before) is not None:
                 continue
             # Remove \r, \b and prompt to unclutter log
             self.ncs.before = self.ncs.before.replace("\r", "")
