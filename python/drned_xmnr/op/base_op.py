@@ -74,7 +74,7 @@ class ActionBase(XmnrBase):
 
     @contextmanager
     def open_log_file(self, path):
-        with open(os.path.join(self.xmnr_directory, path), 'a') as lf:
+        with open(os.path.join(self.dev_test_dir, path), 'a') as lf:
             msg = '{} - {}'.format(dt.now(), self.action_name)
             lf.write('\n{}\n{}\n{}\n'.format('-'*len(msg), msg, '-'*len(msg)))
             yield lf
