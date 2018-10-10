@@ -100,3 +100,9 @@ that by translating hyphens to tildes (`~`) in file names (but not in device
 names), so it should be possible to use hyphens in state names (again: not in
 device names), but due to the workaround, it is not possible to use tildes
 there.
+
+## Testing the testing tool
+
+If you intend to modify or extend the tool, you may want to test your changes -
+please refer to the test [README](test/README.md); note that the tests add few
+additional prerequisities, see there.
