@@ -1,15 +1,4 @@
 # -*- mode: python; python-indent: 4 -*-
-"""
-*********************************************************************
-* (C) 2016 Tail-f Systems                                           *
-* NETCONF/YANG drned_xmnr                                           *
-*                                                                   *
-* Your Swiss army knife when it somes to basic NETCONF,             *
-* YANG module collection, NSO NETCONF NED building, installation    *
-* and testing.                                                      *
-*********************************************************************
-"""
-
 from __future__ import print_function
 
 import os
