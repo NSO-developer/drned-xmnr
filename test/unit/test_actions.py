@@ -310,7 +310,9 @@ class TestStartup(TestBase):
     def test_registry(self):
         xmnr = action.Xmnr()
         xmnr.setup()
-        xmnr.register_action.assert_called_once_with('drned-xmnr', action.ActionHandler)
+        xmnr.register_action.assert_has_calls([mock.call('drned-xmnr', action.ActionHandler),
+                                               mock.call('drned-xmnr-completion',
+                                                         action.CompletionHandler)])
         xmnr.register_service.assert_has_calls([mock.call('coverage-data', action.XmnrDataHandler),
                                                 mock.call('xmnr-states', action.XmnrDataHandler)])
 
@@ -323,6 +325,8 @@ class TestSetup(TestBase):
                                                       'drned-skeleton',
                                                       'skeleton'),
                                          contents='drned skeleton')
+        system.ff_patcher.fs.create_dir(os.path.join(mocklib.XMNR_INSTALL,
+                                                     'drned'))
 
     def setup_ncs_data(self, ncs):
         device = ncs.data['device']
@@ -335,7 +339,7 @@ class TestSetup(TestBase):
         xpatch.system.socket_data(device_data.encode())
         output = self.invoke_action('setup-xmnr', overwrite=True)
         self.check_output(output)
-        with open(os.path.join(self.test_run_dir, 'drned/skeleton')) as skel_test:
+        with open(os.path.join(self.test_run_dir, 'drned-skeleton', 'skeleton')) as skel_test:
             assert skel_test.read() == 'drned skeleton'
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         popen_mock.assert_called_once()
@@ -523,7 +527,7 @@ class TransitionsTestBase(TestBase):
 
 
 class TestTransitions(TransitionsTestBase):
-    def check_drned_call(self, call, state=None, rollback=False, fnames=None):
+    def check_drned_call(self, call, state=None, rollback=False, fnames=None, builtin_drned=False):
         if fnames is None:
             test = 'test_template_single' if rollback else 'test_template_raw'
             test_args = ['-k {}[../states/{}.state.cfg]'.format(test, state)]
@@ -535,9 +539,11 @@ class TestTransitions(TransitionsTestBase):
             if not rollback:
                 test_args += ['--end-op', '']
             test_args += ['--unsorted', '-k', 'test_template_set']
-        args = ['py.test', '-s', '--tb=short', '--device=' + mocklib.DEVICE_NAME, '--unreserved']
+        args = ['py.test', '-s', '--tb=short', '--device=' + mocklib.DEVICE_NAME]
+        if not builtin_drned:
+            args.append('--unreserved')
         args += test_args
-        assert call[0] == (args,)
+        assert sorted(call[0][0]) == sorted(args)
 
     @xtest_patch
     def test_transition_to_state(self, xpatch):
@@ -571,6 +577,18 @@ class TestTransitions(TransitionsTestBase):
         popen_mock.assert_not_called()
         assert output.failure is not None
         assert output.failure.startswith('No such state')
+
+    @xtest_patch
+    def test_transition_builtin(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        root = xpatch.ncs.data['root']
+        root.drned_xmnr.drned_directory = 'builtin'
+        output = self.invoke_action('transition-to-state',
+                                    state_name='state1',
+                                    rollback=False)
+        self.check_output(output)
+        popen_mock = xpatch.system.patches['subprocess']['Popen']
+        self.check_drned_call(popen_mock.call_args, 'state1', rollback=False, builtin_drned=True)
 
     @xtest_patch
     def test_explore_states(self, xpatch):

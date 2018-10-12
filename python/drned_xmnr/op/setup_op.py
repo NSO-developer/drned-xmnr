@@ -69,7 +69,7 @@ class SetupOp(base_op.ActionBase):
                 msg = "The target {0} already exists. Did you use `overwrite' parameter?" \
                       .format(target)
             else:
-                msg = "Failed to copy the `drned' directory."
+                msg = "Failed to copy the `drned' directory: " + ose.strerror
             raise ActionError(msg)
         self.setup_drned()
         return {'success': "XMNR set up for device " + self.dev_name}
