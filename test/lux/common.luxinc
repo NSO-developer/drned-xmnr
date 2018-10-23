@@ -70,4 +70,6 @@
     ?SH-PROMPT:
     !ncs-netsim stop
     ?SH-PROMPT:
+    !make clean
+    ?SH-PROMPT:
 [endmacro]
