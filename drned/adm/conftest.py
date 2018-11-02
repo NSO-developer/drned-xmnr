@@ -10,6 +10,7 @@ from drned.fixtures import init
 from drned.fixtures import init_op
 from drned.fixtures import iteration
 from drned.fixtures import op
+from drned.fixtures import ordered
 from drned.fixtures import pytest_addoption
 from drned.fixtures import pytest_generate_tests
 from drned.fixtures import root

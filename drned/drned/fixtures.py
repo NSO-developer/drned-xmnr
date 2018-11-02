@@ -35,6 +35,8 @@ def pytest_addoption(parser):
                      help="select iterations to run")
     parser.addoption("--op", action="append", dest="op",
                      help="operations to perform")
+    parser.addoption("--ordered", choices=["true", "false"], default="true",
+                     help="how to order config files (fnames)"),
     parser.addoption("--root", action="store", dest="root",
                      help="select traversal root")
     parser.addoption("--use", action="append", dest="use",
@@ -151,6 +153,11 @@ def device_raw(request):
 @pytest.yield_fixture(scope=SCOPE)
 def yangpath(request):
     yield request.config.getoption("--yangpath")
+
+@pytest.yield_fixture(scope=SCOPE)
+def ordered(request):
+    option = request.config.getoption("--ordered")
+    yield "true" if option is None else option
 
 @pytest.yield_fixture(scope=SCOPE)
 def schema(request):
