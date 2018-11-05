@@ -25,20 +25,23 @@ The only prerequisite is the DrNED dependencies, in particular `pytest`,
 ## What it can do
 
 Apart from this file that presents an overview of the tool's capabilities,
-the main documentation is the drned-xmnr.yang file, where each command is 
+the main documentation is the drned-xmnr.yang file, where each command is
 described.
 
 Before working with this tool you need a device configured in NSO and
 connected.  For doing that you may want to use the
 [Pioneer](https://github.com/NSO-developer/pioneer) tool.
 
-DrNED Examiner has two configuration parameters: `/drned-xmnr/xmnr-directory`
-and `/drned-xmnr/drned-directory`.  The former sets the location where the tool
-stores its data and defaults to `/tmp/xmnr`; the latter default to the built-in
-DrNED version that come with this NSO package. For using a different version of
-DrNED, you can point to a different DrNED installation directory than the default
-one.  (As an alternative, set the environment variable `DRNED` before starting
-NSO and configure the drned-directory to `env`)
+DrNED Examiner has three configuration parameters: `/drned-xmnr/xmnr-directory`,
+ `/drned-xmnr/drned-directory` and
+ `/drned-xmnr/ncs-ipc-port`. `/drned-xmnr/xmnr-directory` sets the location where
+ the tool stores its data and defaults to `/tmp/xmnr`;
+ `/drned-xmnr/drned-directory` default to the built-in DrNED version that come
+ with this NSO package. For using a different version of DrNED, you can point to a
+ different DrNED installation directory than the default one.  (As an alternative,
+ set the environment variable `DRNED` before starting NSO and configure the
+ drned-directory to `env`) Finally, `/drned-xmnr/ncs-ipc-port` allows you to use a
+ different IPC port for NSO than the default value (4569).
 
 The following sections briefly describe actions implemented by the tool.  All
 actions have only a textual output with fields `success` (populated if the
@@ -68,20 +71,20 @@ more details about the problem in case of failure).
  * **Coverage**
 
     DrNED is capable of reporting how big part of the device model your tests have
-    covered; the tool implements a simple wrapper around this DrNED capability, 
+    covered; the tool implements a simple wrapper around this DrNED capability,
     including status data providing the coverage report in a structured form.
 
 ## Debugging issues
 
-Your main tools for debugging issues are logs. 
+Your main tools for debugging issues are logs.
 
   * First you have the DrNED log that you control the filtering of via
-    `/drned-xmnr/log-detail/cli` and output via `/drned-xmnr/log-detail/redirect`. 
-    In an automated test environment, you would normally set the cli detail to 
+    `/drned-xmnr/log-detail/cli` and output via `/drned-xmnr/log-detail/redirect`.
+    In an automated test environment, you would normally set the cli detail to
     `drned-overview` to get the DrNED reports, and you would likely want to
     redirect the output to a file. When debugging issues, you may want to remove
-    the redirect to file and output everything to your CLI console with the 
-    log-detail set to `all`. 
+    the redirect to file and output everything to your CLI console with the
+    log-detail set to `all`.
   * Equally useful is the ncs-python-vm-drned-xmnr.log that you control through
     `/python-vm/logging/vm-levels/drned-xmnr/level/`. To maximize the information
     captured by this log, set to `level-debug`. The log can be found in the
@@ -90,7 +93,7 @@ Your main tools for debugging issues are logs.
     with the (virtual/physical) device. Set the `/devices/device/<my-device>/trace`
     to `pretty` or `raw` to capture the communication between the NED and the device.
   * For other issues detected and reported by NSO, refer to the NSO administration
-    guide for troubleshooting adivce. 
+    guide for troubleshooting adivce.
 
 ## Common problems
 

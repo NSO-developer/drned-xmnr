@@ -37,6 +37,7 @@ class XmnrBase(object):
     def _setup_directories(self, trans):
         root = maagic.get_root(trans)
         self.xmnr_directory = root.drned_xmnr.xmnr_directory
+        self.ncs_ipc_port = root.drned_xmnr.ncs_ipc_port
         self.log_filename = root.drned_xmnr.xmnr_log_file
         self.dev_test_dir = os.path.join(self.xmnr_directory, self.dev_name, 'test')
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
@@ -209,7 +210,7 @@ class ActionBase(XmnrBase):
                 id=save_id,
                 flags=0,
                 ip='127.0.0.1',
-                port=_ncs.NCS_PORT)
+                port=self.ncs_ipc_port)
             while True:
                 config_data = ssocket.recv(4096)
                 if not config_data:

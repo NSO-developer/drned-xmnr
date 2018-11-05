@@ -87,6 +87,11 @@ module drned-xmnr {
         type string;
       }
     }
+    leaf ncs-ipc-port {
+      tailf:info "NCS IPC port. Change this if using non-standard value";
+      type uint16;
+      default 4569;
+    }
   }
 
   augment /ncs:devices/ncs:device {
