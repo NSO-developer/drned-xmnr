@@ -259,7 +259,12 @@ class EventGenerator(Closeable):
         super(EventGenerator, self).__init__(cort, consumer)
 
     def close(self):
-        self.consumer.send(TerminateEvent())
+        try:
+            # we need to let the consumer know; but it can raise
+            # StopIteration
+            self.consumer.send(TerminateEvent())
+        except StopIteration:
+            pass
         self.coroutine.close()
 
 
@@ -272,13 +277,13 @@ line_regexp = re.compile('''\
 (?P<transition>Transition [0-9]*/[0-9]*: .* ==> .*)|\
 (?P<init_failed>Failed to initialize state .*)|\
 (?P<trans_failed>Transition failed)|\
-(?P<drned>={30} (?P<drned_op>rload|commit|compare_config|rollback)\(.*\))|\
-(?P<no_modifs>% No modifications to commit\.)|\
-(?P<commit_queue>commit-queue \{)|\
+(?P<drned>={30} (?P<drned_op>rload|commit|compare_config|rollback)\\(.*\\))|\
+(?P<no_modifs>% No modifications to commit\\.)|\
+(?P<commit_queue>commit-queue \\{)|\
 (?P<commit_result> *status (?P<result>completed|failed))|\
 (?P<failure_reason> *reason (?P<reason>RPC error .*))|\
 (?P<teardown>### TEARDOWN, RESTORE DEVICE ###)|\
-(?P<restore>={30} load\(drned-work/before-session.xml\))|\
+(?P<restore>={30} load\\(drned-work/before-session.xml\\))|\
 (?P<diff>diff *)\
 )$''')
 

@@ -928,7 +928,7 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         with open(os.path.join(xmnr_dir, 'redirect.output')) as r_out:
             assert r_out.readline() == '\n'
             assert re.match('-+$', r_out.readline()) is not None
-            assert re.match('[0-9]{4}(-[0-9]{2}){2} [0-9]{2}(:[0-9]{2}){2}\.[0-9]* - walk states$',
+            assert re.match(r'[0-9]{4}(-[0-9]{2}){2} [0-9]{2}(:[0-9]{2}){2}\.[0-9]* - walk states$',
                             r_out.readline()) is not None
             assert re.match('-+$', r_out.readline()) is not None
             assert ''.join(drned_output.expected_output()) == r_out.read()
