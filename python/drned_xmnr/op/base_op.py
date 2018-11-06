@@ -209,7 +209,7 @@ class ActionBase(XmnrBase):
                 id=save_id,
                 flags=0,
                 ip='127.0.0.1',
-                port=_ncs.NCS_PORT)
+                port=_ncs.PORT)
             while True:
                 config_data = ssocket.recv(4096)
                 if not config_data:
