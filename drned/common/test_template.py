@@ -91,7 +91,7 @@ def test_template_single(device, template, op):
         pytest.fail("The state after rollback differs from before load. " +
                     "Please check before-test.cfg and after-test.cfg")
 
-def test_template_set(device, init, fname, init_op, op, end_op):
+def test_template_set(device, init, fname, init_op, op, end_op, ordered):
     """Normal test of template file set, defined by naming convention:
 
     first_set:0.txt
@@ -146,9 +146,9 @@ def test_template_set(device, init, fname, init_op, op, end_op):
     Returns:
         nothing
     """
-    _drned_single_set(device, init, fname, init_op, op, end_op, 1)
+    _drned_single_set(device, init, fname, init_op, op, end_op, 1, ordered)
 
-def test_template_union(device, init, fname, init_op, iteration):
+def test_template_union(device, init, fname, init_op, iteration, ordered):
     """Test of all combinations of file sets.
 
     This test is using the device fixture, which means that the device
@@ -188,7 +188,7 @@ def test_template_union(device, init, fname, init_op, iteration):
                 end_op = []
             # Load the entire collection of sets
             commit_id_base = len(device.commit_id)
-            _drned_single_set(device, init, fname, init_op, op, end_op, it)
+            _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered)
             # Final commit
             if it in [5, 6]:
                 device.commit_compare(dry_run=False)
@@ -200,7 +200,7 @@ def test_template_union(device, init, fname, init_op, iteration):
                 device.rollback_compare(id=device.commit_id[i], dry_run=False)
 
 # Test single set
-def _drned_single_set(device, init, fname, init_op, op, end_op, it):
+def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
     src_in_set = False
     device.save("drned-work/before-test.cfg")
     # Load init files
@@ -216,7 +216,9 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it):
     if not fname:
         pytest.fail("Please specify a file with the --fname option")
     # Divide in sets
-    tsets = sorted(list(set([re.sub(":[^\.]*", ":*", f) for f in fname])))
+    tsets = [re.sub(":[^\.]*", ":*", f) for f in fname]
+    if ordered == "true":
+        tsets = sorted(list(set(tsets)))
     if not it % 2:
         tsets = reversed(tsets)
     if op == None:
