@@ -207,7 +207,7 @@ class WalkTransitionsOp(ExploringOp):
         # if rollback is not desired, we need to set it to an empty list
         fname_args = ["--fname=" + filename for filename in self.state_filenames]
         end_op = [] if self.rollback else ["--end-op", ""]
-        result, _ = self.drned_run(fname_args + end_op + ["--unsorted", "-k", "test_template_set"])
+        result, _ = self.drned_run(fname_args + end_op + ["--ordered=false", "-k", "test_template_set"])
         self.log.debug("DrNED completed: {0}".format(result))
         if result != 0:
             raise ActionError("drned failed")

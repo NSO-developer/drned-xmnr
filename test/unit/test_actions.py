@@ -538,7 +538,7 @@ class TestTransitions(TransitionsTestBase):
                          for state in self.states]
             if not rollback:
                 test_args += ['--end-op', '']
-            test_args += ['--unsorted', '-k', 'test_template_set']
+            test_args += ['--ordered=false', '-k', 'test_template_set']
         args = ['py.test', '-s', '--tb=short', '--device=' + mocklib.DEVICE_NAME]
         if not builtin_drned:
             args.append('--unreserved')
