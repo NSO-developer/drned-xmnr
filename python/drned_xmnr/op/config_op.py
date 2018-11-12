@@ -134,11 +134,12 @@ class RecordStateOp(ConfigOp):
         <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
            <xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>
            <xsl:strip-space elements="*"/>
-           <xsl:template xmlns:config="http://tail-f.com/ns/config/1.0" xmlns:ncs="http://tail-f.com/ns/ncs"
+           <xsl:template xmlns:config="http://tail-f.com/ns/config/1.0"
+                         xmlns:ncs="http://tail-f.com/ns/ncs"
                          match="/config:config/ncs:devices/ncs:device">
-              <config xmlns="http://tail-f.com/ns/config/1.0">
+              <config:config>
                 <xsl:apply-templates select="ncs:config"/>
-              </config>
+              </config:config>
            </xsl:template>
 
            <xsl:template xmlns:ncs="http://tail-f.com/ns/ncs" match="ncs:config">
