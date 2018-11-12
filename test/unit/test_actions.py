@@ -922,10 +922,9 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
     def test_filter_redirect(self, xpatch):
         self.setup_filter(xpatch, 'drned-overview', 'redirect.output')
         self.setup_states_data(xpatch.system)
-        xmnr_dir = mocklib.XMNR_DIRECTORY
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
         self.invoke_action('walk-states', states=self.states, rollback=False)
-        with open(os.path.join(xmnr_dir, 'redirect.output')) as r_out:
+        with open(os.path.join(self.test_run_dir, 'redirect.output')) as r_out:
             assert r_out.readline() == '\n'
             assert re.match('-+$', r_out.readline()) is not None
             assert re.match('[0-9]{4}(-[0-9]{2}){2} [0-9]{2}(:[0-9]{2}){2}\.[0-9]* - walk states$',
