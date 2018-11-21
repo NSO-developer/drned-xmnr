@@ -63,7 +63,7 @@ test_state_data_xml = '''\
 '''
 
 test_state_data_xml_transformed = '''\
-<config xmlns="http://tail-f.com/ns/config/1.0" xmlns:ncs="http://tail-f.com/ns/ncs">
+<config:config xmlns:config="http://tail-f.com/ns/config/1.0" xmlns:ncs="http://tail-f.com/ns/ncs">
   <aaa xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-lib-cfg">
     <diameter xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-diameter-cfg">
       <origin>
@@ -72,7 +72,7 @@ test_state_data_xml_transformed = '''\
       </origin>
     </diameter>
   </aaa>
-</config>
+</config:config>
 '''
 
 test_state_data = '''\
