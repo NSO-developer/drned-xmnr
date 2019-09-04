@@ -1,0 +1,14 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+pexpect = "*"
+pytest = ">=3.0"
+lxml = "*"
+
+[requires]
+python_version = "2.7"
