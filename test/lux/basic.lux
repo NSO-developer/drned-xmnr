@@ -6,8 +6,10 @@
     [invoke ned-test-setup]
     !ncs-make-package --netconf-ned ../../yang ned
     [invoke shell-check]
+    [timeout 10]
     !make -C ned/src all
     [invoke shell-check]
+    [timeout]
     [progress create and start the netsim]
     !cd ..
     !ncs-netsim delete-network
@@ -36,7 +38,7 @@
     !drned-xmnr state check-states validate true
     ???success all states are consistent
     [progress walk states]
-    [timeout 10]
+    [timeout 15]
     !drned-xmnr transitions walk-states states [ empty subnet time ]
     """???
     Prepare the device
