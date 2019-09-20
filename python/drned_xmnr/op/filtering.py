@@ -160,7 +160,11 @@ class DrnedActionEvent(DrnedEvent):
         return self.indent_line(line)
 
 
-class DrnedEmptyCommit(DrnedEvent):
+class DrnedCommitEvent(DrnedEvent):
+    pass
+
+
+class DrnedEmptyCommit(DrnedCommitEvent):
     def __init__(self):
         super(DrnedEmptyCommit, self).__init__('    (no modifications)')
 
@@ -171,9 +175,9 @@ class DrnedEmptyCommit(DrnedEvent):
         return self.indent_line(self.line)
 
 
-class DrnedCommitEvent(DrnedEvent):
+class DrnedCommitLogEvent(DrnedCommitEvent):
     def __init__(self):
-        super(DrnedCommitEvent, self).__init__('')
+        super(DrnedCommitLogEvent, self).__init__('')
 
     def __str__(self):
         return 'Drned commit queue event'
@@ -182,7 +186,19 @@ class DrnedCommitEvent(DrnedEvent):
         return self.indent_line('commit...')  # should not be used?
 
 
-class DrnedCommitResult(DrnedEvent):
+class DrnedCommitNNEvent(DrnedCommitEvent):
+    def __init__(self):
+        super(DrnedCommitNNEvent, self).__init__('')
+
+    def __str__(self):
+        return 'Drned commit no-networking event'
+
+    def produce_line(self):
+        # should not be used?
+        return self.indent_line('commit no networking...')
+
+
+class DrnedCommitResult(DrnedCommitEvent):
     def __init__(self, line, success):
         super(DrnedCommitResult, self).__init__(line)
         self.success = success
@@ -195,7 +211,20 @@ class DrnedCommitResult(DrnedEvent):
         return self.indent_line(line)
 
 
-class DrnedFailureReason(DrnedEvent):
+class DrnedCommitComplete(DrnedCommitEvent):
+    def __init__(self, line):
+        super(DrnedCommitComplete, self).__init__(line)
+        self.success = True
+
+    def __str__(self):
+        return 'Drned commit complete event'
+
+    def produce_line(self):
+        line = '    succeeded'
+        return self.indent_line(line)
+
+
+class DrnedFailureReason(DrnedCommitEvent):
     def __init__(self, reason):
         super(DrnedFailureReason, self).__init__('')
         self.reason = reason
@@ -280,6 +309,8 @@ line_regexp = re.compile('''\
 (?P<drned>={30} (?P<drned_op>rload|commit|compare_config|rollback)\\(.*\\))|\
 (?P<no_modifs>% No modifications to commit\\.)|\
 (?P<commit_queue>commit-queue \\{)|\
+(?P<commit_nn>commit no-networking)|\
+(?P<commit_complete>Commit complete\\.)|\
 (?P<commit_result> *status (?P<result>completed|failed))|\
 (?P<failure_reason> *reason (?P<reason>RPC error .*))|\
 (?P<teardown>### TEARDOWN, RESTORE DEVICE ###)|\
@@ -317,10 +348,14 @@ def event_generator(consumer):
             elif match.lastgroup == 'no_modifs':
                 consumer.send(DrnedEmptyCommit())
             elif match.lastgroup == 'commit_queue':
-                consumer.send(DrnedCommitEvent())
+                consumer.send(DrnedCommitLogEvent())
+            elif match.lastgroup == 'commit_nn':
+                consumer.send(DrnedCommitNNEvent())
             elif match.lastgroup == 'commit_result':
                 consumer.send(DrnedCommitResult(match.string,
                                                 match.groupdict()['result'] == 'completed'))
+            elif match.lastgroup == 'commit_complete':
+                consumer.send(DrnedCommitComplete(match.string))
             elif match.lastgroup == 'failure_reason':
                 consumer.send(DrnedFailureReason(match.groupdict()['reason']))
             elif match.lastgroup == 'teardown':
@@ -412,8 +447,9 @@ class WalkLogState(LogState):
             if self.level == 'overview':
                 return event.produce_line()
             return (event.produce_line(), DrnedLogState())
-        if not isinstance(event, DrnedEmptyCommit):
-            # empty commits can occur on this level
+        if not isinstance(event, DrnedEmptyCommit) and \
+           not isinstance(event, DrnedCommitComplete):
+            # commits can occur on this level
             return event.produce_line()
         return None
 
@@ -436,12 +472,18 @@ class DrnedLogState(LogState):
 
 class DrnedCommitState(LogState):
     def handle(self, event):
-        if isinstance(event, DrnedCommitEvent):
+        if isinstance(event, DrnedCommitLogEvent):
             event.mark_complete()
             return DrnedCommitResultState()
+        elif isinstance(event, DrnedCommitNNEvent):
+            event.mark_complete()
+            return DrnedCommitNNState()
         elif isinstance(event, DrnedEmptyCommit):
             event.mark_complete()
             return (event.produce_line(), TERMINATED)
+        elif isinstance(event, DrnedCommitEvent):
+            event.mark_complete()
+            return TERMINATED
         return TERMINATED
 
 
@@ -453,6 +495,20 @@ class DrnedCommitResultState(LogState):
                 return (event.produce_line(), TERMINATED)
             else:
                 return DrnedFailureState()
+        return TERMINATED
+
+
+class DrnedCommitNNState(LogState):
+    def handle(self, event):
+        if isinstance(event, DrnedCommitComplete):
+            event.mark_complete()
+            return (event.produce_line(), TERMINATED)
+        elif isinstance(event, DrnedActionEvent) and event.action == 'commit':
+            event.mark_complete()
+            return (DrnedCommitComplete(event.line).produce_line(), TERMINATED)
+        elif isinstance(event, DrnedCommitComplete):
+            event.mark_complete()
+            return (event.produce_line(), TERMINATED)
         return TERMINATED
 
 

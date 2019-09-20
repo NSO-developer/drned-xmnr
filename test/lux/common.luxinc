@@ -22,9 +22,14 @@
 [endmacro]
 
 [macro prepare-test device type port]
+    # capture the ncs version; for 5.1+ we need to configure ned-id
+    !ncs --version | (echo -n ned-id ' '; sed -e 's/^5\.[1-9].*\|^[6-9].*/ ned-id ned-nc-1.0/' -e 's/^[45].*//')
+    ?^ned-id (.*)[\r\n]
+    [local nedid=$1]
     -[Ee][Rr][Rr][Oo][Rr]
     !ncs_cli -u admin -C
     ???admin@ncs#
+    !complete-on-space false
     !config
     [progress set up the NCS device]
     # clean up, if there is anything left from previous runs
@@ -38,7 +43,7 @@
     """!
     address 127.0.0.1
     port $port
-    device-type $type
+    device-type $type$nedid
     authgroup default
     state admin-state unlocked
     """
