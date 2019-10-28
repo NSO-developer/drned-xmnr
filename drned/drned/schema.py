@@ -143,7 +143,7 @@ class Schema(object):
                 .islice(self.gen_nodes(root=root, ntype=ntype), 0, None)]
 
     def get_grouping(self, node_pos):
-        groupings = sorted([(g.pos.line, g) for (n, g) in self.groupings.iteritems()])
+        groupings = sorted([(g.pos.line, g) for (n, g) in self.groupings.items()])
         prev = None
         for (g_pos, g) in groupings:
             if g_pos > node_pos:

@@ -2,10 +2,12 @@ import datetime
 import filecmp
 import inspect
 import os
+import sys
 import pexpect
 import pytest
 import re
 import shutil
+import common.test_common as common
 import subprocess
 import tempfile
 import time
@@ -19,6 +21,7 @@ System message at ....-..-.. ..:..:..\.\.\.\s*
 Commit performed by .* via .* using .*
 """)
 
+pxargs = {"encoding": "utf-8"} if sys.version_info >= (3, 0) else {}
 
 class Device(object):
     """The abstraction of a NCS/NED device.
@@ -56,7 +59,7 @@ class Device(object):
         self.java_log_level = "level-all"
         self.extra_ned_settings = None
         # Check if NCS is started
-        out = subprocess.check_output("ncs --status || true", shell=True)
+        out = common.check_output("ncs --status || true")
         if out.find("vsn:") < 0:
             pytest.fail("Please start NCS first, with " +
                         "'make start' or 'make restart'")
@@ -219,7 +222,7 @@ class Device(object):
             f.write("!!! NEW SESSION STARTS\n")
         if hasattr(self, "ncs"):
             self.ncs.close()
-        self.ncs = pexpect.spawn(self.cli, timeout=60)
+        self.ncs = pexpect.spawn(self.cli, timeout=60, **pxargs)
         self.ncs.expect('admin@ncs# ')
         # NCS general setup
         self.cmd("complete-on-space false")
@@ -309,6 +312,7 @@ class Device(object):
             prefix = os.path.basename(name)
             prefix = prefix[:prefix.index(suffix)] + "_tmp"
             with tempfile.NamedTemporaryFile(dir="drned-work",
+                                             mode="w+t",
                                              prefix=prefix,
                                              suffix=suffix,
                                              delete=False) as temp:
@@ -388,6 +392,7 @@ class Device(object):
             prefix = os.path.basename(name)
             prefix = prefix[:prefix.index(suffix)] + "_tmp"
             with tempfile.NamedTemporaryFile(dir="drned-work",
+                                             mode="w+t",
                                              suffix=suffix,
                                              prefix=prefix,
                                              delete=False) as temp:
@@ -427,6 +432,7 @@ class Device(object):
             prefix = os.path.basename(name)
             prefix = prefix[:prefix.index(suffix)] + "_tmp"
             with tempfile.NamedTemporaryFile(dir="drned-work",
+                                             mode="w+t",
                                              suffix=suffix,
                                              prefix=prefix,
                                              delete=False) as temp:
@@ -515,8 +521,8 @@ class Device(object):
                 # Do a poor man's comparison of xml, sort and compare
                 if content(before) != content(after):
                     try:
-                        out = subprocess.check_output("diff %s %s" %
-                                                      (self.rollback_xml[id], xml), shell=True)
+                        out = common.check_output("diff %s %s" %
+                                                      (self.rollback_xml[id], xml))
                     except subprocess.CalledProcessError as e:
                         out = e.output
                     print(out)
@@ -859,8 +865,8 @@ class Device(object):
             self.rollback_xml[next_rollback] = xml
 
     def _get_latest_rollback(self):
-        return subprocess.check_output(
-            "ls -1rt drned-ncs/logs/rollback* | tail -1", shell=True) \
+        return common.check_output(
+            "ls -1rt drned-ncs/logs/rollback* | tail -1") \
                          .replace("drned-ncs/logs/rollback", "") \
                          .replace(".prepare", "") \
                          .strip()
@@ -871,6 +877,7 @@ class Device(object):
             return xml
         with tempfile.NamedTemporaryFile(dir="drned-work/coverage/%s" %
                                          self.covsession,
+                                         mode="w+t",
                                          prefix=str(int(time.time() * 1000)),
                                          suffix=".xml",
                                          delete=False) as temp:
@@ -908,7 +915,7 @@ class Device(object):
                 dev = root.xpath('//ns:device/ns:name',
                                  namespaces={'ns':'http://tail-f.com/ns/ncs'})
                 dev[0].text = self.name
-                temp.write(etree.tostring(root, pretty_print=True))
+                temp.write(etree.tostring(root, pretty_print=True, encoding="unicode"))
         else:
             with open(name) as n:
                 lines = n.read().splitlines(True)

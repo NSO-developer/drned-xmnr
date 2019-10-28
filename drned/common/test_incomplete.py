@@ -72,7 +72,7 @@ def _iteration_1(device, prefix, avoid, lines):
         for p in prefix:
             device.cmd(p)
     for _num,line in enumerate(lines):
-        print "\n### Incomplete commands"
+        print("\n### Incomplete commands")
         reset_to_prefix()
         pwd_prompt = device.last_prompt
         words = line.split(" ")
@@ -106,7 +106,7 @@ def _iteration_1(device, prefix, avoid, lines):
                                     +"for command: \"%s\"" % incomp)
 
         # Finally use entire cmd, should succeed
-        print "\n### Entire command"
+        print("\n### Entire command")
         complete = line.replace("%d", str(_num))
         for comp in complete.split("\n"):
             comp = comp.strip()
@@ -118,7 +118,7 @@ def _iteration_1(device, prefix, avoid, lines):
 def _iteration_2(device, prefix, avoid, lines):
     global _num
     # All commands in separate commits
-    print "\n### All commands, separate commits"
+    print("\n### All commands, separate commits")
     device.cmd("devices device %s config" % device.name)
     for p in prefix:
         device.cmd(p)
@@ -141,7 +141,7 @@ def _iteration_2(device, prefix, avoid, lines):
 def _iteration_3(device, prefix, avoid, lines):
     global _num
     # All commands in same commit
-    print "\n### All commands, same commit"
+    print("\n### All commands, same commit")
     device.cmd("devices device %s config" % device.name)
     for p in prefix:
         device.cmd(p)
@@ -183,7 +183,7 @@ def test_incomplete_union(device, config, iteration=range(1, 7)):
 
 def _incomplete_union(device, config, it):
     global _num
-    keys = sorted(config.keys())
+    keys = sorted(list(config))
     if it in [2, 4, 6]:
         keys = reversed(keys)
     commit_id = []

@@ -228,7 +228,7 @@ def system_mock():
         with ffs.Patcher() as ff_patcher:
             # os.environ needs special care
             with mock.patch.dict('os.environ', {'NCS_DIR': 'tmp_ncs_dir'}):
-                patches = dict(zip(calls.keys(), reversed(patchlist)))
+                patches = dict(zip(list(calls), reversed(patchlist)))
                 yield SystemMock(ff_patcher, patches)
 
 

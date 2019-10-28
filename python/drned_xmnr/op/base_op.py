@@ -219,7 +219,6 @@ class ActionBase(XmnrBase):
         finally:
             ssocket.close()
 
-
 class XmnrDeviceData(XmnrBase):
     """Base for XMNR data providers."""
     @classmethod

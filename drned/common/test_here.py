@@ -112,7 +112,7 @@ class Xrollback(object):
             values = range(self.start + value, self.stop)
         else:
             values = range(self.stop + value, self.stop)
-        print values
+        print(values)
         for i in reversed(values):
             self.rollback(p, i - self.start)
         return True
@@ -143,7 +143,7 @@ class Settings(object):
         return True
 
     def restore_all(self):
-        for attr in self.restore_data.keys():
+        for attr in list(self.restore_data):
             self.restore_value(attr)
 
 class Parameter(object):
@@ -244,7 +244,7 @@ def test_here_union(device, config, iteration=range(1, 7), dry_run=DRY_RUN):
 
 def _here_union(device, config, it, dry_run=False):
     device.save("drned-work/before-test.cfg")
-    names = sorted(config.keys())
+    names = sorted(list(config))
     if it in [2, 4, 6]:
         names = reversed(names)
     commit_id_base = len(device.commit_id)

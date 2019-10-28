@@ -207,7 +207,7 @@ class Walker(object):
         for leaf in self.leaves:
             if leaf.joined_walk:
                 try:
-                    leaf.value = leaf.walk.next()
+                    leaf.value = next(leaf.walk)
                 except StopIteration:
                     leaf.done_walk(self.choices)
                     # Add dummy laps while other leaves not done

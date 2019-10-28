@@ -409,7 +409,7 @@ class Node(object):
 
     def init_walk(self):
         self.walk = self.gen_walk()
-        self.value = self.walk.next()
+        self.value = next(self.walk)
 
     def join_walk(self, choices):
         child = self

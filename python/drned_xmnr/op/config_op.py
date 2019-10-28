@@ -161,6 +161,7 @@ class RecordStateOp(ConfigOp):
         return {'success': "Recorded states " + str(state_filenames)}
 
 
+
 class ImportStateFiles(ConfigOp):
     action_name = 'import states'
 
@@ -267,9 +268,9 @@ class ImportStateFiles(ConfigOp):
         </xsl:stylesheet>''')
         tree = etree.parse(xml_file)
         transform = etree.XSLT(xslt_root)
-        nso_xml = transform(tree,  device_name=etree.XSLT.strparam(self.dev_name))
+        nso_xml = transform(tree, device_name=etree.XSLT.strparam(self.dev_name))
         with open(nso_xml_file, "w+") as outfile:
-            nso_xml.write(outfile)
+            nso_xml.write(outfile.name)
 
     def create_state(self, source_file, state_file, flags):
         try:
@@ -281,12 +282,11 @@ class ImportStateFiles(ConfigOp):
 
     def run_create_state(self, trans, source_file, state_file, flags):
         trans.load_config(flags, source_file)
-        with open(state_file, "w+") as state_file:
+        with open(state_file, "wb") as state_file:
             for data in self.save_config(trans,
                                          _ncs.maapi.CONFIG_C,
                                          "/ncs:devices/device{"+self.dev_name+"}/config"):
                 state_file.write(data)
-
 
 class CheckStates(ConfigOp):
     action_name = 'check states'
