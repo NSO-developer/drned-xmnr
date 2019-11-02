@@ -161,7 +161,6 @@ class RecordStateOp(ConfigOp):
         return {'success': "Recorded states " + str(state_filenames)}
 
 
-
 class ImportStateFiles(ConfigOp):
     action_name = 'import states'
 
@@ -287,6 +286,7 @@ class ImportStateFiles(ConfigOp):
                                          _ncs.maapi.CONFIG_C,
                                          "/ncs:devices/device{"+self.dev_name+"}/config"):
                 state_file.write(data)
+
 
 class CheckStates(ConfigOp):
     action_name = 'check states'

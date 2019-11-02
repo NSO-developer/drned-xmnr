@@ -285,7 +285,7 @@ class TestBase(object):
         return mock.Mock()
 
     def invoke_action(self, action_name, **action_params):
-        params = mock.Mock(spec=list(action_params), **action_params)
+        params = mock.Mock(spec=action_params.keys(), **action_params)
         ah = action.ActionHandler()
         self.setup_log(ah)
         kp = [[mocklib.DEVICE_NAME], None, None]

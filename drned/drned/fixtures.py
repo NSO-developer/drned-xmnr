@@ -5,7 +5,6 @@ import pytest
 import pwd
 import sys
 import common.test_common as common
-#from _pytest.main import EXIT_INTERRUPTED
 
 SCOPE = "session"
 

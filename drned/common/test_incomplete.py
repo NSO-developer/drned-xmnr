@@ -183,7 +183,7 @@ def test_incomplete_union(device, config, iteration=range(1, 7)):
 
 def _incomplete_union(device, config, it):
     global _num
-    keys = sorted(list(config))
+    keys = sorted(config.keys())
     if it in [2, 4, 6]:
         keys = reversed(keys)
     commit_id = []

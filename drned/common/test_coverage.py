@@ -571,7 +571,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
             if ns not in nsmap:
                 nsmap[ns] = list()
             nsmap[ns].append(p)
-        if len(list(nsmap)) > 1:
+        if len(nsmap.keys()) > 1:
             for (ns, pl) in nsmap.items():
                 print("  namespace: " + ns + "\n  " +
                         "\n  ".join(sorted(pl)))

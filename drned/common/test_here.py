@@ -244,7 +244,7 @@ def test_here_union(device, config, iteration=range(1, 7), dry_run=DRY_RUN):
 
 def _here_union(device, config, it, dry_run=False):
     device.save("drned-work/before-test.cfg")
-    names = sorted(list(config))
+    names = sorted(config.keys())
     if it in [2, 4, 6]:
         names = reversed(names)
     commit_id_base = len(device.commit_id)
