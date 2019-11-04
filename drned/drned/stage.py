@@ -1,6 +1,6 @@
 from lxml import etree
 
-import node
+from . import node
 import re
 
 class Stage(object):

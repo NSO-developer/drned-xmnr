@@ -8,7 +8,6 @@ import re
 import sys
 import glob
 import string
-import subprocess
 from lxml import etree
 
 import common.test_common as common
@@ -256,7 +255,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
     cached_dirs = []
     save_cache = False
 
-    use_cache = (subprocess.check_output("whoami", shell=True).strip() != "jenkins") \
+    use_cache = (common.check_output("whoami").strip() != "jenkins") \
         and (devname is None or devname == "none")
 
     if use_cache and os.path.exists("drned-work/coverage/covanalysis.json"):
@@ -264,7 +263,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
             covcache = json.load(covf)
             cached_dirs = covcache["cached_dirs"]
             list_multiple = set(covcache["list_multiple"])
-            for (p, d) in covcache["coverage"].iteritems():
+            for (p, d) in covcache["coverage"].items():
                 c = _Coverage("dummy")
                 c.__dict__ = d
                 all_coverage[p] = c
@@ -313,7 +312,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                 if not cfg is None:
                     ddc = root.getelementpath(cfg)
                     cfgnodes = cfg.iter()
-                    cfgnodes.next()  # skip cfg itself
+                    next(cfgnodes)  # skip cfg itself
                 else:
                     # Empty DB -> noting set initially or all deleted in the end
                     cfgnodes = []
@@ -368,7 +367,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                                     print("ADD LIST PREFIX: %s - %s" % (path + "/", orig_path))
                                 current_list_prefix.append((orig_path, path))
                                 nokeys_path = re.sub("\[[^\]]*\]", "", path)
-                                if not list_keys.has_key(nokeys_path):
+                                if nokeys_path not in list_keys:
                                     list_keys[nokeys_path] = set()
                                 list_keys[nokeys_path].add(current_key_vals)
                                 current_key_names = None
@@ -397,7 +396,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                             coverage[path].set_node(e.text)
                         else:
                             coverage[path].init_node(e.text)
-                for (p, v) in leaf_lists.iteritems():
+                for (p, v) in leaf_lists.items():
                     if not p in coverage:
                         coverage[p] = _Coverage(p)
                     v = ",".join(v)
@@ -407,7 +406,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                         coverage[p].init_node(v)
                 in_sync = True
 
-            for (p, keys) in list_keys.iteritems():
+            for (p, keys) in list_keys.items():
                 if len(keys) > 1:
                     list_multiple.add(p)
                     if VERBOSE:
@@ -418,8 +417,8 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                 coverage[p].delete_node()
 
         # We now have one coverage map per dir, unionize after each dir to avoid excessive calls to delete_node above
-        for (p, cov) in coverage.iteritems():
-            if all_coverage.has_key(p):
+        for (p, cov) in coverage.items():
+            if p in all_coverage:
                 all_coverage[p].union_node(cov)
             else:
                 all_coverage[p] = cov
@@ -440,7 +439,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
             json.dump(covcache, covf, default=dumpcov)
 
     # Consolidate lists into single entries
-    for p in coverage.keys():
+    for p in list(coverage):
         nolist = re.sub("\[[^\]]*\]", "", p)
         if nolist != p:
             # Ok, this path has at least one list, so move to common entry
@@ -569,11 +568,11 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
             if p.startswith("/{"):
                 ns = p[2:p.index("}")]
                 p = "/" + p[p.index("}")+1:]
-            if not nsmap.has_key(ns):
+            if ns not in nsmap:
                 nsmap[ns] = list()
             nsmap[ns].append(p)
         if len(nsmap.keys()) > 1:
-            for (ns, pl) in nsmap.iteritems():
+            for (ns, pl) in nsmap.items():
                 print("  namespace: " + ns + "\n  " +
                         "\n  ".join(sorted(pl)))
         else:

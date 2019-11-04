@@ -1,9 +1,16 @@
 import os
 import re
+import subprocess
 
 # Compare two config files but ignore comments
 def filecmp(a, b):
     return os.system("diff -I '^ *!' -I '^ */\*' %s %s" % (a, b)) == 0
+
+def check_output(command, **args):
+    return subprocess.check_output(command,
+                                   universal_newlines=True,
+                                   shell=True,
+                                   **args)
 
 def path_in_prefixes(path, prefixes):
     pathnons = path

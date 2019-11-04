@@ -112,7 +112,7 @@ class Xrollback(object):
             values = range(self.start + value, self.stop)
         else:
             values = range(self.stop + value, self.stop)
-        print values
+        print(values)
         for i in reversed(values):
             self.rollback(p, i - self.start)
         return True
@@ -143,7 +143,7 @@ class Settings(object):
         return True
 
     def restore_all(self):
-        for attr in self.restore_data.keys():
+        for attr in list(self.restore_data):
             self.restore_value(attr)
 
 class Parameter(object):

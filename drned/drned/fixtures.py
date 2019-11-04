@@ -3,10 +3,8 @@ import glob
 import os
 import pytest
 import pwd
-import subprocess
 import sys
 import common.test_common as common
-from _pytest.main import EXIT_INTERRUPTED
 
 SCOPE = "session"
 
@@ -73,7 +71,7 @@ def pytest_generate_tests(metafunc):
             os.mkdir("drned-work")
         # List all functions that use the fname fixture
         with open("drned-work/fname-func.tmp", "a") as f:
-            f.write(metafunc.function.func_name + "\n")
+            f.write(metafunc.function.__name__ + "\n")
         # Write file list if not already done
         if not os.path.isfile("drned-work/fname-file.tmp"):
             with open("drned-work/fname-file.tmp", "w") as f:
@@ -83,7 +81,7 @@ def none(p):
     return None if p == "none" else p
 
 def sh(cmd):
-    return subprocess.check_output(cmd, shell=True)
+    return common.check_output(cmd)
 
 def rmf(p):
     try:
