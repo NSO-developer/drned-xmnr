@@ -21,45 +21,59 @@
     [invoke shell-check]
 [endmacro]
 
-[macro prepare-test device type port]
-    # capture the ncs version; for 5.1+ we need to configure ned-id
-    !ncs --version | (echo -n ned-id ' '; sed -e 's/^5\.[1-9].*\|^[6-9].*/ ned-id ned-nc-1.0/' -e 's/^[45].*//')
-    ?^ned-id (.*)[\r\n]
-    [local nedid=$1]
-    -[Ee][Rr][Rr][Oo][Rr]
+[macro start-ncs-netsim device]
+    [progress create and start the netsim]
+    !ncs-netsim delete-network
+    !ncs-netsim create-network packages/$device 1 $device
+    [invoke shell-check]
+    !ncs-netsim start
+    [invoke shell-check]
+    [progress start ncs]
+    [timeout 10]
+    !ncs --stop; ncs
+    [invoke shell-check]
+    [timeout]
+[endmacro]
+
+[macro test-walk-states states]
+    [progress walk states]
+    [timeout 15]
+    !drned-xmnr transitions walk-states states [ $states ]
+    ?Prepare the device
+    [loop state $states]
+        """?
+        Test transition to $state
+           load $state
+           commit
+               succeeded
+           compare config
+               succeeded
+        """
+    [endloop]
+    """?
+    Device cleanup
+       load before-session
+       commit
+           succeeded
+       compare config
+           succeeded
+    success Completed successfully
+    """
+[endmacro]
+
+[macro prepare-test device]
+    !ncs_cmd -u admin -c 'mdel /devices/device{$device}'
+    !ncs-netsim --dir ncs-run/netsim ncs-xml-init $device | sed -e 's/10022/12022/' -e 's/cli>/netconf>/' | ncs_load -F p -l -m
+    [invoke shell-check]
     !ncs_cli -u admin -C
     ???admin@ncs#
     !complete-on-space false
     !config
-    [progress set up the NCS device]
-    # clean up, if there is anything left from previous runs
-    !no devices device $device
-    # set up python-vm logging to see any problems
     !python-vm logging level level-debug
     !commit
     ?Commit complete|No modifications.
     !devices device $device
-    ??admin@ncs(config-device-$device)#
-    """!
-    address 127.0.0.1
-    port $port
-    device-type $type$nedid
-    authgroup default
-    state admin-state unlocked
-    """
-    !commit
-    ???Commit complete.
-    !ssh fetch-host-keys
-    ???result updated
     !sync-from
-    !no config
-    !commit
-    [timeout 10]
-    ?Commit complete|No modifications to commit
-    # watch for autoconfigs
-    !sync-from
-    ?result true
-    [timeout]
     [progress setup xmnr]
     !drned-xmnr setup setup-xmnr overwrite true
     ???success
@@ -76,5 +90,7 @@
     !ncs-netsim stop
     ?SH-PROMPT:
     !make clean
+    ?SH-PROMPT:
+    !rm -rf packages/*
     ?SH-PROMPT:
 [endmacro]
