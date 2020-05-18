@@ -195,32 +195,24 @@ class ImportStateFiles(ConfigOp):
                         outfile.write(line)
             if self.merge:
                 tmpfile2 = tmpfile + ".tmp2"
-                flags = _ncs.maapi.CONFIG_C + _ncs.maapi.CONFIG_MERGE
-                self.create_state(tmpfile, tmpfile2, flags)
+                self.create_state(tmpfile, tmpfile2, _ncs.maapi.CONFIG_C)
                 tmpfile = tmpfile2
             source_file = tmpfile
         elif self.file_format == "xml":
             tmpxmlfile = "/tmp/" + os.path.basename(source_file) + ".xmltmp"
             tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
             self.run_xslt(tmpxmlfile, source_file)
-            flags = _ncs.maapi.CONFIG_XML
-            if self.merge:
-                flags += _ncs.maapi.CONFIG_MERGE
-            self.create_state(tmpxmlfile, tmpfile, flags)
+            self.create_state(tmpxmlfile, tmpfile, _ncs.maapi.CONFIG_XML)
             source_file = tmpfile
         elif self.file_format == "nso-xml":
             tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
-            flags = _ncs.maapi.CONFIG_XML
-            if self.merge:
-                flags += _ncs.maapi.CONFIG_MERGE
-            self.create_state(source_file, tmpfile, flags)
+            self.create_state(source_file, tmpfile, _ncs.maapi.CONFIG_XML)
             source_file = tmpfile
         elif self.file_format == "nso-c-style":
             # file(s) already in state format (== nso-c-style format)
             if self.merge:
                 tmpfile = "/tmp/" + os.path.basename(source_file) + ".tmp"
-                flags = _ncs.maapi.CONFIG_C + _ncs.maapi.CONFIG_MERGE
-                self.create_state(source_file, tmpfile, flags)
+                self.create_state(source_file, tmpfile, _ncs.maapi.CONFIG_C)
         dirname = os.path.dirname(source_file)
         if dirname == self.states_dir:
             tmpfile = source_file
@@ -280,11 +272,12 @@ class ImportStateFiles(ConfigOp):
                               str(err).replace("\n", ""))
 
     def run_create_state(self, trans, source_file, state_file, flags):
-        trans.load_config(flags, source_file)
+        dev_config = "/ncs:devices/device{{{}}}/config".format(self.dev_name)
+        if not self.merge:
+            trans.delete(dev_config)
+        trans.load_config(_ncs.maapi.CONFIG_MERGE | flags, source_file)
         with open(state_file, "wb") as state_file:
-            for data in self.save_config(trans,
-                                         _ncs.maapi.CONFIG_C,
-                                         "/ncs:devices/device{"+self.dev_name+"}/config"):
+            for data in self.save_config(trans, _ncs.maapi.CONFIG_C, dev_config):
                 state_file.write(data)
 
 

@@ -54,7 +54,7 @@
     Device cleanup
        load before-session
        commit
-           succeeded
+           (succeeded|\(no modifications\))
        compare config
            succeeded
     success Completed successfully

@@ -20,10 +20,8 @@
     ???Commit complete.
     !drned-xmnr state record-state state-name time
     ???success
-    !config dhcp SharedNetworks sharedNetwork test SubNets subNet 1.1.1.1 255.255.255.0
-    !commit
-    ???Commit complete.
-    !drned-xmnr state record-state state-name subnet
+    ~drned-xmnr state import-state-files
+    ! file-path-pattern ../subnet.xml merge false overwrite true
     ???success
     !drned-xmnr state check-states validate true
     ???success all states are consistent
