@@ -10,21 +10,11 @@
     !make -C ned/src all
     [invoke shell-check]
     [timeout]
-    [progress create and start the netsim]
     !cd ..
-    !ncs-netsim delete-network
-    !ncs-netsim create-network packages/ned 1 ned
-    [invoke shell-check]
-    !ncs-netsim start
-    [invoke shell-check]
-    [progress start ncs]
-    [timeout 10]
-    !ncs --stop; ncs
-    [invoke shell-check]
-    [timeout]
+    [invoke start-ncs-netsim ned]
 
 [shell ncs-cli]
-    [invoke prepare-test dhcp netconf 12022]
+    [invoke prepare-test ned0]
     !config dhcp defaultLeaseTime 200s
     !commit
     ???Commit complete.
@@ -35,37 +25,7 @@
     ???success
     !drned-xmnr state check-states validate true
     ???success all states are consistent
-    [progress walk states]
-    [timeout 15]
-    !drned-xmnr transitions walk-states states [ empty subnet time ]
-    """?
-    Prepare the device
-    Test transition to empty
-       load empty
-       commit
-           succeeded
-       compare config
-           succeeded
-    Test transition to subnet
-       load subnet
-       commit
-           succeeded
-       compare config
-           succeeded
-    Test transition to time
-       load time
-       commit
-           succeeded
-       compare config
-           succeeded
-    Device cleanup
-       load before-session
-       commit
-           (succeeded|\(no modifications\))
-       compare config
-           succeeded
-    success Completed successfully
-    """
+    [invoke test-walk-states "empty subnet time"]
 
 [cleanup]
     [invoke cleanup]

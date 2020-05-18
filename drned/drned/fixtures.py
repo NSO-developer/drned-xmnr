@@ -107,23 +107,24 @@ def device(request):
     use = request.config.getoption("--use")
     device = drned.Device(devname, use=use, request=request)
     device.trace("\n%s\n" % request._pyfuncitem.name)
-    # Save state in XML to be able to restore
-    # reliably. Note that the entire "devices" tree is
-    # saved, the "replace" load option requires it.
-    device.save("drned-work/before-session.xml",
-                path="devices", fmt="xml")
-    # Also save in CLI format to make it easier to
-    # compare
+    # Save state in XML to be able to restore reliably
+    device.save("drned-work/before-session.xml", fmt="xml")
+    # Also save in CLI format to make it easier to compare
     device.save("drned-work/before-session.cfg")
+
     yield device
+
     print("\n### TEARDOWN, RESTORE DEVICE ###")
     device.reset_cli()
+    device.cmd("no devices device %s config" % device.name)
+    device.cmd("top")
+    device.load("drned-work/before-session.xml")
+    device.cmd("show config")
+    device.commit(no_networking=True)
     # Try to restore device twice, required for some NCS releases
     laps = 2
     for i in range(laps):
-        device.sync_from()
-        device.load("drned-work/before-session.xml", mode="replace")
-        device.commit()
+        device.sync_to()
         try:
             device.compare_config()
             break

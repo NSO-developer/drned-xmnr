@@ -1,0 +1,34 @@
+[doc Testing DrNED-XMNR integration with NCS and DrNED; CLI device interaction]
+
+[include common.luxinc]
+
+[shell os]
+    [invoke ned-test-setup]
+    !ls -d $NCS_DIR/packages/neds/*-ios-cli* | tail -1
+    ?(cisco-ios.*)
+    !cp -r $NCS_DIR/packages/neds/$1 cisco-ios
+    [invoke shell-check]
+    [timeout 30]
+    !make -C cisco-ios/src all
+    [invoke shell-check]
+    [timeout]
+    !cd ..
+    [invoke start-ncs-netsim cisco-ios]
+
+[shell ncs-cli]
+    [invoke prepare-test cisco-ios0]
+    !top show full devices device cisco-ios0 config ios:ip
+    !config ios:interface GigabitEthernet 2 ip address 10.10.10.10 255.255.255.0
+    !commit
+    ???Commit complete.
+    # watch for autoconfigs
+    !sync-from
+    ?result true
+    !drned-xmnr state record-state state-name if
+    ???success
+    [progress walk states]
+    [timeout 20]
+    [invoke test-walk-states "empty if"]
+
+[cleanup]
+    [invoke cleanup]
