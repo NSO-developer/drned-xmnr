@@ -50,7 +50,7 @@ class TransitionsOp(base_op.ActionBase):
         args = ["-s", "--tb=short", "--device="+self.dev_name] + drned_args
         if not self.using_builtin_drned:
             args.append("--unreserved")
-        args.insert(0, "py.test")
+        args.insert(0, self.pytest_executable())
         self.log.debug("drned: {0}".format(args))
         return self.run_in_drned_env(args, timeout)
 
