@@ -44,7 +44,7 @@ class CoverageOp(base_op.ActionBase):
         yangfiles = set(functools.reduce(operator.concat, globs, []))
         yangpath = set(os.path.dirname(yf) for yf in yangfiles)
         fnames = ['--fname=' + yang for yang in yangfiles]
-        args = ['py.test',
+        args = [self.pytest_executable(),
                 '-s',
                 '--device='+self.dev_name,
                 '-k', 'test_coverage',

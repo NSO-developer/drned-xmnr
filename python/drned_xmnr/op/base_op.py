@@ -61,6 +61,8 @@ class XmnrBase(object):
 
 
 class ActionBase(XmnrBase):
+    _pytest_executable = None
+
     def __init__(self, uinfo, dev_name, params, log_obj):
         super(ActionBase, self).__init__(dev_name, log_obj)
         self.uinfo = uinfo
@@ -176,6 +178,24 @@ class ActionBase(XmnrBase):
         env['PATH'] = os.pathsep.join(ppart for ppart in path.split(os.pathsep)
                                       if 'ncs/erts' not in ppart)
         return env
+
+    def check_which(self, executable):
+        with open('/dev/null', 'wb') as devnull:
+            return subprocess.call(['which', executable], stdout=devnull) == 0
+
+    def pytest_executable(self):
+        if ActionBase._pytest_executable is None:
+            ActionBase._pytest_executable = self.find_pytest_executable()
+        return ActionBase._pytest_executable
+
+    def find_pytest_executable(self):
+        suffix = str(sys.version_info[0])  # '2' or '3'
+        execs = ['pytest', 'py.test', 'pytest-' + suffix, 'py.test-' + suffix]
+        for executable in execs:
+            if self.check_which(executable):
+                self.log.debug('found pytest executable: ' + executable)
+                return executable
+        raise ActionError('PyTest not installed - pytest executable not found')
 
     def run_in_drned_env(self, args, timeout=120, outputfun=None):
         env = self.run_with_trans(self.setup_drned_env)
