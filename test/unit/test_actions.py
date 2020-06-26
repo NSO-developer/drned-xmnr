@@ -2,8 +2,9 @@ from __future__ import print_function
 
 from . import mocklib
 from .mocklib import mock, xtest_patch
+import pytest
 from drned_xmnr import action
-from drned_xmnr.op import config_op, base_op, coverage_op
+from drned_xmnr.op import config_op, base_op, coverage_op, ex
 import os
 import sys
 import re
@@ -320,7 +321,6 @@ class TestStartup(TestBase):
 class TestSetup(TestBase):
     def setup_fs_data(self, system):
         system.ff_patcher.fs.create_dir(mocklib.XMNR_DIRECTORY)
-        system.ff_patcher.fs.add_real_file('/dev/null')
         system.ff_patcher.fs.create_file(os.path.join(mocklib.XMNR_INSTALL,
                                                       'drned-skeleton',
                                                       'skeleton'),
@@ -344,6 +344,28 @@ class TestSetup(TestBase):
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         popen_mock.assert_called_once()
         assert popen_mock.call_args[0] == (['make', 'env.sh'],)
+
+
+class TestPytestEnv(TestBase):
+    def set_env(self, executable):
+        base_op.ActionBase._pytest_executable = None
+        self.xpatch.system.set_pytest_env(executable)
+
+    @xtest_patch
+    def test_environments(self, xpatch):
+        self.xpatch = xpatch
+        py_variant = str(sys.version_info[0])
+        ab = base_op.ActionBase(mock.Mock(), mocklib.DEVICE_NAME, None, mock.Mock())
+        try:
+            for executable in ['pytest', 'py.test',
+                               'pytest-' + py_variant, 'py.test-' + py_variant]:
+                self.set_env(executable)
+                assert ab.pytest_executable() == executable
+            with pytest.raises(ex.ActionError):
+                self.set_env(None)
+                ab.pytest_executable()
+        finally:
+            self.set_env('py.test')  # expected by other tests
 
 
 class LoadConfig(object):

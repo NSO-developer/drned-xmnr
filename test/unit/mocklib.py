@@ -170,13 +170,29 @@ class StreamData(object):
         return None
 
 
+class PyTestEnv(object):
+    def __init__(self):
+        self.command = 'py.test'
+
+    def set_command(self, command):
+        self.command = command
+
+    def which(self, args, **rest):
+        if args[1] == self.command:
+            return 0
+        else:
+            return 1
+
+
 class SystemMock(XtestMock):
     def __init__(self, ff_patcher, patches):
         super(SystemMock, self).__init__('system')
         self.patches = patches
         self.ff_patcher = ff_patcher
+        self.ff_patcher.fs.add_real_file('/dev/null', read_only=False)
         self.proc_stream = StreamData()
         self.socket_stream = StreamData(b'')
+        self.pytest_env = PyTestEnv()
         self.mock_socket_data()
         self.complete_popen_mock()
 
@@ -193,6 +209,7 @@ class SystemMock(XtestMock):
                                        test=self.proc_stream.finished,
                                        stdout=stdout_mock)
         self.patches['select']['select'].side_effect = self.proc_stream.select
+        self.patches['subprocess']['call'].side_effect = self.pytest_env.which
 
     def socket_data(self, data, chunk=10):
         self.socket_stream.set_data(data, chunk)
@@ -206,6 +223,9 @@ class SystemMock(XtestMock):
     def proc_data(self, data, chunk=10):
         self.proc_stream.set_data(data, chunk)
 
+    def set_pytest_env(self, command):
+        self.pytest_env.set_command(command)
+
 
 @contextmanager
 def system_mock():
@@ -217,7 +237,7 @@ def system_mock():
     calls = {'fcntl': ['fcntl'],
              'select': ['select'],
              'socket': ['socket'],
-             'subprocess': ['Popen']}
+             'subprocess': ['Popen', 'call']}
 
     @contextmanager
     def make_patch_group(name):
