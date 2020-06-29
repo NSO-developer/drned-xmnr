@@ -19,20 +19,26 @@ package. Using the tool's actions you can:
 
 ## Prerequisites
 
-The prerequisites are given by what DrNED needs to run, the first and foremost
-requirement is Python 2.7.  Apart form that, several Python packages are
-needed: `pytest`, `pexpect`, and `lxml`, and `pytest` version needs to be at
-least 3.0.  There are several options how to install these packages:
+The tool is supported to run on Python 3.5 or newer.  It is known to run on
+Python 2.7, but this is no longer actively maintained.
 
-1. Quite likely, they are available in your system distribution repositories;
+Apart form that, several Python packages are needed: `pytest`, `pexpect`, and
+`lxml`; `pytest` version needs to be at least 3.0.  There are several options
+how to install these packages:
+
+1. Quite likely, they are available in your system distribution repositories,
    for example in Ubuntu they can be installed like
 
-        $ sudo apt install python-pytest python-lxml python-pexpect
+        $ sudo apt install python3-pytest python3-lxml python3-pexpect
        
+   Note that these are packages that run with Python 3.  If you happen to be
+   restricted to Python 2, install `python-pytest`, `python-lxm`, and
+   `python-pexpect`.
+
    Care must be taken though if the `pytest` version meets requirements,
    namely on Ubuntu 16.04 it does not:
 
-        $ apt show python-pytest
+        $ apt show python3-pytest
         ...
         Version: 2.8.7-4
 
@@ -47,7 +53,7 @@ least 3.0.  There are several options how to install these packages:
 
         $ sudo pip install -r requirements.txt
        
- 3. If it is required that the packages are not only user-specific but also a
+ 3. If it is required that the packages are not only user-specific but also
     project-specific, it is possible to use so called python virtual
     environments.  Using them can be greatly simplified by the tool `pipenv`
     which needs to be installed first (globally or per user):
@@ -72,6 +78,8 @@ least 3.0.  There are several options how to install these packages:
     NSO or at least its Python VM should be started from this shell (see also
     the command `pipenv run` for an alternative method).
 
+DrNED Examiner and all its prerequisites is installed in this
+[NSO-interoperability testing image](https://github.com/jojohans/NSO-Interop).
 
 ## What it can do
 

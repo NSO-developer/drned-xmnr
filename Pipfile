@@ -9,6 +9,3 @@ verify_ssl = true
 pexpect = "*"
 pytest = ">=3.0"
 lxml = "*"
-
-[requires]
-python_version = "2.7"
