@@ -7,8 +7,5 @@ verify_ssl = true
 
 [packages]
 pexpect = "*"
-pytest = ">=3.0"
+pytest = ">=3.0,<6.0.0"
 lxml = "*"
-
-[requires]
-python_version = "2.7"
