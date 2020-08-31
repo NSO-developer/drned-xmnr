@@ -76,10 +76,10 @@
     !sync-from
     [progress setup xmnr]
     !drned-xmnr setup setup-xmnr overwrite true
-    ???success
+    ???success XMNR set up
     [progress record states]
-    !drned-xmnr state record-state state-name empty
-    ???success
+    !drned-xmnr state record-state state-name empty overwrite true
+    ???success Recorded state
 [endmacro]
 
 [macro cleanup]

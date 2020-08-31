@@ -28,7 +28,8 @@ else:
 
 
 class XmnrBase(object):
-    statefile_extension = '.state.cfg'
+    xml_statefile_extension = '.state.xml'
+    cfg_statefile_extension = '.state.cfg'
 
     def __init__(self, dev_name, log_obj):
         self.dev_name = dev_name
@@ -47,17 +48,52 @@ class XmnrBase(object):
         except OSError:
             pass
 
-    def state_name_to_filename(self, statename):
-        return os.path.join(self.states_dir, statename + self.statefile_extension)
+    def format_state_filename(self, statename, format='xml'):
+        """Just convert the state name to the right filename."""
+        suffix = (self.cfg_statefile_extension if format == 'cfg'
+                  else self.xml_statefile_extension)
+        return os.path.join(self.states_dir, statename + suffix)
+
+    def state_name_to_existing_filename(self, statename, format='any'):
+        if format != 'cfg':
+            path = self.format_state_filename(statename, format='xml')
+            if os.path.exists(path):
+                return path
+        if format != 'xml':
+            path = self.format_state_filename(statename, format='cfg')
+            if os.path.exists(path):
+                return path
+        return None
+
+    def state_name_to_filename(self, statename, format='any', existing=True):
+        """Look for a state file.
+
+        :param bool existing: if True, the file must exist, otherwise fail
+            with `ActionError`
+        :param str format: one of 'any', 'xml', 'cfg'; for 'any', the XML
+            format is preferred
+        """
+        filename = self.state_name_to_existing_filename(statename, format)
+        if filename is not None:
+            return filename
+        if existing:
+            raise ActionError('No such state: ' + statename)
+        return self.format_state_filename(statename,
+                                          format=('xml' if format != 'cfg' else 'cfg'))
 
     def state_filename_to_name(self, filename):
-        return os.path.basename(filename)[:-len(self.statefile_extension)]
+        return os.path.basename(filename)[:-len(self.xml_statefile_extension)]
 
     def get_states(self):
         return [self.state_filename_to_name(f) for f in self.get_state_files()]
 
     def get_state_files(self):
-        return glob.glob(self.state_name_to_filename('*'))
+        return self.get_state_files_by_pattern('*')
+
+    def get_state_files_by_pattern(self, pattern):
+        xmls = glob.glob(os.path.join(self.states_dir, pattern + self.xml_statefile_extension))
+        cfgs = glob.glob(os.path.join(self.states_dir, pattern + self.cfg_statefile_extension))
+        return xmls + [cfg for cfg in cfgs if (cfg[:-3] + 'xml') not in xmls]
 
 
 class ActionBase(XmnrBase):

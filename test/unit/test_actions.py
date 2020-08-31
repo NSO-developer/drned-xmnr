@@ -38,42 +38,29 @@ device_data = '''\
 '''
 
 test_state_data_xml = '''\
-    <config xmlns="http://tail-f.com/ns/config/1.0">
-      <devices xmlns="http://tail-f.com/ns/ncs">
-        <device>
-          <name>mock-device</name>
-          <address>127.0.0.1</address>
-          <port>2022</port>
-          <ssh/>
-          <connect-timeout/>
-          <read-timeout/>
-          <trace/>
-          <config>
-             <aaa xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-lib-cfg">
-              <diameter xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-diameter-cfg">
-                <origin>
-                  <realm>cisco.com</realm>
-                  <host>iotbng.cisco.com</host>
-                </origin>
-              </diameter>
-            </aaa>
-          </config>
-        </device>
-      </devices>
-    </config>
-'''
-
-test_state_data_xml_transformed = '''\
-<config:config xmlns:config="http://tail-f.com/ns/config/1.0" xmlns:ncs="http://tail-f.com/ns/ncs">
-  <aaa xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-lib-cfg">
-    <diameter xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-diameter-cfg">
-      <origin>
-        <realm>cisco.com</realm>
-        <host>iotbng.cisco.com</host>
-      </origin>
-    </diameter>
-  </aaa>
-</config:config>
+<config xmlns="http://tail-f.com/ns/config/1.0">
+  <devices xmlns="http://tail-f.com/ns/ncs">
+    <device>
+      <name>mock-device</name>
+      <address>127.0.0.1</address>
+      <port>2022</port>
+      <ssh/>
+      <connect-timeout/>
+      <read-timeout/>
+      <trace/>
+      <config>
+         <aaa xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-lib-cfg">
+          <diameter xmlns="http://cisco.com/ns/yang/Cisco-IOS-XR-aaa-diameter-cfg">
+            <origin>
+              <realm>cisco.com</realm>
+              <host>iotbng.cisco.com</host>
+            </origin>
+          </diameter>
+        </aaa>
+      </config>
+    </device>
+  </devices>
+</config>
 '''
 
 test_state_data = '''\
@@ -299,7 +286,7 @@ class TestBase(object):
         if spath is None:
             spath = os.path.join(self.test_run_dir, 'states')
         for state in self.states:
-            stname = state + base_op.XmnrBase.statefile_extension
+            stname = state + base_op.XmnrBase.cfg_statefile_extension
             system.ff_patcher.fs.create_file(os.path.join(spath, stname),
                                              contents='{} test data'.format(state))
             if state_path is None:
@@ -422,9 +409,10 @@ class TestStates(TestBase):
         output = self.invoke_action('record-state',
                                     state_name='test_state',
                                     format="c-style",
+                                    overwrite=False,
                                     including_rollbacks=None)
         self.check_output(output)
-        state_path = 'states/test_state' + base_op.XmnrBase.statefile_extension
+        state_path = 'states/test_state' + base_op.XmnrBase.cfg_statefile_extension
         assert os.path.exists(os.path.join(self.test_run_dir, state_path))
         with open(os.path.join(self.test_run_dir, state_path + '.load')) as metadata:
             assert metadata.read() == config_op.state_metadata
@@ -437,14 +425,15 @@ class TestStates(TestBase):
         output = self.invoke_action('record-state',
                                     state_name='test_state_xml',
                                     format="xml",
+                                    overwrite=False,
                                     including_rollbacks=None)
         self.check_output(output)
-        state_path = 'states/test_state_xml' + base_op.XmnrBase.statefile_extension
+        state_path = 'states/test_state_xml' + base_op.XmnrBase.xml_statefile_extension
         assert os.path.exists(os.path.join(self.test_run_dir, state_path))
         with open(os.path.join(self.test_run_dir, state_path + '.load')) as metadata:
             assert metadata.read() == config_op.state_metadata
         with open(os.path.join(self.test_run_dir, state_path)) as state_data:
-            assert state_data.read() == test_state_data_xml_transformed
+            assert state_data.read() == test_state_data_xml
 
     @xtest_patch
     def test_import_states(self, xpatch):
@@ -454,6 +443,7 @@ class TestStates(TestBase):
         output = self.invoke_action('import-state-files',
                                     file_path_pattern=os.path.join(path, '*1.state.cfg'),
                                     format="c-style",
+                                    target_format="c-style",
                                     merge=False,
                                     overwrite=None)
         self.check_output(output)

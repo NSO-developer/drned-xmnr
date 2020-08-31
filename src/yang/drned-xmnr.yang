@@ -29,6 +29,13 @@ module drned-xmnr {
   typedef dirpath-type {
     type string;
   }
+  typedef state-file-format {
+    type enumeration {
+      enum xml;
+      enum c-style;
+    }
+    default xml;
+  }
 
   container drned-xmnr {
     leaf drned-directory {
@@ -128,6 +135,10 @@ module drned-xmnr {
               mandatory true;
               type string;
             }
+            leaf overwrite {
+              type boolean;
+              default false;
+            }
             leaf including-rollbacks {
               type uint32 {
                 range 0..25;
@@ -135,11 +146,7 @@ module drned-xmnr {
               default 0;
             }
             leaf format {
-              type enumeration {
-                enum xml;
-                enum c-style;
-              }
-              default c-style;
+              type state-file-format;
             }
           }
           output {
@@ -210,6 +217,9 @@ module drned-xmnr {
                 enum nso-c-style;
               }
               default xml;
+            }
+            leaf target-format {
+              type state-file-format;
             }
             leaf overwrite {
               type boolean;

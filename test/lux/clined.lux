@@ -24,7 +24,7 @@
     # watch for autoconfigs
     !sync-from
     ?result true
-    !drned-xmnr state record-state state-name if
+    !drned-xmnr state record-state state-name if overwrite true
     ???success
     [progress walk states]
     [timeout 20]
