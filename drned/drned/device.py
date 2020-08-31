@@ -282,7 +282,7 @@ class Device(object):
         return self
 
     def load(self, name, mode="merge", fail_on_errors=True, rename_device=False,
-             ancient=False):
+             ancient=False, xload=False):
         """Load device configuration from file.
 
         The load operation can read additional load information from a
@@ -328,6 +328,9 @@ class Device(object):
             if lmode:
                 mode = lmode.group(1)
 
+        if xload and mode == 'override':  # broken in 5.3.2 and later - ENG-24198
+            self.cmd('no devices device {} config'.format(self.name))
+            mode = 'merge'
         expect_not = None
         if not fail_on_errors:
             expect_not = "(ERROR|[Ee]rror|Failed|Aborted):(?! incomplete| on line| bad value)"
@@ -339,7 +342,7 @@ class Device(object):
         return self
 
     def rload(self, name, mode="merge", fail_on_errors=True, remove_device=False,
-              set_path=True, banner=True):
+              set_path=True, banner=True, xload=False):
         """Load device configuration from file at current position.
 
         The rload operation can read additional load information from
@@ -398,6 +401,9 @@ class Device(object):
                                              delete=False) as temp:
                 name = self._new_device_name(name, temp, remove=True)
                 rm = None if name == temp.name else temp.name
+        if xload and mode == 'override':  # broken in 5.3.2 and later - ENG-24198
+            self.cmd('no devices device {} config'.format(self.name))
+            mode = 'merge'
         if set_path and path:
             self.cmd(path)
         expect_not = None
