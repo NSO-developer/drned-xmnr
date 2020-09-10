@@ -378,7 +378,8 @@ def _drned_single_file(device, name, op, commit_id_base=None):
 def _drned_template_load(device, template, fail_on_errors=True):
     fname = template.replace("~", "-")
     if fname.endswith(".xml"):
-        device.load(fname, rename_device=True, fail_on_errors=fail_on_errors)
+        device.load(fname, rename_device=True, fail_on_errors=fail_on_errors,
+                    xload=True)
     else:
-        device.rload(fname, remove_device=True, fail_on_errors=fail_on_errors)
-
+        device.rload(fname, remove_device=True, fail_on_errors=fail_on_errors,
+                     xload=True)

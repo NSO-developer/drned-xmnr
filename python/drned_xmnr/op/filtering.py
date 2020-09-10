@@ -83,7 +83,7 @@ TERMINATED = StateTerminatedObject()
 
 class LineOutputEvent(object):
     indent = 3 * ' '
-    state_name_regexp = re.compile(r'.*/states/([^/]*)\.state\.cfg')
+    state_name_regexp = re.compile(r'.*/states/([^/]*)\.state\.(cfg|xml)')
 
     @staticmethod
     def indent_line(line):
@@ -150,7 +150,7 @@ class DrnedActionEvent(DrnedEvent):
         return 'Drned event ' + self.action
 
     def produce_line(self):
-        if self.action == 'rload':
+        if self.action == 'load':
             state = self.state_name_regexp.search(self.line).groups()[0]
             line = 'load ' + state
         elif self.action == 'compare_config':
@@ -301,12 +301,13 @@ line_regexp = re.compile('''\
 (?:\
 (?P<init_states>Found [0-9]* states recorded for device .*)|\
 (?P<start>Starting with state .*)|\
-(?P<py_test>py.test -k test_template_set --fname=[^ ]*.state.cfg\
+(?P<py_test>py.test -k test_template_set --fname=[^ ]*.state.(cfg|xml)\
 (?: --op=[^ ]*)*(?: --end-op=)? --device=[^ ]*)|\
 (?P<transition>Transition [0-9]*/[0-9]*: .* ==> .*)|\
 (?P<init_failed>Failed to initialize state .*)|\
 (?P<trans_failed>Transition failed)|\
-(?P<drned>={30} (?P<drned_op>rload|commit|compare_config|rollback)\\(.*\\))|\
+(?P<drned_load>={30} r?load\\(.*/states/.*\\))|\
+(?P<drned>={30} (?P<drned_op>commit|compare_config|rollback)\\(.*\\))|\
 (?P<no_modifs>% No modifications to commit\\.)|\
 (?P<commit_queue>commit-queue \\{)|\
 (?P<commit_nn>commit no-networking)|\
@@ -343,6 +344,8 @@ def event_generator(consumer):
                 consumer.send(PyTest(match.string))
             elif match.lastgroup == 'init_states':
                 consumer.send(InitStates(match.string))
+            elif match.lastgroup == 'drned_load':
+                consumer.send(DrnedActionEvent(match.string, 'load'))
             elif match.lastgroup == 'drned':
                 consumer.send(DrnedActionEvent(match.string, match.groupdict()['drned_op']))
             elif match.lastgroup == 'no_modifs':

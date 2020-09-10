@@ -56,9 +56,8 @@ class SetupOp(base_op.ActionBase):
         if self.overwrite and os.path.exists(target):
             try:
                 shutil.rmtree(target, ignore_errors=True)
-                os.remove(target)
             except OSError as ose:
-                if ose.errno != errno.ENOENT:		
+                if ose.errno != errno.ENOENT:
                     msg = "Failed to remove the old drned directory {0}" \
                           .format(os.strerror(ose.errno))
                     raise ActionError(msg)

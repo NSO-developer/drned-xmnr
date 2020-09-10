@@ -18,8 +18,10 @@
     !config dhcp defaultLeaseTime 200s
     !commit
     ???Commit complete.
-    !drned-xmnr state record-state state-name time
+    !drned-xmnr state record-state state-name time format c-style overwrite true
     ???success
+    !drned-xmnr state record-state state-name time
+    ???failure state time already exists
     ~drned-xmnr state import-state-files
     ! file-path-pattern ../subnet.xml merge false overwrite true
     ???success

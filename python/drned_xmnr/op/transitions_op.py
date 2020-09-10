@@ -54,16 +54,12 @@ class TransitionsOp(base_op.ActionBase):
         self.log.debug("drned: {0}".format(args))
         return self.run_in_drned_env(args, timeout)
 
-    def transition_to_state(self, filename, rollback=False):
-        state_name = self.state_filename_to_name(filename)
-        if not os.path.exists(filename):
-            raise ActionError('No such state: {0}'.format(state_name))
-
+    def transition_to_state(self, state_name, rollback=False):
+        filename = self.state_name_to_filename(state_name)
         self.log.debug("Transition_to_state: {0}\n".format(state_name))
         # filename needs to use '~' instead of '-'
         # need to use relative path for DrNED to accept that
-        filepath = os.path.relpath(self.state_name_to_filename(state_name.replace("-", "~")),
-                                   self.drned_run_directory)
+        filepath = os.path.relpath(filename, self.drned_run_directory).replace("-", "~")
 
         self.log.debug("Using file {0}\n".format(filepath))
         # Max 120 seconds for executing DrNED
@@ -91,8 +87,7 @@ class TransitionToStateOp(TransitionsOp):
         msg = "config_transition_to_state() with device {0} to state {1}" \
               .format(self.dev_name, self.state_name)
         self.log.debug(msg)
-        to_filename = self.state_name_to_filename(self.state_name)
-        result = self.transition_to_state(to_filename, self.rollback)
+        result = self.transition_to_state(self.state_name, self.rollback)
         if result is True:
             return {'success': "Done"}
         else:
@@ -101,15 +96,13 @@ class TransitionToStateOp(TransitionsOp):
 
 class ExploringOp(TransitionsOp):
     def _init_params(self, params):
-        state_files = self.get_state_files()
         pstates = list(params.states)
         if pstates == []:
-            self.state_filenames = state_files
+            self.state_filenames = self.get_state_files()
             random.shuffle(self.state_filenames)
         else:
             self.state_filenames = [self.state_name_to_filename(state)
-                                    for state in pstates
-                                    if self.state_name_to_filename(state) in state_files]
+                                    for state in pstates]
 
 
 class ExploreTransitionsOp(ExploringOp):
@@ -167,7 +160,7 @@ class ExploreTransitionsOp(ExploringOp):
             to_name = self.state_filename_to_name(to_state)
             if prev_state != from_state:
                 self.progress_msg("Starting with state {0}\n".format(from_name))
-                result = self.transition_to_state(from_state)
+                result = self.transition_to_state(from_name)
                 if result is not True:
                     msg = "Failed to initialize state {0}".format(from_name)
                     self.progress_msg(msg + '\n')
@@ -178,7 +171,7 @@ class ExploreTransitionsOp(ExploringOp):
                 prev_state = from_state
             self.progress_msg("Transition {0}/{1}: {2} ==> {3}\n"
                               .format(index+1, num_transitions, from_name, to_name))
-            result = self.transition_to_state(to_state, rollback=True)
+            result = self.transition_to_state(to_name, rollback=True)
             if result is not True:
                 failed_transitions.append((from_name, to_name, result))
                 self.progress_msg("Transition failed\n")
@@ -207,7 +200,8 @@ class WalkTransitionsOp(ExploringOp):
         # if rollback is not desired, we need to set it to an empty list
         fname_args = ["--fname=" + filename for filename in self.state_filenames]
         end_op = [] if self.rollback else ["--end-op", ""]
-        result, _ = self.drned_run(fname_args + end_op + ["--ordered=false", "-k", "test_template_set"])
+        result, _ = self.drned_run(fname_args + end_op +
+                                   ["--ordered=false", "-k", "test_template_set"])
         self.log.debug("DrNED completed: {0}".format(result))
         if result != 0:
             raise ActionError("drned failed")
