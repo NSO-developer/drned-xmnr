@@ -860,16 +860,19 @@ class Device(object):
             f.write(s + "\n")
 
     def _set_rollback_xml(self, xml):
-        next_rollback = str(int(self._get_latest_rollback()) + 1)
-        if next_rollback not in self.rollback_xml:
-            self.rollback_xml[next_rollback] = xml
+        rb_no = self._get_latest_rollback()
+        if rb_no is not None:
+            next_rollback = str(int(rb_no) + 1)
+            if next_rollback not in self.rollback_xml:
+                self.rollback_xml[next_rollback] = xml
 
     def _get_latest_rollback(self):
-        return common.check_output(
+        val = common.check_output(
             "ls -1rt drned-ncs/logs/rollback* | tail -1") \
-                         .replace("drned-ncs/logs/rollback", "") \
-                         .replace(".prepare", "") \
-                         .strip()
+                    .replace("drned-ncs/logs/rollback", "") \
+                    .replace(".prepare", "") \
+                    .strip()
+        return val if val else None
 
     def _coverage(self):
         xml = None
