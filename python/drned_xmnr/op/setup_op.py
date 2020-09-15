@@ -79,6 +79,7 @@ class SetupOp(base_op.ActionBase):
         xmnr_pkg = root.packages.package['drned-xmnr'].directory
         self.drned_skeleton = os.path.join(xmnr_pkg, 'drned-skeleton')
         self.drned_submod = os.path.join(xmnr_pkg, 'drned')
+
     def get_package(self, root):
         devtype = root.devices.device[self.dev_name].device_type
         if devtype.ne_type in (devtype.netconf, devtype.snmp):
