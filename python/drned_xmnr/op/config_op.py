@@ -78,7 +78,7 @@ class ViewStateOp(ConfigOp):
     def perform(self):
         self.log.debug("config_view_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
-        state_filename = self.state_name_to_single_filename(state_name)
+        state_filename = self.state_name_to_existing_filename(state_name)
         try:
             with open(state_filename, 'r') as f:
                 state_str = f.read()
