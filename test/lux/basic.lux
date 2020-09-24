@@ -1,6 +1,7 @@
 [doc Testing DrNED-XMNR integration with NCS and DrNED]
 
 [include common.luxinc]
+[global ned0_log=/tmp/xmnr/ned0/test/output.log]
 
 [shell os]
     [invoke ned-test-setup]
@@ -12,9 +13,22 @@
     [timeout]
     !cd ..
     [invoke start-ncs-netsim ned]
-
 [shell ncs-cli]
-    [invoke prepare-test ned0]
+    [invoke prepare-ncs ned0]
+
+    [loop queues true false]
+[shell os]
+    !rm -f $ned0_log
+    !$queues && echo -n en || echo -n dis; echo abled
+    ?(disabled|enabled)
+    [my qtest=$1]
+    !$queues && echo -n dis || echo -n en; echo abled
+    ?(disabled|enabled)
+    [my neg_qtest=$1]
+    !tail -F $ned0_log
+    -Commit queues are $neg_qtest
+[shell ncs-cli]
+    [invoke prepare-xmnr $queues]
     !config dhcp defaultLeaseTime 200s
     !commit
     ???Commit complete.
@@ -28,6 +42,17 @@
     !drned-xmnr state check-states validate true
     ???success all states are consistent
     [invoke test-walk-states "empty subnet time"]
+[shell os]
+    """?
+    -----*
+    .* - walk states
+    -----*
+    """
+    ?Commit queues are $qtest
+    ?====* 1 passed, .* ====*
+    ~$_CTRL_C_
+    ?SH-PROMPT:
+    [endloop]
 
 [cleanup]
     [invoke cleanup]

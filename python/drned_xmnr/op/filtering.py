@@ -310,6 +310,7 @@ line_regexp = re.compile('''\
 (?P<drned>={30} (?P<drned_op>commit|compare_config|rollback)\\(.*\\))|\
 (?P<no_modifs>% No modifications to commit\\.)|\
 (?P<commit_queue>commit-queue \\{)|\
+(?P<commit_noqueue>commit)|\
 (?P<commit_nn>commit no-networking)|\
 (?P<commit_complete>Commit complete\\.)|\
 (?P<commit_result> *status (?P<result>completed|failed))|\
@@ -352,6 +353,9 @@ def event_generator(consumer):
                 consumer.send(DrnedEmptyCommit())
             elif match.lastgroup == 'commit_queue':
                 consumer.send(DrnedCommitLogEvent())
+            elif match.lastgroup == 'commit_noqueue':
+                consumer.send(DrnedCommitLogEvent())
+                consumer.send(DrnedCommitResult('commit', True))
             elif match.lastgroup == 'commit_nn':
                 consumer.send(DrnedCommitNNEvent())
             elif match.lastgroup == 'commit_result':

@@ -62,6 +62,11 @@
 [endmacro]
 
 [macro prepare-test device]
+    [invoke prepare-ncs $device]
+    [invoke prepare-xmnr true]
+[endmacro]
+
+[macro prepare-ncs device]
     !ncs_cmd -u admin -c 'mdel /devices/device{$device}'
     !ncs-netsim --dir ncs-run/netsim ncs-xml-init $device | sed -e 's/10022/12022/' -e 's/cli>/netconf>/' | ncs_load -F p -l -m
     [invoke shell-check]
@@ -70,12 +75,18 @@
     !complete-on-space false
     !config
     !python-vm logging level level-debug
+    !drned-xmnr xmnr-log-file output.log
     !commit
     ?Commit complete|No modifications.
     !devices device $device
     !sync-from
+[endmacro]
+
+[macro prepare-xmnr queues]
+    !no config
+    !commit
     [progress setup xmnr]
-    !drned-xmnr setup setup-xmnr overwrite true
+    !drned-xmnr setup setup-xmnr overwrite true use-commit-queue $queues
     ???success XMNR set up
     [progress record states]
     !drned-xmnr state record-state state-name empty overwrite true

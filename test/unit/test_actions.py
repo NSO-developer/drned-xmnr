@@ -149,16 +149,13 @@ drned_transition_output_filtered = '''\
 '''
 
 
-drned_walk_output = '''\
+drned_walk_output_base = '''\
 --generic drned data--
-============================== rload(../states/{state_to}.state.cfg)
+============================== rload(../states/{{state_to}}.state.cfg)
 --generic drned data--
 ============================== commit()
 --generic drned data--
-commit-queue {{
-    id 1529566672491
-    status completed
-}}
+{commit_message}
 Commit complete.
 --generic drned data--
 ============================== compare_config()
@@ -167,14 +164,20 @@ Commit complete.
 --generic drned data--
 ============================== commit()
 --generic drned data--
-commit-queue {{
-    id 1529566674280
-    status completed
-}}
+{commit_message}
 --generic drned data--
 ============================== compare_config()
 --generic drned data--
 '''
+
+commit_queue_message = '''\
+commit-queue {{
+    id 1529566674280
+    status completed
+}}
+'''
+drned_walk_output = drned_walk_output_base.format(commit_message=commit_queue_message)
+drned_walk_output_noqueues = drned_walk_output_base.format(commit_message='commit')
 
 drned_walk_output_outro = '''\
 ### TEARDOWN, RESTORE DEVICE ###
@@ -324,7 +327,7 @@ class TestSetup(TestBase):
         self.setup_fs_data(xpatch.system)
         self.setup_ncs_data(xpatch.ncs)
         xpatch.system.socket_data(device_data.encode())
-        output = self.invoke_action('setup-xmnr', overwrite=True)
+        output = self.invoke_action('setup-xmnr', overwrite=True, use_commit_queue=True)
         self.check_output(output)
         with open(os.path.join(self.test_run_dir, 'drned-skeleton', 'skeleton')) as skel_test:
             assert skel_test.read() == 'drned skeleton'
