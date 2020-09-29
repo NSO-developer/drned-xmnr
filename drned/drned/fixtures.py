@@ -54,8 +54,7 @@ def pytest_generate_tests(metafunc):
                 for f in files:
                     if os.path.splitext(f)[1] in [".cfg", ".txt", ".xml", ".init"]:
                         fn = (os.path.join(root, f)
-                              .replace("../%s/" % os.path.basename(os.getcwd()), "")
-                              .replace("-", "~"))
+                              .replace("../%s/" % os.path.basename(os.getcwd()), ""))
                         filenames.append(fn)
         return filenames
 
@@ -63,7 +62,8 @@ def pytest_generate_tests(metafunc):
     if "template" in metafunc.fixturenames:
         filenames = get_filenames()
         if filenames:
-            metafunc.parametrize("template", filenames, scope=SCOPE)
+            metafunc.parametrize("template", filenames, ids=os.path.basename,
+                                 scope=SCOPE)
 
     # Look for fname files
     if "fname" in metafunc.fixturenames:

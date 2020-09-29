@@ -542,7 +542,7 @@ class TestTransitions(TransitionsTestBase):
     def check_drned_call(self, call, state=None, rollback=False, fnames=None, builtin_drned=False):
         if fnames is None:
             test = 'test_template_single' if rollback else 'test_template_raw'
-            test_args = ['-k {}[../states/{}.state.cfg]'.format(test, state)]
+            test_args = ['-k {}[{}.state.cfg]'.format(test, state)]
         else:
             test_args = ['--fname={}'.format(os.path.join(self.test_run_dir,
                                                           'states',
