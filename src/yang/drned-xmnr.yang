@@ -110,6 +110,12 @@ module drned-xmnr {
               type boolean;
               default false;
             }
+            leaf use-commit-queue {
+              tailf:info "Commit queue should be used for testing this
+                          device.";
+              type boolean;
+              default true;
+            }
           }
           output {
             uses action-output-common;

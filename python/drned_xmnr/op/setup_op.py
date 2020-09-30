@@ -23,15 +23,19 @@ class SetupOp(base_op.ActionBase):
 
     def _init_params(self, params):
         self.overwrite = params.overwrite
+        self.queue = params.use_commit_queue
 
     def perform(self):
         # device and states directory should have been already created
         self.run_with_trans(self.prepare_setup)
         try:
-            shutil.copy(self.pkg_file,
-                        os.path.join(os.path.dirname(self.dev_test_dir), 'package-meta-data.xml'))
+            with open(os.path.join(os.path.dirname(self.dev_test_dir),
+                                   'package-meta-data.xml'),
+                      'w') as meta:
+                if not self.queue:
+                    print('<requires-transaction-states/>', file=meta)
         except OSError as ose:
-            msg = "Failed to copy package-meta-data file {0}".format(os.strerror(ose.errno))
+            msg = "Failed to set up package-meta-data file {0}".format(os.strerror(ose.errno))
             raise ActionError(msg)
         target = os.path.join(self.dev_test_dir, "drned-skeleton")
         if self.overwrite and os.path.exists(target):
@@ -75,27 +79,9 @@ class SetupOp(base_op.ActionBase):
 
     def prepare_setup(self, trans):
         root = maagic.get_root(trans)
-        self.pkg_file = self.get_package(root)
         xmnr_pkg = root.packages.package['drned-xmnr'].directory
         self.drned_skeleton = os.path.join(xmnr_pkg, 'drned-skeleton')
         self.drned_submod = os.path.join(xmnr_pkg, 'drned')
-
-    def get_package(self, root):
-        devtype = root.devices.device[self.dev_name].device_type
-        if devtype.ne_type in (devtype.netconf, devtype.snmp):
-            # for netconf/snmp devices, there is (usually) no package
-            return '/dev/null'
-        elif devtype.ne_type == devtype.generic:
-            ned_id = devtype.generic.ned_id
-            ned_type = 'generic'
-        else:
-            ned_id = devtype.cli.ned_id
-            ned_type = 'cli'
-        package = self.find_ned_package(root, ned_id, ned_type)
-        if package is None:
-            self.log.warning("Could not find the device NED package, NED id {0}".format(ned_id))
-            return '/dev/null'
-        return os.path.join(package.directory, 'package-meta-data.xml')
 
     def find_ned_package(self, root, ned_id, ned_type):
         for package in root.packages.package:
