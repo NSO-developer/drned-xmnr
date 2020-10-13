@@ -1,7 +1,8 @@
 [doc Testing DrNED-XMNR integration with NCS and DrNED]
 
 [include common.luxinc]
-[global ned0_log=/tmp/xmnr/ned0/test/output.log]
+[global ned0_dir=/tmp/xmnr/ned0]
+[global ned0_log=$ned0_dir/test/output.log]
 
 [shell os]
     [invoke ned-test-setup]
@@ -16,7 +17,42 @@
 [shell ncs-cli]
     [invoke prepare-ncs ned0]
 
+    [invoke prepare-xmnr true]
+    !config dhcp defaultLeaseTime 200s
+    !commit
+    ???Commit complete.
+    !drned-xmnr state record-state state-name time format c-style overwrite true
+    ???success
+    !drned-xmnr state record-state state-name time
+    ???failure state time already exists
+    ~drned-xmnr state import-state-files
+    ! file-path-pattern ../subnet.xml merge false overwrite true
+    ???success
+[shell os]
+    !cp -v ../subnet2.xml $ned0_dir/test/states/
+    ??'../subnet2.xml' -> '$ned0_dir/test/states/subnet2.xml'
+    ?SH-PROMPT
+[shell ncs-cli]
+    !drned-xmnr state record-state state-name subnet2
+    ???failure state subnet2 already exists
+[shell os]
+    ~netconf-console --get -x /devices/device/drned-xmnr/state/states |
+    ~sed -n 's%.*<state>\(.*\)</state>.*%\1%p' |
+    !sort
+    """?
+    netconf-console --get .*
+    empty
+    subnet
+    subnet2
+    time
+    SH-PROMPT
+    """
+[shell ncs-cli]
+    !drned-xmnr state check-states validate true
+    ???success all states are consistent
+
     [loop queues true false]
+        [invoke prepare-xmnr $queues]
 [shell os]
     !rm -f $ned0_log
     !$queues && echo -n en || echo -n dis; echo abled
@@ -28,19 +64,6 @@
     !tail -F $ned0_log
     -Commit queues are $neg_qtest
 [shell ncs-cli]
-    [invoke prepare-xmnr $queues]
-    !config dhcp defaultLeaseTime 200s
-    !commit
-    ???Commit complete.
-    !drned-xmnr state record-state state-name time format c-style overwrite true
-    ???success
-    !drned-xmnr state record-state state-name time
-    ???failure state time already exists
-    ~drned-xmnr state import-state-files
-    ! file-path-pattern ../subnet.xml merge false overwrite true
-    ???success
-    !drned-xmnr state check-states validate true
-    ???success all states are consistent
     [invoke test-walk-states "empty subnet time"]
 [shell os]
     """?
@@ -52,6 +75,7 @@
     ?====* 1 passed, .* ====*
     ~$_CTRL_C_
     ?SH-PROMPT:
+[shell ncs-cli]
     [endloop]
 
 [cleanup]
