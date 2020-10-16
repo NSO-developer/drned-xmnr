@@ -171,7 +171,6 @@ class ImportStateFiles(ConfigOp):
         checks = [self.state_name_to_existing_filename(state) for state in states]
         conflicts = {self.state_filename_to_name(filename) for filename in checks
                      if filename is not None}
-        self.log.info(f'import {self.pattern}, {states}, {checks}, {conflicts}')
         if not self.overwrite:
             if conflicts:
                 raise ActionError("States already exists: " + ", ".join(conflicts))
