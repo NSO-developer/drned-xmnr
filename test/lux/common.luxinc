@@ -45,7 +45,7 @@
         Test transition to $state
            load $state
            commit
-               succeeded
+               (succeeded|\(no modifications\))
            compare config
                succeeded
         """

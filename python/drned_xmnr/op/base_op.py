@@ -30,6 +30,8 @@ else:
 class XmnrBase(object):
     xml_statefile_extension = '.state.xml'
     cfg_statefile_extension = '.state.cfg'
+    xml_extensions = [xml_statefile_extension, '.xml']
+    cfg_extensions = [cfg_statefile_extension, '.cfg']
 
     def __init__(self, dev_name, log_obj):
         self.dev_name = dev_name
@@ -48,19 +50,21 @@ class XmnrBase(object):
         except OSError:
             pass
 
-    def format_state_filename(self, statename, format='xml'):
+    def format_state_filename(self, statename, format='xml', suffix=None):
         """Just convert the state name to the right filename."""
-        suffix = (self.cfg_statefile_extension if format == 'cfg'
-                  else self.xml_statefile_extension)
+        if suffix is None:
+            suffix = (self.cfg_statefile_extension if format == 'cfg'
+                      else self.xml_statefile_extension)
         return os.path.join(self.states_dir, statename + suffix)
 
     def state_name_to_existing_filename(self, statename, format='any'):
+        suffixes = []
         if format != 'cfg':
-            path = self.format_state_filename(statename, format='xml')
-            if os.path.exists(path):
-                return path
+            suffixes += self.xml_extensions
         if format != 'xml':
-            path = self.format_state_filename(statename, format='cfg')
+            suffixes += self.cfg_extensions
+        for suffix in suffixes:
+            path = self.format_state_filename(statename, suffix=suffix)
             if os.path.exists(path):
                 return path
         return None
@@ -82,7 +86,9 @@ class XmnrBase(object):
                                           format=('xml' if format != 'cfg' else 'cfg'))
 
     def state_filename_to_name(self, filename):
-        return os.path.basename(filename)[:-len(self.xml_statefile_extension)]
+        for extension in self.xml_extensions + self.cfg_extensions:
+            if filename.endswith(extension):
+                return os.path.basename(filename)[:-len(extension)]
 
     def get_states(self):
         return [self.state_filename_to_name(f) for f in self.get_state_files()]

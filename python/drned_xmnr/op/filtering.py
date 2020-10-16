@@ -443,6 +443,9 @@ class ExploreLogState(LogState):
 
 
 class WalkLogState(LogState):
+    ignored_events = [DrnedEmptyCommit, DrnedCommitComplete, DrnedCommitLogEvent,
+                      DrnedCommitResult]
+
     def __init__(self, level):
         self.level = level
 
@@ -454,16 +457,16 @@ class WalkLogState(LogState):
             if self.level == 'overview':
                 return event.produce_line()
             return (event.produce_line(), DrnedLogState())
-        if not isinstance(event, DrnedEmptyCommit) and \
-           not isinstance(event, DrnedCommitComplete):
-            # commits can occur on this level
-            return event.produce_line()
-        return None
+        for clz in self.ignored_events:
+            if isinstance(event, clz):
+                # commits can occur on this level
+                return None
+        return event.produce_line()
 
 
 class DrnedLogState(LogState):
     def handle(self, event):
-        if isinstance(event, DrnedEmptyCommit):
+        if isinstance(event, DrnedCommitEvent):
             event.mark_complete()
             return None
         if not isinstance(event, DrnedActionEvent):
