@@ -97,8 +97,8 @@ class XmnrBase(object):
         return self.get_state_files_by_pattern('*')
 
     def get_state_files_by_pattern(self, pattern):
-        xmls = glob.glob(os.path.join(self.states_dir, pattern + self.xml_statefile_extension))
-        cfgs = glob.glob(os.path.join(self.states_dir, pattern + self.cfg_statefile_extension))
+        xmls = glob.glob(os.path.join(self.states_dir, pattern + '.xml'))
+        cfgs = glob.glob(os.path.join(self.states_dir, pattern + '.cfg'))
         return xmls + [cfg for cfg in cfgs if (cfg[:-3] + 'xml') not in xmls]
 
 

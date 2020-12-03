@@ -1,14 +1,23 @@
 <?xml version="1.0"?>
-<dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
-  <SharedNetworks>
-    <sharedNetwork>
-      <name>test2</name>
-      <SubNets>
-        <subNet>
-          <net>2.2.2.2</net>
-          <mask>255.255.255.0</mask>
-        </subNet>
-      </SubNets>
-    </sharedNetwork>
-  </SharedNetworks>
-</dhcp>
+<config xmlns="http://tail-f.com/ns/config/1.0">
+  <devices xmlns="http://tail-f.com/ns/ncs">
+    <device>
+      <name>ned0</name>
+      <config>
+        <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+          <SharedNetworks>
+            <sharedNetwork>
+              <name>test2</name>
+              <SubNets>
+                <subNet>
+                  <net>2.2.2.2</net>
+                  <mask>255.255.255.0</mask>
+                </subNet>
+              </SubNets>
+            </sharedNetwork>
+          </SharedNetworks>
+        </dhcp>
+      </config>
+    </device>
+  </devices>
+</config>
