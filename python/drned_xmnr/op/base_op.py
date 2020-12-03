@@ -239,8 +239,9 @@ class ActionBase(XmnrBase):
                 return executable
         raise ActionError('PyTest not installed - pytest executable not found')
 
-    def run_in_drned_env(self, args, timeout=120, outputfun=None):
+    def run_in_drned_env(self, args, timeout=120, outputfun=None, **envdict):
         env = self.run_with_trans(self.setup_drned_env)
+        env.update(envdict)
         self.log.debug("using env {0}\n".format(env))
         self.log.debug("running", args)
         try:
