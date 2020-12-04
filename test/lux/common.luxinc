@@ -1,5 +1,7 @@
 [config timeout=2000]
 
+[global xmnr_dir=/tmp/xmnr]
+
 [macro shell-check]
     !echo ==$?==
     ?==0==
@@ -67,8 +69,12 @@
 [endmacro]
 
 [macro prepare-ncs device]
-    !ncs_cmd -u admin -c 'mdel /devices/device{$device}'
-    !ncs-netsim --dir ncs-run/netsim ncs-xml-init $device | sed -e 's/10022/12022/' -e 's/cli>/netconf>/' | ncs_load -F p -l -m
+    [invoke prepare-ncs-tweak $device cat $device]
+[endmacro]
+
+[macro prepare-ncs-tweak device tweak tweak_device]
+    !ncs_cmd -u admin -c 'mdel /devices/device{$tweak_device}'
+    !ncs-netsim --dir ncs-run/netsim ncs-xml-init $device | $tweak | ncs_load -F p -l -m
     [invoke shell-check]
     !ncs_cli -u admin -C
     ???admin@ncs#
@@ -78,13 +84,11 @@
     !drned-xmnr xmnr-log-file output.log
     !commit
     ?Commit complete|No modifications.
-    !devices device $device
+    !devices device $tweak_device
     !sync-from
 [endmacro]
 
 [macro prepare-xmnr queues]
-    !no config
-    !commit
     [progress setup xmnr]
     !drned-xmnr setup setup-xmnr overwrite true use-commit-queue $queues
     ???success XMNR set up

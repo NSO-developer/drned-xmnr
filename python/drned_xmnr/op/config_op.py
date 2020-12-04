@@ -294,9 +294,14 @@ class ImportConvertCliFiles(ImportOp):
         super(ImportConvertCliFiles, self)._init_params(params)
         self.devcli = self.param_default(params, "cli_device", self.dev_name)
 
+    def cli_filter(self, msg):
+        for match in re.finditer('converting [^ ]* to [^ ]*/([^/]*)[.]xml', msg):
+            report = 'importing state {}\n'.format(match.groups()[0])
+            super(ImportConvertCliFiles, self).cli_filter(report)
+
     def perform(self):
         filenames, states, _ = self.verify_filenames()
-        args = filenames[:]
+        args = [os.path.realpath(filename) for filename in filenames]
         if self.merge:
             args.insert(0, '-m')
         args[0:0] = ['python', 'cli2netconf.py', self.dev_name, self.devcli]
