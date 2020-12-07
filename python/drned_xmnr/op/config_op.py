@@ -41,12 +41,12 @@ class DeleteStateOp(ConfigOp):
 
     def perform(self):
         self.log.debug("config_delete_state() with device {0}".format(self.dev_name))
-        name_or_pattern = self.state_name_pattern
-        if name_or_pattern is None:
-            name_or_pattern = self.state_name
-        state_filenames = self.get_state_files_by_pattern(name_or_pattern)
-        if state_filenames == []:
-            raise ActionError("no such states: {0}".format(self.state_name))
+        if self.state_name_pattern is None:
+            state_filenames = [self.state_name_to_filename(self.state_name)]
+        else:
+            state_filenames = self.get_state_files_by_pattern(self.state_name_pattern)
+            if state_filenames == []:
+                raise ActionError("no such states: {0}".format(self.state_name_pattern))
         for state_filename in state_filenames:
             try:
                 self.remove_state_file(state_filename)
