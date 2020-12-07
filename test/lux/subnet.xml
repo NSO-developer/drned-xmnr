@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
-  <SharedNetworks>
-    <sharedNetwork>
+  <shared-networks>
+    <shared-network>
       <name>test</name>
-      <SubNets>
-        <subNet>
+      <subnets>
+        <subnet>
           <net>1.1.1.1</net>
           <mask>255.255.255.0</mask>
-        </subNet>
-      </SubNets>
-    </sharedNetwork>
-  </SharedNetworks>
+        </subnet>
+      </subnets>
+    </shared-network>
+  </shared-networks>
 </dhcp>

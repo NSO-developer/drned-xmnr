@@ -5,17 +5,17 @@
       <name>ned0</name>
       <config>
         <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
-          <SharedNetworks>
-            <sharedNetwork>
+          <shared-networks>
+            <shared-network>
               <name>test2</name>
-              <SubNets>
-                <subNet>
+              <subnets>
+                <subnet>
                   <net>2.2.2.2</net>
                   <mask>255.255.255.0</mask>
-                </subNet>
-              </SubNets>
-            </sharedNetwork>
-          </SharedNetworks>
+                </subnet>
+              </subnets>
+            </shared-network>
+          </shared-networks>
         </dhcp>
       </config>
     </device>

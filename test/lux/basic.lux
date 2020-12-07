@@ -18,7 +18,7 @@
     [invoke prepare-ncs ned0]
 
     [invoke prepare-xmnr true]
-    !config dhcp defaultLeaseTime 200s
+    !config dhcp default-lease-time 200s
     !commit
     ???Commit complete.
     !drned-xmnr state record-state state-name time format c-style overwrite true

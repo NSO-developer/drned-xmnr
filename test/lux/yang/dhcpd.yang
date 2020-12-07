@@ -19,8 +19,8 @@ module dhcpd {
     }
   }
 
-  grouping subNet {
-    list subNet {
+  grouping subnet {
+    list subnet {
       key "net mask";
       leaf net {
         type inet:ipv4-address;
@@ -30,17 +30,17 @@ module dhcpd {
       }
       container range {
         presence "";
-        leaf dynamicBootP {
+        leaf dynamic-bootp {
           type boolean;
           default false;
           description "Enable BOOTP for this instance.";
         }
-        leaf lowAddr {
+        leaf low-addr {
           type inet:ipv4-address;
           mandatory true;
           description "Enable BOOTP for this instance.";
         }
-        leaf hiAddr {
+        leaf high-addr {
           type inet:ipv4-address;
           description "Enable BOOTP for this instance.";
         }
@@ -48,40 +48,38 @@ module dhcpd {
       leaf routers {
         type string;
       }
-      leaf maxLeaseTime {
+      leaf max-lease-time {
         type xs:duration;
         default PT7200S;
       }
     }
   }
 
-
-
   container dhcp {
-    leaf defaultLeaseTime {
+    leaf default-lease-time {
       type xs:duration;
       default PT600S;
     }
-    leaf maxLeaseTime {
+    leaf max-lease-time {
       type xs:duration;
       default PT7200S;
     }
-    leaf logFacility {
+    leaf log-facility {
       type loglevel;
       default local7;
     }
-    container SubNets {
-      uses subNet;
+    container subnets {
+      uses subnet;
     }
-    container SharedNetworks {
-      list sharedNetwork {
+    container shared-networks {
+      list shared-network {
         key name;
         max-elements 1024;
         leaf name {
           type string;
         }
-        container SubNets {
-          uses subNet ;
+        container subnets {
+          uses subnet;
         }
       }
     }
