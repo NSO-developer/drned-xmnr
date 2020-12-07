@@ -28,6 +28,9 @@
     ~drned-xmnr state import-state-files
     ! file-path-pattern ../subnet.xml merge false overwrite true
     ???success
+    ~drned-xmnr state import-state-files
+    ! file-path-pattern ../dhcp-ls.cfg format nso-c-style merge false overwrite true
+    ???success
 [shell os]
     !cp -v ../subnet2.xml $ned0_dir/test/states/
     ??'../subnet2.xml' -> '$ned0_dir/test/states/subnet2.xml'
@@ -41,6 +44,7 @@
     !sort
     """?
     netconf-console --get .*
+    dhcp-ls
     empty
     subnet
     subnet2
@@ -64,7 +68,7 @@
     !tail -F $ned0_log
     -Commit queues are $neg_qtest
 [shell ncs-cli]
-    [invoke test-walk-states "empty subnet time"]
+    [invoke test-walk-states "empty subnet dhcp-ls time"]
 [shell os]
     """?
     -----*

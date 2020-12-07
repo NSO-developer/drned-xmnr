@@ -202,12 +202,12 @@ class ImportStateFiles(ConfigOp):
             devname[0].text = self.dev_name
             config.write(tmpfile1)
         else:
-            devrx = re.compile('devices device .*')
-            fixline = 'devices.device {}'.format(self.dev_name)
+            devrx = re.compile('devices device \\S+')
+            fixline = 'devices device {}'.format(self.dev_name)
             with open(tmpfile1, 'w+') as output:
                 with open(source_file) as source:
                     for line in source:
-                        output.write(devrx.sub(fixline))
+                        output.write(devrx.sub(fixline, line))
         self.create_state(tmpfile1, tmpfile2)
         os.remove(tmpfile1)
         format = 'cfg' if self.state_format == 'c-style' else 'xml'
