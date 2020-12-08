@@ -3,6 +3,7 @@
 import os
 import time
 import random
+import re
 import itertools
 
 from ncs import maagic
@@ -91,7 +92,12 @@ class TransitionToStateOp(TransitionsOp):
             return {'failure': result}
 
 
-class ExploringOp(TransitionsOp):
+class ExploreTransitionsOp(TransitionsOp):
+    action_name = 'explore transitions'
+
+    def event_processor(self, level, sink):
+        return filtering.explore_output_filter(level, sink)
+
     def _init_params(self, params):
         pstates = list(params.states)
         if pstates == []:
@@ -100,16 +106,6 @@ class ExploringOp(TransitionsOp):
         else:
             self.state_filenames = [self.state_name_to_filename(state)
                                     for state in pstates]
-
-
-class ExploreTransitionsOp(ExploringOp):
-    action_name = 'explore transitions'
-
-    def event_processor(self, level, sink):
-        return filtering.explore_output_filter(level, sink)
-
-    def _init_params(self, params):
-        super(ExploreTransitionsOp, self)._init_params(params)
         stp = params.stop_after
         self.stop_time = 24 * int(self.param_default(stp, "days", 0))
         self.stop_time = 60 * int(self.param_default(stp, "hours", self.stop_time))
@@ -182,12 +178,36 @@ class ExploreTransitionsOp(ExploringOp):
         return result
 
 
-class WalkTransitionsOp(ExploringOp):
+class WalkTransitionsOp(TransitionsOp):
     action_name = 'walk states'
 
     def _init_params(self, params):
-        super(WalkTransitionsOp, self)._init_params(params)
+        pstates = list(params.states)
+        if pstates == []:
+            pstates = list(self.filter_state_sets(self.get_states()))
+            random.shuffle(pstates)
+        self.state_filenames = [self.state_name_to_filename(state)
+                                for state in pstates]
         self.rollback = params.rollback
+
+    def filter_state_sets(self, states):
+        """Filter out duplicate representatives of "state sets".
+
+        For all states of the form state_name:N make sure that only
+        one such state is present.
+
+        """
+        sets = set()
+        sfx = re.compile(r'(.*):\d+')
+        for state in states:
+            mm = sfx.fullmatch(state)
+            if mm is None:
+                yield state
+            else:
+                base = mm.groups()[0]
+                if base not in sets:
+                    sets.add(base)
+                    yield state
 
     def perform_transitions(self):
         self.log.debug("walking states {0}"
