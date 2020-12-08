@@ -59,6 +59,7 @@
            succeeded
     success Completed successfully
     """
+    [timeout]
 [endmacro]
 
 [macro prepare-test device]

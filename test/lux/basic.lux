@@ -4,6 +4,45 @@
 [global ned0_dir=/tmp/xmnr/ned0]
 [global ned0_log=$ned0_dir/test/output.log]
 
+[macro run-queues queues]
+[shell ncs-cli]
+    [invoke prepare-xmnr $queues]
+[shell os]
+    !rm -f $ned0_log
+    !$queues && echo -n en || echo -n dis; echo abled
+    ?(disabled|enabled)
+    [my qtest=$1]
+    !$queues && echo -n dis || echo -n en; echo abled
+    ?(disabled|enabled)
+    [my neg_qtest=$1]
+    !tail -F $ned0_log
+    -Commit queues are $neg_qtest
+[shell ncs-cli]
+    [invoke test-walk-states "empty subnet dhcp-ls time"]
+[shell os]
+    """?
+    -----*
+    .* - walk states
+    -----*
+    """
+    ?Commit queues are $qtest
+    ?====* 1 passed, .* ====*
+    ~$_CTRL_C_
+    ?SH-PROMPT:
+[endmacro]
+
+[macro check-states states]
+[shell os]
+    ~netconf-console --get -x /devices/device/drned-xmnr/state/states |
+    ~sed -n 's%.*<state>\(.*\)</state>.*%\1%p' |
+    !sort | xargs echo
+    """?
+    netconf-console --get .*
+    $states$$
+    SH-PROMPT
+    """
+[endmacro]
+
 [shell os]
     [invoke ned-test-setup]
     !ncs-make-package --netconf-ned ../../yang ned
@@ -38,49 +77,21 @@
 [shell ncs-cli]
     !drned-xmnr state record-state state-name subnet2
     ???failure state subnet2 already exists
-[shell os]
-    ~netconf-console --get -x /devices/device/drned-xmnr/state/states |
-    ~sed -n 's%.*<state>\(.*\)</state>.*%\1%p' |
-    !sort
-    """?
-    netconf-console --get .*
-    dhcp-ls
-    empty
-    subnet
-    subnet2
-    time
-    SH-PROMPT
-    """
+    [invoke check-states "dhcp-ls empty subnet subnet2 time"]
 [shell ncs-cli]
     !drned-xmnr state check-states validate true
     ???success all states are consistent
 
     [loop queues true false]
-        [invoke prepare-xmnr $queues]
-[shell os]
-    !rm -f $ned0_log
-    !$queues && echo -n en || echo -n dis; echo abled
-    ?(disabled|enabled)
-    [my qtest=$1]
-    !$queues && echo -n dis || echo -n en; echo abled
-    ?(disabled|enabled)
-    [my neg_qtest=$1]
-    !tail -F $ned0_log
-    -Commit queues are $neg_qtest
-[shell ncs-cli]
-    [invoke test-walk-states "empty subnet dhcp-ls time"]
-[shell os]
-    """?
-    -----*
-    .* - walk states
-    -----*
-    """
-    ?Commit queues are $qtest
-    ?====* 1 passed, .* ====*
-    ~$_CTRL_C_
-    ?SH-PROMPT:
-[shell ncs-cli]
+        [invoke run-queues $queues]
     [endloop]
+[shell ncs-cli]
+    [progress deleting states]
+    !drned-xmnr state delete-state state-name dhcp-ls
+    ?success Deleted: dhcp-ls$
+    !drned-xmnr state delete-state state-name-pattern subnet*
+    ?success Deleted: (subnet, subnet2|subnet2, subnet)$
+    [invoke check-states "empty time"]
 
 [cleanup]
     [invoke cleanup]
