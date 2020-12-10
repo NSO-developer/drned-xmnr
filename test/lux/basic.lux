@@ -5,6 +5,7 @@
 [global ned0_log=$ned0_dir/test/output.log]
 
 [macro run-queues queues]
+    [my shell=$LUX_SHELLNAME]
 [shell ncs-cli]
     [invoke prepare-xmnr $queues]
 [shell os]
@@ -29,9 +30,11 @@
     ?====* 1 passed, .* ====*
     ~$_CTRL_C_
     ?SH-PROMPT:
+[shell $shell]
 [endmacro]
 
 [macro check-states states]
+    [my shell=$LUX_SHELLNAME]
 [shell os]
     ~netconf-console --get -x /devices/device/drned-xmnr/state/states |
     ~sed -n 's%.*<state>\(.*\)</state>.*%\1%p' |
@@ -41,6 +44,7 @@
     $states$$
     SH-PROMPT
     """
+[shell $shell]
 [endmacro]
 
 [shell os]
@@ -78,20 +82,40 @@
     !drned-xmnr state record-state state-name subnet2
     ???failure state subnet2 already exists
     [invoke check-states "dhcp-ls empty subnet subnet2 time"]
-[shell ncs-cli]
     !drned-xmnr state check-states validate true
     ???success all states are consistent
 
     [loop queues true false]
         [invoke run-queues $queues]
     [endloop]
-[shell ncs-cli]
     [progress deleting states]
     !drned-xmnr state delete-state state-name dhcp-ls
     ?success Deleted: dhcp-ls$
     !drned-xmnr state delete-state state-name-pattern subnet*
     ?success Deleted: (subnet, subnet2|subnet2, subnet)$
     [invoke check-states "empty time"]
+    !drned-xmnr state delete-state state-name time
+    ?success Deleted: time$
+    [progress walk-state with sets]
+    !config dhcp default-lease-time 300s
+    !commit
+    ?Commit complete
+    !drned-xmnr state record-state state-name lt:3
+    ?success
+    !config dhcp default-lease-time 400s
+    !commit
+    ?Commit complete
+    !drned-xmnr state record-state state-name lt:4
+    ?success
+    !drned-xmnr transitions walk-states | include "Test transition" | linnum
+    [timeout 10]
+    -3: Test transition
+    """?
+    1: Test transition to (empty|lt:[*])
+    2: Test transition to (empty|lt:[*])
+    admin@ncs\(.*\)\#
+    """
+    [timeout]
 
 [cleanup]
     [invoke cleanup]

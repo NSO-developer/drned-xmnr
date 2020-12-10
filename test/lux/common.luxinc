@@ -105,4 +105,6 @@
     ?SH-PROMPT:
     !rm -rf packages/*
     ?SH-PROMPT:
+    !rm -rf /tmp/xmnr
+    ?SH-PROMPT:
 [endmacro]
