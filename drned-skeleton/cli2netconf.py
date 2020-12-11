@@ -78,9 +78,8 @@ class Devcli:
     def load_config(self, merge, fname):
         """Send configuration to the device.
 
-        Args:
-        Returns:
-            self
+        With `merge=False` it corresponds to load-override, but not
+        every device supports `merge=True`.
         """
         self._banner(fname)
         self.data = fname
@@ -90,10 +89,6 @@ class Devcli:
 
     def get_config(self, fname):
         """Get configuration from the device.
-
-        Args:
-        Returns:
-            self
         """
         self._banner(fname)
         self.data = fname
@@ -109,9 +104,7 @@ class Devcli:
     def restore_config(self, fname=None):
         """Restore configuration on the device.
 
-        Args:
-        Returns:
-            self
+        If `fname` is not provided, the initial configuration is used.
         """
         if fname is None:
             fname = self.initial_config
@@ -124,10 +117,6 @@ class Devcli:
 
     def clean_config(self):
         """Clean all device configuration and enter initial state.
-
-        Args:
-        Returns:
-            self
         """
         return self.restore_config()
 
@@ -137,6 +126,8 @@ class Devcli:
         self.get_config(self.initial_config)
 
     def interstate(self, init_states, new_ssh=True):
+        """Run the state machine for all initial states.
+        """
         if isinstance(init_states, list):
             for init_state in init_states:
                 self.interstate_one(init_state, new_ssh)
@@ -145,11 +136,7 @@ class Devcli:
             self.interstate_one(init_state, new_ssh)
 
     def interstate_one(self, init_state, new_ssh=True):
-        """Run a state machine.
-
-        Args:
-        Returns:
-            self
+        """Run the state machine.
         """
         if new_ssh:
             self._ssh()
