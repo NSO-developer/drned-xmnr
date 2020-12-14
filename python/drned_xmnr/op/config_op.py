@@ -152,17 +152,13 @@ class RecordStateOp(ConfigOp):
         return {'success': "Recorded states " + str(state_filenames)}
 
 
-class ImportStateFiles(ConfigOp):
-    action_name = 'import states'
-
+class ImportOp(ConfigOp):
     def _init_params(self, params):
         self.pattern = params.file_path_pattern
-        self.file_format = self.param_default(params, "format", "")
-        self.state_format = params.target_format
         self.overwrite = params.overwrite
         self.merge = params.merge
 
-    def perform(self):
+    def verify_filenames(self):
         filenames = glob.glob(self.pattern)
         if filenames == []:
             raise ActionError("no files found: " + self.pattern)
@@ -174,6 +170,25 @@ class ImportStateFiles(ConfigOp):
         if not self.overwrite:
             if conflicts:
                 raise ActionError("States already exists: " + ", ".join(conflicts))
+        return filenames, states, conflicts
+
+    def get_state_name(self, origname):
+        (base, ext) = os.path.splitext(origname)
+        while ext != "":
+            (base, ext) = os.path.splitext(base)
+        return base
+
+
+class ImportStateFiles(ImportOp):
+    action_name = 'import states'
+
+    def _init_params(self, params):
+        super(ImportStateFiles, self)._init_params(params)
+        self.file_format = self.param_default(params, "format", "")
+        self.state_format = params.target_format
+
+    def perform(self):
+        filenames, states, conflicts = self.verify_filenames()
         for (source, target) in zip(filenames, states):
             if target in conflicts:
                 # TODO: the conflicts should be removed only after
@@ -214,12 +229,6 @@ class ImportStateFiles(ConfigOp):
         filename = self.format_state_filename(state, format=format)
         shutil.move(tmpfile2, filename)
         self.write_metadata(filename)
-
-    def get_state_name(self, origname):
-        (base, ext) = os.path.splitext(origname)
-        while ext != "":
-            (base, ext) = os.path.splitext(base)
-        return base
 
     def run_xslt(self, nso_xml_file, xml_file):
         xslt_root = etree.XML('''\
@@ -276,6 +285,38 @@ class ImportStateFiles(ConfigOp):
         with open(state_file, "wb") as state_file:
             for data in self.save_config(trans, save_flag, dev_config):
                 state_file.write(data)
+
+
+class ImportConvertCliFiles(ImportOp):
+    action_name = 'convert and import CLI states'
+
+    def _init_params(self, params):
+        super(ImportConvertCliFiles, self)._init_params(params)
+        self.devcli = self.param_default(params, "cli_device", self.dev_name)
+
+    def cli_filter(self, msg):
+        for match in re.finditer('converting [^ ]* to [^ ]*/([^/]*)[.]xml', msg):
+            report = 'importing state {}\n'.format(match.groups()[0])
+            super(ImportConvertCliFiles, self).cli_filter(report)
+
+    def perform(self):
+        filenames, states, _ = self.verify_filenames()
+        args = [os.path.realpath(filename) for filename in filenames]
+        if self.merge:
+            args.insert(0, '-m')
+        args[0:0] = ['python', 'cli2netconf.py', self.dev_name, self.devcli]
+        workdir = 'drned-ncs'
+        result, _ = self.run_in_drned_env(args, timeout=120, outputfun=None,
+                                          NC_WORKDIR=workdir)
+        if result != 0:
+            raise ActionError('drned failed')
+        for filename, state in zip(filenames, states):
+            xml = os.path.splitext(os.path.basename(filename))[0] + '.xml'
+            source = os.path.join(self.drned_run_directory, workdir, xml)
+            target = self.format_state_filename(state)
+            shutil.move(source, target)
+            self.write_metadata(target)
+        return {"success": "Imported states: " + ", ".join(states)}
 
 
 class CheckStates(ConfigOp):

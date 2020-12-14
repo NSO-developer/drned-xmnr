@@ -242,6 +242,42 @@ module drned-xmnr {
             uses action-output-common;
           }
         }
+        tailf:action import-convert-cli-files {
+          tailf:info
+            "Given a set of CLI-NED configuration files, convert them
+             to NETCONF configuration files and import them as states.
+             Note that it also means to successively apply all those
+             files.";
+          tailf:actionpoint drned-xmnr;
+          input {
+            leaf file-path-pattern {
+              type filepath-pattern-type;
+              mandatory true;
+            }
+            leaf cli-device {
+              tailf:info
+                "The identification of the CLI device and its device
+                 driver; the name of the current device is used as the
+                 default.";
+              type string;
+            }
+            leaf merge {
+              tailf:info
+                "Merge the file(s) with the current configuration.
+                 Note that the device (and the device driver) needs to
+                 support this option, otherwise the action fails.";
+              type boolean;
+              default false;
+            }
+            leaf overwrite {
+              type boolean;
+              default false;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
         tailf:action check-states {
           tailf:info
             "Check if all configuration files can be still applied

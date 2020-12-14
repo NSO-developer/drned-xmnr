@@ -1,7 +1,7 @@
 [doc Testing DrNED-XMNR integration with NCS and DrNED]
 
 [include common.luxinc]
-[global ned0_dir=/tmp/xmnr/ned0]
+[global ned0_dir=$xmnr_dir/ned0]
 [global ned0_log=$ned0_dir/test/output.log]
 
 [macro run-queues queues]
