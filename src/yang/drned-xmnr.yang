@@ -273,6 +273,13 @@ module drned-xmnr {
               type boolean;
               default false;
             }
+            leaf timeout {
+              tailf:info
+                "How long should XMNR wait for a device to respond (or
+                 how long to wait for an expected response).";
+              type uint16;
+              default 120;
+            }
           }
           output {
             uses action-output-common;

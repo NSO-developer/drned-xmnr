@@ -293,6 +293,7 @@ class ImportConvertCliFiles(ImportOp):
     def _init_params(self, params):
         super(ImportConvertCliFiles, self)._init_params(params)
         self.devcli = self.param_default(params, "cli_device", self.dev_name)
+        self.cli_timeout = params.timeout
 
     def cli_filter(self, msg):
         for match in re.finditer('converting [^ ]* to [^ ]*/([^/]*)[.]xml', msg):
@@ -304,7 +305,8 @@ class ImportConvertCliFiles(ImportOp):
         args = [os.path.realpath(filename) for filename in filenames]
         if self.merge:
             args.insert(0, '-m')
-        args[0:0] = ['python', 'cli2netconf.py', self.dev_name, self.devcli]
+        args[0:0] = ['python', 'cli2netconf.py', self.dev_name, self.devcli,
+                     '-t', str(self.cli_timeout)]
         workdir = 'drned-ncs'
         result, _ = self.run_in_drned_env(args, timeout=120, outputfun=None,
                                           NC_WORKDIR=workdir)
