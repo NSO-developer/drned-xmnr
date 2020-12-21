@@ -27,11 +27,12 @@
     !drned-xmnr state record-state state-name if overwrite true
     ???success
     [progress walk states]
-    [timeout 20]
     [invoke test-walk-states "empty if"]
     # clean up
+    [timeout 10]
     !drned-xmnr transitions transition-to-state state-name empty
     ?success
+    [timeout]
     !abort
     !exit
     ?SH-PROMPT

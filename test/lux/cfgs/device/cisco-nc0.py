@@ -11,7 +11,6 @@ class Devcfg(object):
     def __init__(self, path, name):
         self.path = path
         self.name = name
-        print('devcfg', path, name)
 
     def _get(self, what):
         with open(os.path.join(self.path, self.name + ".cfg")) as f:
@@ -61,20 +60,20 @@ class Devcfg(object):
                 (None, _get_data, "done"),
             ],
             # Load data to device
-            "load-merge": [
+            "put-merge": [
                 (None, lambda devcli: "load merge {}".format(devcli.data),
-                 "load-done"),
+                 "put-done"),
             ],
-            "load": [
+            "put": [
                 (None, lambda devcli: "load override {}".format(devcli.data),
-                 "load-done"),
+                 "put-done"),
             ],
-            "load-done": [
+            "put-done": [
                 (self.get_prompt(), None, "done"),
             ],
             # Restore - just load initial config
             "restore": [
-                (None, None, "load"),
+                (None, None, "put"),
             ],
             "restore-done": [
                 (self.get_prompt(), None, "done"),

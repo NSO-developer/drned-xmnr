@@ -19,13 +19,14 @@ class DevcliException(Exception):
 
 
 class Devcli:
-    def __init__(self, name, basepath, workdir):
+    def __init__(self, name, basepath, workdir, timeout):
         self.name = name
         self.basepath = basepath
         self.workdir = workdir
         self.initial_config = os.path.join(self.workdir, 'initial-config.txt')
         self.trace = None
         self.verbose = VERBOSE
+        self.timeout = timeout
         self.log_lines = 0
         self._read_config()
 
@@ -63,7 +64,8 @@ class Devcli:
     def _ssh(self):
         for i in range(3):
             try:
-                self.cli = pexpect.spawn(self.ssh, timeout=3, logfile=sys.stdout, encoding='utf-8')
+                self.cli = pexpect.spawn(self.ssh, timeout=self.timeout,
+                                         logfile=sys.stdout, encoding='utf-8')
             except Exception as exc:
                 e = exc
             else:
@@ -83,7 +85,7 @@ class Devcli:
         """
         self._banner(fname)
         self.data = fname
-        load_state = "load-merge" if merge else "load"
+        load_state = "put-merge" if merge else "put"
         self.interstate(["enter", load_state, "exit"])
         return self
 
@@ -192,18 +194,28 @@ def _cli2netconf(device, devcli, merge, fnames):
 
 
 def cli2netconf(devname, devcliname, *args):
-    merge = args[0] == '-m'
-    fnames = args[1:] if merge else args
+    args = list(args)
+    if args[0] == '-t':
+        timeout = int(args[1])
+        del args[0:2]
+    else:
+        timeout = 120
+    if args[0] == '-m':
+        merge = True
+        args.pop(0)
+    else:
+        merge = False
+    fnames = args
     basedir = os.path.realpath(os.path.dirname(fnames[0]))
     workdir = os.path.realpath(os.environ['NC_WORKDIR'])
     os.makedirs(workdir, exist_ok=True)
     os.makedirs('drned-work', exist_ok=True)  # device needs that
     with closing(XDevice(devname)) as device, \
-         closing(Devcli(devcliname, basedir, workdir)) as devcli:
+         closing(Devcli(devcliname, basedir, workdir, timeout)) as devcli:
         _cli2netconf(device, devcli, merge, fnames)
 
 
-# Usage: cli2netconf.py netconf-device cli-device [-m] [files]
+# Usage: cli2netconf.py netconf-device cli-device [-t timeout] [-m] [files]
 #
 #  netconf-device: device name; the device must be configured by Drned/XMNR
 #
