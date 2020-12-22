@@ -100,7 +100,7 @@ drned_explore_start_output_filtered = '''\
 
 drned_transition_output = '''\
 --generic drned data--
-============================== load(./polaris.cfg)
+============================== load(./mockdevice.cfg)
 --generic drned data--
 ============================== sync_from()
 test_template_single[../states/{state_to}.state.cfg]
@@ -113,7 +113,7 @@ commit-queue {{
     id 1529558544009
     status failed
     failed-device {{
-        name polaris
+        name mockdevice
         reason RPC error towards test device
     }}
 }}

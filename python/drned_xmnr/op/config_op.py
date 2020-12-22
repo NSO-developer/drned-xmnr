@@ -282,9 +282,9 @@ class ImportStateFiles(ImportOp):
         trans.load_config(_ncs.maapi.CONFIG_MERGE | load_flag, source_file)
         save_flag = (_ncs.maapi.CONFIG_C if self.state_format == 'c-style'
                      else _ncs.maapi.CONFIG_XML_PRETTY)
-        with open(state_file, "wb") as state_file:
+        with open(state_file, "wb") as state_data:
             for data in self.save_config(trans, save_flag, dev_config):
-                state_file.write(data)
+                state_data.write(data)
 
 
 class ImportConvertCliFiles(ImportOp):

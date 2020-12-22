@@ -97,9 +97,13 @@ class XmnrBase(object):
         return self.get_state_files_by_pattern('*')
 
     def get_state_files_by_pattern(self, pattern):
-        xmls = glob.glob(os.path.join(self.states_dir, pattern + '.xml'))
-        cfgs = glob.glob(os.path.join(self.states_dir, pattern + '.cfg'))
-        return xmls + [cfg for cfg in cfgs if (cfg[:-3] + 'xml') not in xmls]
+        files = {}
+        for suff in ['.xml', '.cfg']:
+            files[suff] = set()
+            for part in ['.state', '']:
+                files[suff].update(glob.glob(os.path.join(self.states_dir, pattern + part + suff)))
+        return list(files['.xml']) + [cfg for cfg in files['.cfg']
+                                      if (cfg[:-3] + 'xml') not in files['.xml']]
 
 
 class ActionBase(XmnrBase):
