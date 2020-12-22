@@ -61,10 +61,10 @@ class CoverageOp(base_op.ActionBase):
 
     def parse_output(self, output):
         lines = iter(output.split('\n'))
-        expr = ('Found a total of (?P<nodes>[0-9]*) nodes \([0-9]* of type empty\)' +
+        expr = (r'Found a total of (?P<nodes>[0-9]*) nodes \([0-9]* of type empty\)' +
                 ' and (?P<lists>[0-9]*) lists')
         rx = re.compile(expr)
-        valrx = re.compile(' *(?P<total>[0-9]*) \( *(?P<percent>[0-9]*)%\) ')
+        valrx = re.compile(r' *(?P<total>[0-9]*) \( *(?P<percent>[0-9]*)%\) ')
         lines = itertools.dropwhile(lambda line: rx.match(line) is None, lines)
         match = rx.match(next(lines))
         self.covdata = dict(total={k: int(v) for (k, v) in match.groupdict().items()},

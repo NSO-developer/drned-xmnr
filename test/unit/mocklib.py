@@ -189,7 +189,11 @@ class SystemMock(XtestMock):
         super(SystemMock, self).__init__('system')
         self.patches = patches
         self.ff_patcher = ff_patcher
-        self.ff_patcher.fs.add_real_file('/dev/null', read_only=False)
+        try:
+            self.ff_patcher.fs.add_real_file('/dev/null', read_only=False)
+        except FileExistsError:
+            # happens on newer pyfakefs - /dev/null is created automatically
+            pass
         self.proc_stream = StreamData()
         self.socket_stream = StreamData(b'')
         self.pytest_env = PyTestEnv()

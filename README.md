@@ -19,7 +19,7 @@ package. Using the tool's actions you can:
 
 ## Prerequisites
 
-The tool is supported to run on Python 3.5 or newer.  It is known to run on
+The tool is supported to run on Python 3.6 or newer.  It is known to run on
 Python 2.7, but this is no longer actively maintained.
 
 Apart form that, several Python packages are needed: `pytest`, `pexpect`, and
