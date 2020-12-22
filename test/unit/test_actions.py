@@ -376,6 +376,23 @@ class LoadConfig(object):
             raise _ncs.error.Error(self.exc_message.format(state))
 
 
+class LoadSaveConfig(object):
+    def __init__(self, system, ncs):
+        self.tcx_mock = mocklib.CxMgrMock(load_config=mock.Mock(side_effect=self.load_config),
+                                          save_config=mock.Mock(side_effect=self.save_config))
+        ncs.data['maapi'].start_write_trans = lambda *args, **dargs: self.tcx_mock
+        self.data = []
+        self.system = system
+
+    def load_config(self, _flags, filename):
+        with open(filename) as data:
+            self.data = ''.join(data)
+
+    def save_config(self, _type, _path):
+        self.system.socket_data(self.data.encode())
+        return 1
+
+
 class TestStates(TestBase):
     def state_files(self, states):
         return sorted(itertools.chain(*((st + '.state.cfg', st + '.state.cfg.load')
@@ -443,6 +460,7 @@ class TestStates(TestBase):
         path = '/tmp/data'
         xpatch.system.ff_patcher.fs.create_dir(path)
         self.setup_states_data(xpatch.system, state_path=path)
+        LoadSaveConfig(xpatch.system, xpatch.ncs)
         output = self.invoke_action('import-state-files',
                                     file_path_pattern=os.path.join(path, '*1.state.cfg'),
                                     format="c-style",
