@@ -19,12 +19,11 @@ package. Using the tool's actions you can:
 
 ## Prerequisites
 
-The tool is supported to run on Python 3.5 or newer.  It is known to run on
-Python 2.7, but this is no longer actively maintained.
+The tool is supported to run on Python 3.5 or newer.
 
-Apart form that, several Python packages are needed: `pytest`, `pexpect`, and
-`lxml`; `pytest` version needs to be at least 3.0.  There are several options
-how to install these packages:
+Several Python packages are needed: `pytest`, `pexpect`, and `lxml`; `pytest`
+version needs to be at least 3.0.  There are several options how to install
+these packages:
 
 1. Quite likely, they are available in your system distribution repositories,
    for example in Ubuntu they can be installed like
