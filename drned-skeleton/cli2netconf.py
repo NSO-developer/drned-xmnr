@@ -41,7 +41,7 @@ class Devcli:
         self.name = name
         self.basepath = basepath
         self.workdir = workdir
-        self.initial_config = os.path.join(self.workdir, 'initial-config.txt')
+        self.initial_config = 'drned-init'
         self.trace = None
         self.verbose = VERBOSE
         self.timeout = timeout
@@ -138,10 +138,17 @@ class Devcli:
         """
         return self.restore_config()
 
-    def save_config(self):
+    def save_config(self, fname=None):
         """Save the initial configuration.
         """
-        self.get_config(self.initial_config)
+        if fname is None:
+            fname = self.initial_config
+        self._banner(fname)
+        self.data = fname
+        self.interstate(["enter", "save", "exit"])
+        if self.trace:
+            self.trace(self.cli.before + self.cli.after)
+        return self
 
     def interstate(self, init_states, new_ssh=True):
         """Run the state machine for all initial states.
