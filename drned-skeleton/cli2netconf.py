@@ -1,4 +1,5 @@
 # Taken and adapted from DrNED
+from __future__ import print_function
 
 import importlib
 import inspect
@@ -12,6 +13,23 @@ import drned
 
 VERBOSE = True
 INDENT = "=" * 30 + " "
+
+
+if sys.version_info > (3, 0):
+    pexpect_args = dict(encoding='utf-8')
+    os_makedirs = os.makedirs
+else:
+    pexpect_args = {}
+
+    def os_makedirs(dirname, exist_ok=False):
+        """
+        In Python 2.7 the argument exist_ok is not available for os.makedirs.
+        """
+        try:
+            os.makedirs(dirname)
+        except OSError:
+            if not exist_ok:
+                raise
 
 
 class DevcliException(Exception):
@@ -39,9 +57,7 @@ class Devcli:
             for subpath in ['.', 'device']:
                 self.path = os.path.join(base, subpath)
                 d = os.path.join(self.path, self.name + '.py')
-                print(f'using {d}: {os.path.realpath(d)}')
                 if os.path.isfile(d):
-                    print('found')
                     return
         raise DevcliException('No device definition found')
 
@@ -65,7 +81,7 @@ class Devcli:
         for i in range(3):
             try:
                 self.cli = pexpect.spawn(self.ssh, timeout=self.timeout,
-                                         logfile=sys.stdout, encoding='utf-8')
+                                         logfile=sys.stdout, **pexpect_args)
             except Exception as exc:
                 e = exc
             else:
@@ -208,8 +224,8 @@ def cli2netconf(devname, devcliname, *args):
     fnames = args
     basedir = os.path.realpath(os.path.dirname(fnames[0]))
     workdir = os.path.realpath(os.environ['NC_WORKDIR'])
-    os.makedirs(workdir, exist_ok=True)
-    os.makedirs('drned-work', exist_ok=True)  # device needs that
+    os_makedirs(workdir, exist_ok=True)
+    os_makedirs('drned-work', exist_ok=True)  # device needs that
     with closing(XDevice(devname)) as device, \
          closing(Devcli(devcliname, basedir, workdir, timeout)) as devcli:
         _cli2netconf(device, devcli, merge, fnames)
