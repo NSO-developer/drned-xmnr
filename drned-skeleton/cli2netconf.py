@@ -1,13 +1,17 @@
 # Taken and adapted from DrNED
 from __future__ import print_function
 
+from collections import namedtuple
+from contextlib import closing
 import importlib
 import inspect
+import itertools
+import operator
 import os
 import pexpect
+import re
 import sys
 import types
-from contextlib import closing
 
 import drned
 
@@ -93,16 +97,12 @@ class Devcli:
         if self.trace:
             self.trace(INDENT + inspect.stack()[1][3] + "(%s)" % txt)
 
-    def load_config(self, merge, fname):
+    def load_config(self, fname):
         """Send configuration to the device.
-
-        With `merge=False` it corresponds to load-override, but not
-        every device supports `merge=True`.
         """
         self._banner(fname)
         self.data = fname
-        load_state = "put-merge" if merge else "put"
-        self.interstate(["enter", load_state, "exit"])
+        self.interstate(["enter", "put", "exit"])
         return self
 
     def get_config(self, fname):
@@ -194,25 +194,39 @@ class XDevice(drned.Device):
         self.ncs.close()
 
 
-def _cli2netconf(device, devcli, merge, fnames):
+testrx = re.compile(r'(?P<set>.*):(?P<index>[0-9]+)(?:\..*)')
+SetDesc = namedtuple('SetDesc', ['fname', 'fset', 'index'])
+
+
+def fname_set_desc(fname):
+    m = testrx.match(fname)
+    if m is None:
+        return SetDesc(fname=fname, fset=fname, index=0)
+    else:
+        d = m.groupdict()
+        return SetDesc(fname=fname, fset=d['set'], index=int(d['index']))
+
+
+def _cli2netconf(device, devcli, fnames):
     # Save initial CLI state
     devcli.save_config()
-    # TODO: no support for sets
-    for fname in fnames:
-        base = os.path.basename(os.path.splitext(fname)[0])
-        target = os.path.join(devcli.workdir, base + ".xml")
-        print("converting", fname, 'to', target)
-        # Load config on device and read back
-        devcli.load_config(merge, fname)
-        try:
-            device.sync_from()
-        except Exception:
-            devcli.clean_config()
-            device.sync_from()
-            raise
-        device.save(target, fmt="xml")
+    namesets = (fname_set_desc(fname) for fname in sorted(fnames))
+    namegroups = itertools.groupby(namesets, key=operator.attrgetter('fset'))
+    for _, group in namegroups:
+        for desc in sorted(group, key=operator.attrgetter('index')):
+            base = os.path.basename(os.path.splitext(desc.fname)[0])
+            target = os.path.join(devcli.workdir, base + ".xml")
+            print("converting", desc.fname, 'to', target)
+            # Load config on device and read back
+            devcli.load_config(desc.fname)
+            try:
+                device.sync_from()
+            except Exception:
+                devcli.clean_config()
+                device.sync_from()
+                raise
+            device.save(target, fmt="xml")
         devcli.clean_config()
-    devcli.clean_config()
     device.sync_from()
 
 
@@ -223,11 +237,6 @@ def cli2netconf(devname, devcliname, *args):
         del args[0:2]
     else:
         timeout = 120
-    if args[0] == '-m':
-        merge = True
-        args.pop(0)
-    else:
-        merge = False
     fnames = args
     basedir = os.path.realpath(os.path.dirname(fnames[0]))
     workdir = os.path.realpath(os.environ['NC_WORKDIR'])
@@ -235,10 +244,10 @@ def cli2netconf(devname, devcliname, *args):
     os_makedirs('drned-work', exist_ok=True)  # device needs that
     with closing(XDevice(devname)) as device, \
          closing(Devcli(devcliname, basedir, workdir, timeout)) as devcli:
-        _cli2netconf(device, devcli, merge, fnames)
+        _cli2netconf(device, devcli, fnames)
 
 
-# Usage: cli2netconf.py netconf-device cli-device [-t timeout] [-m] [files]
+# Usage: cli2netconf.py netconf-device cli-device [-t timeout] [files]
 #
 #  netconf-device: device name; the device must be configured by Drned/XMNR
 #

@@ -156,7 +156,6 @@ class ImportOp(ConfigOp):
     def _init_params(self, params):
         self.pattern = params.file_path_pattern
         self.overwrite = params.overwrite
-        self.merge = params.merge
 
     def verify_filenames(self):
         filenames = glob.glob(self.pattern)
@@ -186,6 +185,7 @@ class ImportStateFiles(ImportOp):
         super(ImportStateFiles, self)._init_params(params)
         self.file_format = self.param_default(params, "format", "")
         self.state_format = params.target_format
+        self.merge = params.merge
 
     def perform(self):
         filenames, states, conflicts = self.verify_filenames()
@@ -302,11 +302,9 @@ class ImportConvertCliFiles(ImportOp):
 
     def perform(self):
         filenames, states, _ = self.verify_filenames()
-        args = [os.path.realpath(filename) for filename in filenames]
-        if self.merge:
-            args.insert(0, '-m')
-        args[0:0] = ['python', 'cli2netconf.py', self.dev_name, self.devcli,
-                     '-t', str(self.cli_timeout)]
+        args = ['python', 'cli2netconf.py', self.dev_name, self.devcli,
+                '-t', str(self.cli_timeout)] + \
+               [os.path.realpath(filename) for filename in filenames]
         workdir = 'drned-ncs'
         result, _ = self.run_in_drned_env(args, timeout=120, outputfun=None,
                                           NC_WORKDIR=workdir)
@@ -318,7 +316,7 @@ class ImportConvertCliFiles(ImportOp):
             target = self.format_state_filename(state)
             shutil.move(source, target)
             self.write_metadata(target)
-        return {"success": "Imported states: " + ", ".join(states)}
+        return {"success": "Imported states: " + ", ".join(sorted(states))}
 
 
 class CheckStates(ConfigOp):

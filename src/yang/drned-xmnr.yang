@@ -261,14 +261,6 @@ module drned-xmnr {
                  default.";
               type string;
             }
-            leaf merge {
-              tailf:info
-                "Merge the file(s) with the current configuration.
-                 Note that the device (and the device driver) needs to
-                 support this option, otherwise the action fails.";
-              type boolean;
-              default false;
-            }
             leaf overwrite {
               type boolean;
               default false;

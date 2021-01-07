@@ -43,47 +43,17 @@
     ???success
     [timeout 20]
     -failure
-    [progress import full configs]
-    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/rad*.cfg
-    ???success Imported states: rad1, rad2
-    [progress import-merge short configs]
-    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad*.cfg merge true
-    ???success Imported states: short-rad1, short-rad2
+    [progress import configs]
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/*rad*.cfg
+    ???success Imported states: rad1, rad2, short-rad1:1, short-rad1:2, short-rad1:3, short-rad2:1, short-rad2:2
     [timeout]
 [shell os]
     [local states_dir=$xmnr_dir/cisco-nc0/test/states]
-    !diff $states_dir/*rad1.state.xml
+    !diff $states_dir/rad1.state.xml $states_dir/short-rad1:3.state.xml
     [invoke shell-check]
-    !diff $states_dir/*rad2.state.xml
+    !diff $states_dir/rad2.state.xml $states_dir/short-rad2:2.state.xml
     [invoke shell-check]
     ~xmlstarlet sel -N ios=urn:ios -t -m '//ios:group/ios:server' -c . -n $states_dir/rad1.state.xml
-    !| xmllint --format -
-    """?
-    <?xml version=.*?>
-    <server xmlns=.*>
-     *<radius>
-     *<name>rad1</name>
-     *</radius>
-    </server>
-    SH-PROMPT:
-    """
-    ~xmlstarlet sel -N ios=urn:ios -t -m '//ios:radius[ios:server]' -c . -n $states_dir/rad1.state.xml
-    !| xmllint --format -
-    """?
-    <?xml version=.*?>
-    <radius xmlns="urn:ios">
-     *<server>
-     *<id>rad1</id>
-     *<address>
-     *<ipv4>
-     *<host>127.0.0.1</host>
-     *</ipv4>
-     *</address>
-     *</server>
-    </radius>
-    SH-PROMPT:
-    """
-    ~xmlstarlet sel -N ios=urn:ios -t -m '//ios:group/ios:server' -c . -n $states_dir/rad2.state.xml
     !| xmllint --format -
     """?
     <?xml version=.*?>
@@ -94,7 +64,7 @@
     </server>
     SH-PROMPT:
     """
-    ~xmlstarlet sel -N ios=urn:ios -t -m '//ios:radius[ios:server]' -c . -n $states_dir/rad2.state.xml
+    ~xmlstarlet sel -N ios=urn:ios -t -m '//ios:radius[ios:server]' -c . -n $states_dir/rad1.state.xml
     !| xmllint --format -
     """?
     <?xml version=.*?>
@@ -120,14 +90,41 @@
     </radius>
     SH-PROMPT:
     """
+    ~xmlstarlet sel -N ios=urn:ios -t -m '//ios:group/ios:server' -c . -n $states_dir/rad2.state.xml
+    !| xmllint --format -
+    """?
+    <?xml version=.*?>
+    <server xmlns=.*>
+     *<radius>
+     *<name>rad1</name>
+     *</radius>
+    </server>
+    SH-PROMPT:
+    """
+    ~xmlstarlet sel -N ios=urn:ios -t -m '//ios:radius[ios:server]' -c . -n $states_dir/rad2.state.xml
+    !| xmllint --format -
+    """?
+    <?xml version=.*?>
+    <radius xmlns="urn:ios">
+     *<server>
+     *<id>rad1</id>
+     *<address>
+     *<ipv4>
+     *<host>127.0.0.1</host>
+     *</ipv4>
+     *</address>
+     *</server>
+    </radius>
+    SH-PROMPT:
+    """
 [shell ncs-cli]
-    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad1.cfg merge true
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad2*.cfg
     -
-    ???failure States already exists: short-rad1
-    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad1.cfg merge true overwrite true
+    ?failure States already exists: short-rad2:[12]
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad2*.cfg overwrite true
     [timeout 20]
     -failure
-    ???success Imported states: short-rad1
+    ???success Imported states: short-rad2:1, short-rad2:2
     [timeout]
 
 [cleanup]

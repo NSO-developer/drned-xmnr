@@ -48,7 +48,7 @@ class Devcfg(object):
             # Get data from device
             "get": [
                 (None, lambda devcli:
-                 "save {}".format("/tmp/" + os.path.basename(devcli.data)),
+                 "save /tmp/{}".format(os.path.basename(devcli.data)),
                  "get-confirm"),
             ],
             "get-confirm": [
@@ -60,20 +60,29 @@ class Devcfg(object):
                 (None, _get_data, "done"),
             ],
             # Load data to device
-            "put-merge": [
-                (None, lambda devcli: "load merge {}".format(devcli.data),
-                 "put-done"),
-            ],
             "put": [
-                (None, lambda devcli: "load override {}".format(devcli.data),
+                (None, lambda devcli: "load merge {}".format(devcli.data),
                  "put-done"),
             ],
             "put-done": [
                 (self.get_prompt(), None, "done"),
             ],
-            # Restore - just load initial config
+            # Save the initial configuration
+            "save": [
+                (None,
+                 lambda devcli: "save /tmp/{}".format(devcli.data),
+                 "save-confirm"),
+            ],
+            "save-confirm": [
+                ("File already exists. Overwrite[?] [[]yes,no[]]", "yes",
+                 "save-confirm"),
+                (self.get_prompt(), None, "done"),
+            ],
+            # Restore - just load the initial config
             "restore": [
-                (None, None, "put"),
+                (None,
+                 lambda devcli: "load override /tmp/{}".format(devcli.data),
+                 "restore-done"),
             ],
             "restore-done": [
                 (self.get_prompt(), None, "done"),
