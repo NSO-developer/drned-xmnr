@@ -1,4 +1,5 @@
-pytest
+pytest>=3.0
 pyfakefs
 mock
 lxml
+pexpect
