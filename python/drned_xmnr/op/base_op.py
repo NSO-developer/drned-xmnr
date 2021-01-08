@@ -106,6 +106,24 @@ class XmnrBase(object):
                                       if (cfg[:-3] + 'xml') not in files['.xml']]
 
 
+class Progressor(object):
+    """Track progress messages.
+
+    Progress messages come in chunks and need to be re-chunked into
+    lines.  This class is not directly related to The Noon Universe.
+    """
+    def __init__(self, action):
+        self.buf = ""
+        self.action = action
+
+    def progress(self, chunk):
+        lines = chunk.split('\n')
+        lines[0] = self.buf + lines[0]
+        for line in lines[:-1]:
+            self.action.progress_msg(line)
+        self.buf = lines[-1]
+
+
 class ActionBase(XmnrBase):
     _pytest_executable = None
 
@@ -161,7 +179,6 @@ class ActionBase(XmnrBase):
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
-        state = None
         stdoutdata = ""
         while proc.poll() is None:
             rlist, wlist, xlist = select.select([fd], [], [fd], timeout)
@@ -170,10 +187,10 @@ class ActionBase(XmnrBase):
                 if buf is not None and len(buf) != 0:
                     data = text_data(buf)
                     self.log.debug("run_outputfun, output len=" + str(len(data)))
-                    state = outputfun(state, data)
+                    outputfun(data)
                     stdoutdata += data
             else:
-                self.progress_msg("Silence timeout, terminating process\n")
+                self.progress_msg("Silence timeout, terminating process")
                 proc.kill()
 
         self.log.debug("run_finished, output len=" + str(len(stdoutdata)))
@@ -190,7 +207,7 @@ class ActionBase(XmnrBase):
         self.log.debug(msg)
         self.cli_filter(msg)
         if self.log_file is not None:
-            self.log_file.write(msg)
+            self.log_file.write(msg + '\n')
 
     def setup_drned_env(self, trans):
         """Build a dictionary that is supposed to be passed to `Popen` as the
@@ -243,7 +260,7 @@ class ActionBase(XmnrBase):
                 return executable
         raise ActionError('PyTest not installed - pytest executable not found')
 
-    def run_in_drned_env(self, args, timeout=120, outputfun=None, **envdict):
+    def run_in_drned_env(self, args, timeout=120, **envdict):
         env = self.run_with_trans(self.setup_drned_env)
         env.update(envdict)
         self.log.debug("using env {0}\n".format(env))
@@ -254,18 +271,11 @@ class ActionBase(XmnrBase):
                                     cwd=self.drned_run_directory,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
-            self.log.debug("run_outputfun, going in")
+            self.log.debug("run_in_drned_env, going in")
         except OSError:
             msg = 'PyTest not installed or DrNED running directory ({0}) not set up'
             raise ActionError(msg.format(self.drned_run_directory))
-        if outputfun is None:
-            outputfun = self.progress_fun
-        return self.proc_run(proc, outputfun, timeout)
-
-    def progress_fun(self, state, stdout):
-        self.progress_msg(stdout)
-        self.extend_timeout(120)
-        return None
+        return self.proc_run(proc, Progressor(self).progress, timeout)
 
     def save_config(self, trans, config_type, path):
         save_id = trans.save_config(config_type, path)

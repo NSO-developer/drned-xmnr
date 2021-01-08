@@ -125,7 +125,7 @@ class ExploreTransitionsOp(TransitionsOp):
                     'error': "No transitions to make. Run 'config record-state' or "
                     "'config import-state-files' several times "
                     "before running this command."}
-        msg = "Found {0} states recorded for device {1} which gives a total of {2} transitions.\n"
+        msg = "Found {0} states recorded for device {1} which gives a total of {2} transitions."
         self.progress_msg(msg.format(num_states, self.dev_name, num_transitions))
 
         failed_transitions = []
@@ -146,28 +146,28 @@ class ExploreTransitionsOp(TransitionsOp):
             if from_state == failed_state:
                 continue
             if (stop_time and time.time() > stop_time):
-                self.progress_msg("Requested stop-after limit reached\n")
+                self.progress_msg("Requested stop-after limit reached")
                 break
 
             from_name = self.state_filename_to_name(from_state)
             to_name = self.state_filename_to_name(to_state)
             if prev_state != from_state:
-                self.progress_msg("Starting with state {0}\n".format(from_name))
+                self.progress_msg("Starting with state {0}".format(from_name))
                 result = self.transition_to_state(from_name)
                 if result is not True:
                     msg = "Failed to initialize state {0}".format(from_name)
-                    self.progress_msg(msg + '\n')
+                    self.progress_msg(msg)
                     self.log.warning(msg)
                     error_msgs.append(msg)
                     failed_state = from_state
                     continue
                 prev_state = from_state
-            self.progress_msg("Transition {0}/{1}: {2} ==> {3}\n"
+            self.progress_msg("Transition {0}/{1}: {2} ==> {3}"
                               .format(index+1, num_transitions, from_name, to_name))
             result = self.transition_to_state(to_name, rollback=True)
             if result is not True:
                 failed_transitions.append((from_name, to_name, result))
-                self.progress_msg("Transition failed\n")
+                self.progress_msg("Transition failed")
         if failed_transitions == [] and error_msgs == []:
             return {'success': "Completed successfully"}
         result = {'failure':

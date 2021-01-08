@@ -306,8 +306,7 @@ class ImportConvertCliFiles(ImportOp):
                 '-t', str(self.cli_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
         workdir = 'drned-ncs'
-        result, _ = self.run_in_drned_env(args, timeout=120, outputfun=None,
-                                          NC_WORKDIR=workdir)
+        result, _ = self.run_in_drned_env(args, timeout=120, NC_WORKDIR=workdir)
         if result != 0:
             raise ActionError('drned failed')
         for filename, state in zip(filenames, states):

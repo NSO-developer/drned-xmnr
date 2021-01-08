@@ -28,7 +28,8 @@ def filter_sink(writer):
     while True:
         item = yield
         if isinstance(item, str):
-            writer(item)
+            # the writer needs full line
+            writer(item + '\n')
 
 
 class Closeable(object):
@@ -43,26 +44,6 @@ class Closeable(object):
     def send(self, data):
         self.coroutine.send(data)
 
-
-class LineProducer(Closeable):
-    def __init__(self, line_processor):
-        cort = line_producer(line_processor)
-        super(LineProducer, self).__init__(cort, line_processor)
-
-
-@coroutine
-def line_producer(line_proc):
-    buf = ''
-    try:
-        while True:
-            data = yield
-            lines = data.split('\n')
-            lines[0] = buf + lines[0]
-            for line in lines[:-1]:
-                line_proc.send(line)
-            buf = lines[-1]
-    except GeneratorExit:
-        line_proc.close()
 
 #
 # Event handling
@@ -87,7 +68,7 @@ class LineOutputEvent(object):
 
     @staticmethod
     def indent_line(line):
-        return '{}{}\n'.format(LineOutputEvent.indent, line)
+        return '{}{}'.format(LineOutputEvent.indent, line)
 
     def __init__(self, line):
         self.line = line
@@ -100,7 +81,7 @@ class LineOutputEvent(object):
         self.complete = True
 
     def produce_line(self):
-        return self.line + '\n'
+        return self.line
 
 
 class InitStates(LineOutputEvent):
@@ -126,7 +107,7 @@ class TransFailed(LineOutputEvent):
 class PyTest(LineOutputEvent):
     def produce_line(self):
         state = self.state_name_regexp.search(self.line).groups()[0]
-        return 'Test transition to {}\n'.format(state)
+        return 'Test transition to {}'.format(state)
 
 
 class DrnedPrepare(LineOutputEvent):
@@ -263,7 +244,7 @@ class DrnedTeardown(LineOutputEvent):
         return 'Drned teardown event'
 
     def produce_line(self):
-        return 'Device cleanup\n'
+        return 'Device cleanup'
 
 
 class DrnedRestore(DrnedActionEvent):
@@ -279,7 +260,7 @@ class TerminateEvent(LineOutputEvent):
         return 'Terminate event'
 
     def produce_line(self):
-        return ''
+        return None
 
 
 class EventGenerator(Closeable):
@@ -572,5 +553,4 @@ def run_event_machine(machine, sink):
 def build_filter(op, level, write):
     sink = filter_sink(write)
     lines = op.event_processor(level, sink)
-    events = EventGenerator(lines)
-    return LineProducer(events)
+    return EventGenerator(lines)

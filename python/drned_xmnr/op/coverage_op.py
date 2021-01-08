@@ -30,13 +30,6 @@ class CoverageOp(base_op.ActionBase):
     def _init_params(self, params):
         self.patterns = list(params.yang_patterns)
 
-    def collect_data(self, state, stdout):
-        if state is None:
-            state = []
-        state.append(stdout)
-        self.progress_fun(state, stdout)
-        return state
-
     def perform(self):
         if self.patterns == []:
             self.patterns = [self.device_modules_pattern()]

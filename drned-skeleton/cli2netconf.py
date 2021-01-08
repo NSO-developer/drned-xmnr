@@ -209,25 +209,34 @@ def fname_set_desc(fname):
         return SetDesc(fname=fname, fset=d['set'], index=int(d['index']))
 
 
+def group_cli2netconf(device, devcli, group):
+    for desc in group:
+        base = os.path.basename(os.path.splitext(desc.fname)[0])
+        target = os.path.join(devcli.workdir, base + ".xml")
+        print("converting", desc.fname, 'to', target)
+        # Load config on device and read back
+        devcli.load_config(desc.fname)
+        try:
+            device.sync_from()
+        except Exception:
+            devcli.clean_config()
+            device.sync_from()
+            raise
+        device.save(target, fmt="xml")
+
+
 def _cli2netconf(device, devcli, fnames):
     # Save initial CLI state
     devcli.save_config()
     namesets = (fname_set_desc(fname) for fname in sorted(fnames))
     namegroups = itertools.groupby(namesets, key=operator.attrgetter('fset'))
     for _, group in namegroups:
-        for desc in sorted(group, key=operator.attrgetter('index')):
-            base = os.path.basename(os.path.splitext(desc.fname)[0])
-            target = os.path.join(devcli.workdir, base + ".xml")
-            print("converting", desc.fname, 'to', target)
-            # Load config on device and read back
-            devcli.load_config(desc.fname)
-            try:
-                device.sync_from()
-            except Exception:
-                devcli.clean_config()
-                device.sync_from()
-                raise
-            device.save(target, fmt="xml")
+        sgroup = sorted(group, key=operator.attrgetter('index'))
+        groupname = sgroup[0].fset
+        try:
+            group_cli2netconf(device, devcli, sgroup)
+        except Exception:
+            print('failed to convert group {}'.format(groupname))
         devcli.clean_config()
     device.sync_from()
 
