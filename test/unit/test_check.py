@@ -10,7 +10,7 @@ else:
 
 @fixture
 def bad_py_version():
-    with patch('sys.version_info', new=(3, 4)):
+    with patch('sys.version_info', new=(3, 5)):
         yield
 
 
@@ -43,7 +43,7 @@ def old_package():
 
 class TestChecks:
     def test_version_check(self, bad_py_version):
-        with raises(XmnrCheckException, match='Required Python 2.7 or 3.5 or newer'):
+        with raises(XmnrCheckException, match='Required Python 2.7 or 3.6 or newer'):
             XmnrCheck().setup()
 
     def test_missing_package_check(self, missing_package):

@@ -27,8 +27,8 @@ def parse_version(verstr):
 class XmnrCheck(application.Application):
     def setup(self):
         if sys.version_info < (2, 7) or \
-           sys.version_info >= (3, 0) and sys.version_info < (3, 5):
-            raise XmnrCheckException('Required Python 2.7 or 3.5 or newer')
+           sys.version_info >= (3, 0) and sys.version_info < (3, 6):
+            raise XmnrCheckException('Required Python 2.7 or 3.6 or newer')
         for (package, version) in self.xmnr_requirements():
             try:
                 mod = importlib.import_module(package)
