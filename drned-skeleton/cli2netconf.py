@@ -174,7 +174,8 @@ class Devcli:
             patterns = [p for (p, _, _) in state_def]
             n = 0 if patterns == [None] else self.cli.expect(patterns)
             if self.verbose and patterns != [None]:
-                print("<<<< %d:\"%s\" <<<<" % (n, self.cli.before + self.cli.after))
+                print("<<<< %d:\"%s\" <<<<" %
+                      (n, self.cli.before + self.cli.after))
             (p, cmd, state) = state_def[n]
             if state is None:
                 raise IOError("%s : %s" % (cmd, self.cli.before))
@@ -182,7 +183,8 @@ class Devcli:
                or isinstance(cmd, types.BuiltinFunctionType):
                 cmd = cmd(self)
             if self.verbose:
-                print("MATCHED '%s', SEND: '%s' -> NEXT_STATE: '%s'" % (p, cmd, state))
+                print("MATCHED '%s', SEND: '%s' -> NEXT_STATE: '%s'" %
+                      (p, cmd, state))
             if cmd is not None:
                 if self.verbose:
                     print(">>>> \"%s\" >>>>" % cmd)
@@ -243,7 +245,7 @@ def cli2netconf(devname, devcliname, *args):
     os_makedirs(workdir, exist_ok=True)
     os_makedirs('drned-work', exist_ok=True)  # device needs that
     with closing(XDevice(devname)) as device, \
-         closing(Devcli(devcliname, basedir, workdir, timeout)) as devcli:
+            closing(Devcli(devcliname, basedir, workdir, timeout)) as devcli:
         _cli2netconf(device, devcli, fnames)
 
 
@@ -266,8 +268,8 @@ def cli2netconf(devname, devcliname, *args):
 #  instantiated with two arguments: the path that has been found in the process
 #  above, and the device name.  The driver may use other files, if needed.
 #
-#  It then converts (or tries to) all files to a XML/NETCONF form and saves them
-#  to the same directory, under the same name with the extension .xml.
+#  It then converts (or tries to) all files to a XML/NETCONF form and saves
+#  them to the same directory, under the same name with the extension .xml.
 
 if __name__ == "__main__":
     cli2netconf(*sys.argv[1:])
