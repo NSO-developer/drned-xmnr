@@ -89,7 +89,7 @@ class Devcli:
             except Exception as exc:
                 e = exc
             else:
-                break
+                return self.cli
         else:
             raise e
 
@@ -150,24 +150,22 @@ class Devcli:
             self.trace(self.cli.before + self.cli.after)
         return self
 
-    def interstate(self, init_states, new_ssh=True):
+    def interstate(self, init_states):
         """Run the state machine for all initial states.
         """
-        if isinstance(init_states, list):
-            for init_state in init_states:
-                self.interstate_one(init_state, new_ssh)
-                new_ssh = False
-        else:
-            self.interstate_one(init_state, new_ssh)
+        with closing(self._ssh()):
+            if isinstance(init_states, list):
+                for init_state in init_states:
+                    self.interstate_one(init_state)
+            else:
+                self.interstate_one(init_state)
 
-    def interstate_one(self, init_state, new_ssh=True):
+    def interstate_one(self, init_state):
         """Run the state machine.
         """
-        if new_ssh:
-            self._ssh()
         state_machine = self.devcfg.get_state_machine()
         state = init_state
-        while state != "done":
+        while state not in {"done", "failure"}:
             state_def = state_machine[state]
             if self.verbose:
                 print("STATE: %s : %s" % (state, state_def))
@@ -189,6 +187,8 @@ class Devcli:
                 if self.verbose:
                     print(">>>> \"%s\" >>>>" % cmd)
                 self.cli.sendline(cmd)
+        if state == "failure":
+            raise DevcliException("failed to move to state " + init_state)
 
 
 class XDevice(drned.Device):
@@ -218,7 +218,7 @@ def group_cli2netconf(device, devcli, group):
         devcli.load_config(desc.fname)
         try:
             device.sync_from()
-        except Exception:
+        except BaseException:
             devcli.clean_config()
             device.sync_from()
             raise
@@ -235,8 +235,9 @@ def _cli2netconf(device, devcli, fnames):
         groupname = sgroup[0].fset
         try:
             group_cli2netconf(device, devcli, sgroup)
-        except Exception:
-            print('failed to convert group {}'.format(groupname))
+        except BaseException as e:
+            print('failed to convert group', groupname)
+            print('exception:', e)
         devcli.clean_config()
     device.sync_from()
 

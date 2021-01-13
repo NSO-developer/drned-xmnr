@@ -41,7 +41,7 @@
     [invoke prepare-ncs-tweak cisco-ios0 $tweak cisco-nc0]
     !drned-xmnr setup setup-xmnr overwrite true
     ???success
-    [timeout 20]
+    [timeout 30]
     -failure
     [progress import configs]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/*rad*.cfg

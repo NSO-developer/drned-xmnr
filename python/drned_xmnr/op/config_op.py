@@ -289,6 +289,13 @@ class ImportStateFiles(ImportOp):
 
 class ImportConvertCliFiles(ImportOp):
     action_name = 'convert and import CLI states'
+    filterexpr = (
+        r'(?:'
+        r'(?P<convert>converting [^ ]* to [^ ]*/(?P<state>[^/]*)[.]xml)|'
+        r'(?P<failure>failed to convert group (?P<group>.*))|'
+        r'(?P<devcli>.*DevcliException: No device definition found)'
+        r')$')
+    filterrx = re.compile(filterexpr)
 
     def _init_params(self, params):
         super(ImportConvertCliFiles, self)._init_params(params)
@@ -296,9 +303,20 @@ class ImportConvertCliFiles(ImportOp):
         self.cli_timeout = params.timeout
 
     def cli_filter(self, msg):
-        for match in re.finditer('converting [^ ]* to [^ ]*/([^/]*)[.]xml', msg):
-            report = 'importing state {}\n'.format(match.groups()[0])
-            super(ImportConvertCliFiles, self).cli_filter(report)
+        match = self.filterrx.match(msg)
+        if match is None:
+            return
+        gd = match.groupdict()
+        if match.lastgroup == 'convert':
+            report = 'importing state {}\n'.format(gd['state'])
+        elif match.lastgroup == 'devcli':
+            self.devcli_error = msg
+            report = 'could not find the device driver definition\n'
+        else:
+            group = gd['group']
+            report = 'failed to import group {}\n'.format(group)
+            self.failures.append(group)
+        super(ImportConvertCliFiles, self).cli_filter(report)
 
     def perform(self):
         filenames, states, _ = self.verify_filenames()
@@ -306,15 +324,30 @@ class ImportConvertCliFiles(ImportOp):
                 '-t', str(self.cli_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
         workdir = 'drned-ncs'
+        self.failures = []
+        self.devcli_error = None
         result, _ = self.run_in_drned_env(args, timeout=120, NC_WORKDIR=workdir)
-        if result != 0:
-            raise ActionError('drned failed')
+        if self.devcli_error is not None:
+            raise ActionError('No device driver definition found')
+        if result != 0 and not self.failures:
+            raise ActionError('conversion failed; is device driver ')
         for filename, state in zip(filenames, states):
             xml = os.path.splitext(os.path.basename(filename))[0] + '.xml'
             source = os.path.join(self.drned_run_directory, workdir, xml)
-            target = self.format_state_filename(state)
-            shutil.move(source, target)
-            self.write_metadata(target)
+            if os.path.exists(source):
+                target = self.format_state_filename(state)
+                shutil.move(source, target)
+                self.write_metadata(target)
+            elif not self.failures:
+                # this should not be the case - if the source does not
+                # exist, it means that the conversion has not
+                # succeeded and the state/group should be among
+                # failures
+                self.failures.append(state)
+                result = 1
+        if self.failures:
+            raise ActionError('failed to convert configuration(s): ' +
+                              ', '.join(self.failures))
         return {"success": "Imported states: " + ", ".join(sorted(states))}
 
 
