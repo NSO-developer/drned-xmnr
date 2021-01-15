@@ -33,9 +33,6 @@
     !drned-xmnr transitions transition-to-state state-name empty
     ?success
     [timeout]
-    !abort
-    !exit
-    ?SH-PROMPT
     [progress convert CLI config]
     [local tweak=sed -e 's/10022/12022/' -e 's/cli>/netconf>/' -e 's/cisco-ios0/cisco-nc0/']
     [invoke prepare-ncs-tweak cisco-ios0 $tweak cisco-nc0]

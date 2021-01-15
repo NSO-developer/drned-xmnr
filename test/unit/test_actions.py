@@ -366,7 +366,7 @@ class LoadConfig(object):
         self.tcx_mock = mocklib.CxMgrMock(load_config=mock.Mock(side_effect=self.load_config))
         ncs.data['maapi'].start_write_trans = lambda *args, **dargs: self.tcx_mock
         states_dir = os.path.join(TestBase.test_run_dir, 'states')
-        self.sub_rx = re.compile(r'{}/(.*)\.state\.cfg'.format(states_dir))
+        self.sub_rx = re.compile(r'/{}/(.*)\.state\.cfg'.format(states_dir))
         self.loaded_states = []
 
     def load_config(self, _flags, filename):
@@ -565,9 +565,9 @@ class TestTransitions(TransitionsTestBase):
             test = 'test_template_single' if rollback else 'test_template_raw'
             test_args = ['-k {}[{}.state.cfg]'.format(test, state)]
         else:
-            test_args = ['--fname={}'.format(os.path.join(self.test_run_dir,
-                                                          'states',
-                                                          state + '.state.cfg'))
+            state_dir = os.path.join(self.test_run_dir, 'states')
+            full_dir = os.path.abspath(state_dir)
+            test_args = ['--fname={}'.format(os.path.join(full_dir, state + '.state.cfg'))
                          for state in self.states]
             if not rollback:
                 test_args += ['--end-op', '']

@@ -39,7 +39,7 @@ class XmnrBase(object):
 
     def _setup_directories(self, trans):
         root = maagic.get_root(trans)
-        self.xmnr_directory = root.drned_xmnr.xmnr_directory
+        self.xmnr_directory = os.path.abspath(root.drned_xmnr.xmnr_directory)
         self.log_filename = root.drned_xmnr.xmnr_log_file
         self.dev_test_dir = os.path.join(self.xmnr_directory, self.dev_name, 'test')
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')

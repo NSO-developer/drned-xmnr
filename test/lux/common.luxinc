@@ -1,17 +1,46 @@
 [config timeout=2000]
 
-[global xmnr_dir=/tmp/xmnr]
+[global xmnr_dir_rel=xmnr-run-dir]
+[global xmnr_dir_abs=/tmp/xmnr]
+# relative_paths should be true of false
+[config require=relative_paths]
+
+[macro set-xmnr-dir]
+    !printf "dir: >%s<\n" $$($relative_paths && echo $xmnr_dir_rel || echo $xmnr_dir_abs)
+    ?dir: >(.*xmnr.*)<$
+    [global xmnr_dir=$1]
+[endmacro]
 
 [macro shell-check]
-    !echo ==$?==
-    ?==0==
+    [invoke shell-check-prompt check]
+[endmacro]
+
+[macro shell-check-prompt prompt]
+    !echo $prompt: ==$?==
+    ?$prompt: ==0==
+[endmacro]
+
+[macro prepare-xmnr]
+[shell os]
+    [invoke set-xmnr-dir]
+[shell ncs-cli]
+    !ncs_cli -u admin -C
+    ???admin@ncs#
+    !complete-on-space false
+    !config
+    !python-vm logging level level-debug
+    !drned-xmnr xmnr-log-file output.log
+    !drned-xmnr xmnr-directory $xmnr_dir
+    !commit
+    ?Commit complete|No modifications.
 [endmacro]
 
 [macro ned-test-setup]
+    !rm -rf $xmnr_dir_rel $xmnr_dir_abs
     !rm -rf ncs-run
     [progress prepare ncs-run and packages]
     !ncs-project create ncs-run
-    [invoke shell-check]
+    [invoke shell-check-prompt create]
     !cd ncs-run/packages
     [invoke shell-check]
     !ln -s ../../../../ drned-xmnr
@@ -20,21 +49,40 @@
     !file drned-xmnr/python
     ?drned-xmnr/python: directory
     !make -C drned-xmnr/src all
-    [invoke shell-check]
+    [invoke shell-check-prompt make-xmnr]
 [endmacro]
+
+[macro setup-and-prepare]
+    # set things up and start the simple ned
+[shell os]
+    [invoke ned-test-setup]
+    !ncs-make-package --netconf-ned ../../yang ned
+    [invoke shell-check-prompt make-package]
+    [timeout 10]
+    !make -C ned/src all
+    [invoke shell-check-prompt make-ned]
+    [timeout]
+    !cd ..
+    [invoke start-ncs-netsim ned]
+[shell ncs-cli]
+    [invoke prepare-ncs ned0]
+    [invoke prepare-device-xmnr true]
+[endmacro]
+
 
 [macro start-ncs-netsim device]
     [progress create and start the netsim]
     !ncs-netsim delete-network
     !ncs-netsim create-network packages/$device 1 $device
-    [invoke shell-check]
+    [invoke shell-check-prompt create-network]
     !ncs-netsim start
-    [invoke shell-check]
+    [invoke shell-check-prompt netsim]
     [progress start ncs]
     [timeout 10]
     !ncs --stop; ncs
-    [invoke shell-check]
+    [invoke shell-check-prompt ncs]
     [timeout]
+    [invoke prepare-xmnr]
 [endmacro]
 
 [macro test-walk-states states]
@@ -66,7 +114,7 @@
 
 [macro prepare-test device]
     [invoke prepare-ncs $device]
-    [invoke prepare-xmnr true]
+    [invoke prepare-device-xmnr true]
 [endmacro]
 
 [macro prepare-ncs device]
@@ -74,41 +122,29 @@
 [endmacro]
 
 [macro prepare-ncs-tweak device tweak tweak_device]
+[shell os]
     !ncs_cmd -u admin -c 'mdel /devices/device{$tweak_device}'
-    !ncs-netsim --dir ncs-run/netsim ncs-xml-init $device | $tweak | ncs_load -F p -l -m
-    [invoke shell-check]
-    !ncs_cli -u admin -C
-    ???admin@ncs#
-    !complete-on-space false
-    !config
-    !python-vm logging level level-debug
-    !drned-xmnr xmnr-log-file output.log
-    !commit
-    ?Commit complete|No modifications.
+    !ncs-netsim ncs-xml-init $device | $tweak | ncs_load -F p -l -m
+    [invoke shell-check-prompt xml-init]
+[shell ncs-cli]
     !devices device $tweak_device
     !sync-from
 [endmacro]
 
-[macro prepare-xmnr queues]
+[macro prepare-device-xmnr queues]
     [progress setup xmnr]
+    [timeout 10]
     !drned-xmnr setup setup-xmnr overwrite true use-commit-queue $queues
     ???success XMNR set up
+    [timeout]
     [progress record states]
     !drned-xmnr state record-state state-name empty overwrite true
     ???success Recorded state
 [endmacro]
 
 [macro cleanup]
-    !cd ncs-run
-    ?SH-PROMPT:
     !ncs --stop
     ?SH-PROMPT:
-    !ncs-netsim stop
-    ?SH-PROMPT:
-    !make clean
-    ?SH-PROMPT:
-    !rm -rf packages/*
-    ?SH-PROMPT:
-    !rm -rf /tmp/xmnr
+    !ncs-netsim --dir ncs-run/netsim stop
     ?SH-PROMPT:
 [endmacro]

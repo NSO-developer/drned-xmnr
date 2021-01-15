@@ -1,13 +1,11 @@
 [doc Testing DrNED-XMNR integration with NCS and DrNED]
 
 [include common.luxinc]
-[global ned0_dir=$xmnr_dir/ned0]
-[global ned0_log=$ned0_dir/test/output.log]
 
 [macro run-queues queues]
     [my shell=$LUX_SHELLNAME]
 [shell ncs-cli]
-    [invoke prepare-xmnr $queues]
+    [invoke prepare-device-xmnr $queues]
 [shell os]
     !rm -f $ned0_log
     !$queues && echo -n en || echo -n dis; echo abled
@@ -47,20 +45,8 @@
 [shell $shell]
 [endmacro]
 
-[shell os]
-    [invoke ned-test-setup]
-    !ncs-make-package --netconf-ned ../../yang ned
-    [invoke shell-check]
-    [timeout 10]
-    !make -C ned/src all
-    [invoke shell-check]
-    [timeout]
-    !cd ..
-    [invoke start-ncs-netsim ned]
+[invoke setup-and-prepare]
 [shell ncs-cli]
-    [invoke prepare-ncs ned0]
-
-    [invoke prepare-xmnr true]
     !config dhcp default-lease-time 200s
     !commit
     ???Commit complete.
@@ -75,6 +61,8 @@
     ! file-path-pattern ../dhcp-ls.cfg format nso-c-style merge false overwrite true
     ???success
 [shell os]
+    [local ned0_dir=$xmnr_dir/ned0]
+    [local ned0_log=$ned0_dir/test/output.log]
     !cp -v ../subnet2.xml $ned0_dir/test/states/
     ??'../subnet2.xml' -> '$ned0_dir/test/states/subnet2.xml'
     ?SH-PROMPT
