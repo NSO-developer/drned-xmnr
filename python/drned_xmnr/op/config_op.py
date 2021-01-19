@@ -300,7 +300,8 @@ class ImportConvertCliFiles(ImportOp):
     def _init_params(self, params):
         super(ImportConvertCliFiles, self)._init_params(params)
         self.devcli = self.param_default(params, "cli_device", self.dev_name)
-        self.cli_timeout = params.timeout
+        self.device_timeout = params.device_timeout
+        self.import_timeout = params.import_timeout
 
     def cli_filter(self, msg):
         match = self.filterrx.match(msg)
@@ -321,11 +322,13 @@ class ImportConvertCliFiles(ImportOp):
     def perform(self):
         filenames, states, _ = self.verify_filenames()
         args = ['python', 'cli2netconf.py', self.dev_name, self.devcli,
-                '-t', str(self.cli_timeout)] + \
+                '-t', str(self.device_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
         workdir = 'drned-ncs'
         self.failures = []
         self.devcli_error = None
+
+        self.extend_timeout(self.import_timeout)
         result, _ = self.run_in_drned_env(args, timeout=120, NC_WORKDIR=workdir)
         if self.devcli_error is not None:
             raise ActionError('No device driver definition found')

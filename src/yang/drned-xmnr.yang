@@ -265,10 +265,16 @@ module drned-xmnr {
               type boolean;
               default false;
             }
-            leaf timeout {
+            leaf device-timeout {
               tailf:info
                 "How long should XMNR wait for a device to respond (or
                  how long to wait for an expected response).";
+              type uint16;
+              default 120;
+            }
+            leaf import-timeout {
+              tailf:info
+                "How long should NSO wait for the import command to complete.";
               type uint16;
               default 120;
             }
@@ -368,6 +374,12 @@ module drned-xmnr {
                  performed to the original state.";
               type boolean;
               default false;
+            }
+            leaf timeout {
+              tailf:info
+                "How long should NSO wait for the walk-states command to complete.";
+              type uint16;
+              default 120;
             }
           }
           output {

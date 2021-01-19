@@ -70,9 +70,27 @@
     !drned-xmnr state record-state state-name subnet2
     ???failure state subnet2 already exists
     [invoke check-states "dhcp-ls empty subnet subnet2 time"]
+    [progress validate states]
     !drned-xmnr state check-states validate true
     ???success all states are consistent
-
+    ?
+    [progress view states]
+    !drned-xmnr state view-state state-name dhcp-ls
+    """?
+    drned-xmnr state view-state state-name dhcp-ls
+    success <config xmlns="http://tail-f.com/ns/config/1.0">
+      <devices xmlns="http://tail-f.com/ns/ncs">
+      <device>
+        <name>ned0</name>
+          <config>
+            <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+              <default-lease-time>PT200S</default-lease-time>
+            </dhcp>
+          </config>
+      </device>
+      </devices>
+    </config>
+    """
     [loop queues true false]
         [invoke run-queues $queues]
     [endloop]

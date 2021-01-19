@@ -11,7 +11,6 @@ import common.test_common as common
 import subprocess
 import tempfile
 import time
-import urllib
 from lxml import etree
 
 INDENT = "=" * 30 + " "
@@ -76,7 +75,7 @@ class Device(object):
         # Handle possible settings
         if use:
             for u in use:
-                var,val = u.split("=")
+                var, val = u.split("=")
                 assert hasattr(self, var)
                 if val == "True":
                     val = True
@@ -306,7 +305,6 @@ class Device(object):
         """
         self.trace(INDENT + inspect.stack()[0][3] + "(" + name + ")")
         rm = None
-        self.last_load = name
         if rename_device or ancient:
             suffix = "." + name.split(".")[-1]
             prefix = os.path.basename(name)
@@ -368,7 +366,6 @@ class Device(object):
         if banner:
             self.trace(INDENT + inspect.stack()[0][3] + "(" + name + ")")
         rm = None
-        self.last_load = name
         # Get possible load options from file
         path = self.rload_path
         if os.path.isfile("%s.load" % name):
@@ -536,10 +533,6 @@ class Device(object):
                           " %s %s" % (self.rollback_xml[id], xml))
         # Create dry-run files
         self.dry_run(fname="drned-work/drned-dry-run.txt", banner=False)
-        # Check dry-run timing
-        f = [self.last_load]
-        if xml and self.last_load and "logs/rollback" in self.last_load:
-            f = [xml, self.last_load]
         # Update dry-run log
         with open("drned-work/drned-dry-run.txt") as inf, \
              open("drned-work/drned-dry-run-all.txt", "a") as outf:
@@ -575,11 +568,6 @@ class Device(object):
         print("NOTE: Commit id: %s" % id)
         self.commit_id.append(id)
         self._set_rollback_xml(xml)
-
-        f = [self.last_load]
-        if xml and self.last_load and "logs/rollback" in self.last_load:
-            f = [xml, self.last_load]
-        self.last_load = None
 
         # Do disconnect to force reload of NED instance variables
         if self.reconnect_required:
@@ -656,8 +644,6 @@ class Device(object):
         else:
             self.rollback_id = None
             print("NOTE: No rollback since commit was empty")
-        self.last_load = None if not self.rollback_id \
-                         else "drned-ncs/logs/rollback%s" % self.rollback_id
         return self
 
     def rollback_compare(self, id=-1, dry_run=True):
@@ -808,12 +794,12 @@ class Device(object):
                             "for more input: '%s'\nPROMPT" % ncs_buf_raw)
         if echo:
             print(self.ncs_buf)
-        if expect_not != None:
+        if expect_not is not None:
             self.saw_not(expect_not)
         else:
             # Always use fixed set of error msgs if none given
             self.saw_not("((ERROR|[Ee]rror|[Ff]ailed|[Aa]borted):)|([Ee]rror when|[Ee]xternal error|[Ii]nternal error)")
-        if expect != None:
+        if expect is not None:
             self.saw(expect)
         return self
 
