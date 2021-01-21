@@ -265,6 +265,7 @@ def init_mocks():
     patchings remains active for the rest of the Python environment
     lifetime, the patchers' `stop' method is never called!
     """
-    patch('ncs.application.Application', new_callable=lambda: mock.Mock).start()
+    patch('ncs.application.Application', new=mock.Mock).start()
     patch('ncs.dp.Action.action', side_effect=lambda fn: fn).start()
     patch('ncs.dp.Action.__init__', return_value=None).start()
+    patch.dict('sys.modules', drned=mock.Mock()).start()

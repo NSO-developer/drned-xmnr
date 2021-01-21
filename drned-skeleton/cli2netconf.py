@@ -196,17 +196,19 @@ class XDevice(drned.Device):
         self.ncs.close()
 
 
-testrx = re.compile(r'(?P<set>.*):(?P<index>[0-9]+)(?:\..*)')
+testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
 SetDesc = namedtuple('SetDesc', ['fname', 'fset', 'index'])
 
 
-def fname_set_desc(fname):
-    m = testrx.match(fname)
-    if m is None:
-        return SetDesc(fname=fname, fset=fname, index=0)
-    else:
+def fname_set_descriptors(fnames):
+    for fname in sorted(fnames):
+        m = testrx.match(fname)
+        if m is None:
+            print('Filename format not understood: ' + fname)
+            continue
         d = m.groupdict()
-        return SetDesc(fname=fname, fset=d['set'], index=int(d['index']))
+        ix = 0 if d['index'] is None else d['index']
+        yield SetDesc(fname=fname, fset=d['set'], index=int(ix))
 
 
 def group_cli2netconf(device, devcli, group):
@@ -228,8 +230,8 @@ def group_cli2netconf(device, devcli, group):
 def _cli2netconf(device, devcli, fnames):
     # Save initial CLI state
     devcli.save_config()
-    namesets = (fname_set_desc(fname) for fname in sorted(fnames))
-    namegroups = itertools.groupby(namesets, key=operator.attrgetter('fset'))
+    namegroups = itertools.groupby(fname_set_descriptors(fnames),
+                                   key=operator.attrgetter('fset'))
     for _, group in namegroups:
         sgroup = sorted(group, key=operator.attrgetter('index'))
         groupname = sgroup[0].fset

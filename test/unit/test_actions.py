@@ -530,6 +530,87 @@ class TestStates(TestBase):
                 for state in sorted(failures)] == sorted(rest_msgs)
 
 
+class TestConvertMessage(TestBase):
+    config_states = ['clistate1', 'clistate2', 'otherclistate', 'clistate3']
+    config_path = '/cfgpath'
+
+    def action_uinfo(self):
+        return mock.Mock(context='cli')
+
+    def setup_config_files(self, system, failures={}, format_failures={}, states=None):
+        if states is None:
+            states = self.config_states
+        for state in states:
+            # this is needed, the action prepares the state set based on existing files
+            filename = os.path.join(self.config_path, state + '.cfg')
+            system.ff_patcher.fs.create_file(filename, contents='{} test data'.format(state))
+        self.config_pattern = os.path.join(self.config_path, '*.cfg')
+        self.system = system
+        self.failures = failures
+        self.format_failures = format_failures
+        self.states_to_process = states[:]
+
+    def popen_effect(self, *args, **kwargs):
+        cwd = kwargs['cwd']
+        self.path_pattern = os.path.join(cwd, 'drned-ncs', '{}.xml')
+        data = []
+        for state in self.states_to_process:
+            path = self.path_pattern.format(state)
+            self.system.ff_patcher.fs.create_file(path)
+            if state in self.failures:
+                data.append('failed to convert group {}'.format(state))
+            elif state in self.format_failures:
+                data.append('Filename format not understood: ' + path)
+            else:
+                data.append('converting {}.cfg to {}'.format(state, path))
+        self.system.proc_data(b''.join(bytestream(line + '\n') for line in data))
+        return mock.DEFAULT
+
+    def setup_and_start(self, xpatch, **setup_args):
+        self.setup_config_files(xpatch.system, **setup_args)
+        popen_mock = xpatch.system.patches['subprocess']['Popen']
+        popen_mock.side_effect = self.popen_effect
+        output = self.invoke_action('import-convert-cli-files',
+                                    file_path_pattern=self.config_pattern,
+                                    overwrite=True,
+                                    device_timeout=120,
+                                    import_timeout=120,
+                                    cli_device='cli-device')
+        return output
+
+    def expected_writes(self, states=None):
+        if states is None:
+            states = self.config_states
+        for state in states:
+            if state in self.failures:
+                yield 'failed to import group {}\n'.format(state)
+            elif state in self.format_failures:
+                filename = self.path_pattern.format(state)
+                yield 'unknown filename format: {}; should be name[:index].ext\n'.format(filename)
+            else:
+                yield 'importing state {}\n'.format(state)
+
+    @xtest_patch
+    def test_convert_message(self, xpatch):
+        self.check_output(self.setup_and_start(xpatch))
+        calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
+        assert ''.join(self.expected_writes()) == ''.join(call[0][2] for call in calls)
+
+    @xtest_patch
+    def test_convert_failure_messages(self, xpatch):
+        output = self.setup_and_start(xpatch, failures={'otherclistate'})
+        assert output.failure is not None
+        calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
+        assert ''.join(self.expected_writes()) == ''.join(call[0][2] for call in calls)
+
+    @xtest_patch
+    def test_convert_file_format(self, xpatch):
+        output = self.setup_and_start(xpatch, format_failures={'otherclistate'})
+        assert output.failure is not None
+        calls = iter(xpatch.ncs.data['ncs']['cli_write'].call_args_list)
+        assert ''.join(self.expected_writes()) == ''.join(call[0][2] for call in calls)
+
+
 class StopTestTimer(object):
     def __init__(self, **args):
         self.reset(**args)
@@ -710,6 +791,7 @@ class TestTransitions(TransitionsTestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
                                     rollback=False,
+                                    timeout=10,
                                     states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
@@ -721,6 +803,7 @@ class TestTransitions(TransitionsTestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
                                     rollback=True,
+                                    timeout=10,
                                     states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
@@ -889,7 +972,7 @@ class TransitionsLogFiltersTestBase(TransitionsTestBase):
 
     def walk_filter_test_run(self, xpatch, filter_type):
         self.filter_test_run(xpatch, filter_type, DrnedWalkOutput, self.states,
-                             'walk-states', states=self.states, rollback=False)
+                             'walk-states', timeout=10, states=self.states, rollback=False)
 
 
 class TestTransitionsLogFilters(TransitionsLogFiltersTestBase):
@@ -956,7 +1039,8 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_filter(xpatch, 'drned-overview', 'redirect.output')
         self.setup_states_data(xpatch.system)
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
-        self.invoke_action('walk-states', states=self.states, rollback=False)
+        output = self.invoke_action('walk-states', states=self.states, timeout=10, rollback=False)
+        self.check_output(output)
         with open(os.path.join(self.test_run_dir, 'redirect.output')) as r_out:
             assert r_out.readline() == '\n'
             assert re.match('-+$', r_out.readline()) is not None
@@ -970,7 +1054,8 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_filter(xpatch, 'all')
         self.setup_states_data(xpatch.system)
         DrnedWalkOutput(self.states, 'none', xpatch.system)
-        self.invoke_action('walk-states', states=self.states, rollback=False)
+        output = self.invoke_action('walk-states', states=self.states, rollback=False, timeout=10)
+        self.check_output(output)
         calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
         assert ''.join(call[0][2] for call in calls) == ''
 

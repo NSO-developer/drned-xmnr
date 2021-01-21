@@ -79,17 +79,17 @@
     """?
     drned-xmnr state view-state state-name dhcp-ls
     success <config xmlns="http://tail-f.com/ns/config/1.0">
-      <devices xmlns="http://tail-f.com/ns/ncs">
-      <device>
-        <name>ned0</name>
-          <config>
-            <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
-              <default-lease-time>PT200S</default-lease-time>
-            </dhcp>
-          </config>
-      </device>
-      </devices>
-    </config>
+     *<devices xmlns="http://tail-f.com/ns/ncs">
+     *<device>
+     *<name>ned0</name>
+     *<config>
+     *<dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+     *<default-lease-time>PT200S</default-lease-time>
+     *</dhcp>
+     *</config>
+     *</device>
+     *</devices>
+     *</config>
     """
     [loop queues true false]
         [invoke run-queues $queues]

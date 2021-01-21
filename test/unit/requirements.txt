@@ -3,3 +3,4 @@ pyfakefs
 mock
 lxml
 pexpect
+six

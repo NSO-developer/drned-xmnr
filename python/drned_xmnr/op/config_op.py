@@ -293,7 +293,8 @@ class ImportConvertCliFiles(ImportOp):
         r'(?:'
         r'(?P<convert>converting [^ ]* to [^ ]*/(?P<state>[^/]*)[.]xml)|'
         r'(?P<failure>failed to convert group (?P<group>.*))|'
-        r'(?P<devcli>.*DevcliException: No device definition found)'
+        r'(?P<devcli>.*DevcliException: No device definition found)|'
+        r'(?P<format>Filename format not understood: (?P<filename>.*))'
         r')$')
     filterrx = re.compile(filterexpr)
 
@@ -309,15 +310,20 @@ class ImportConvertCliFiles(ImportOp):
             return
         gd = match.groupdict()
         if match.lastgroup == 'convert':
-            report = 'importing state {}\n'.format(gd['state'])
+            report = 'importing state ' + gd['state']
         elif match.lastgroup == 'devcli':
             self.devcli_error = msg
-            report = 'could not find the device driver definition\n'
-        else:
+            report = 'could not find the device driver definition'
+        elif match.lastgroup == 'failure':
             group = gd['group']
-            report = 'failed to import group {}\n'.format(group)
+            report = 'failed to import group ' + group
             self.failures.append(group)
-        super(ImportConvertCliFiles, self).cli_filter(report)
+        else:
+            filename = gd['filename']
+            msg = 'unknown filename format: {}; should be name[:index].ext'
+            report = msg.format(filename)
+            self.failures.append(filename)
+        super(ImportConvertCliFiles, self).cli_filter(report + '\n')
 
     def perform(self):
         filenames, states, _ = self.verify_filenames()
