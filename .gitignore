@@ -1,1 +1,4 @@
 *.pyc
+test/lux/lux_logs/
+test/lux/ncs-run/
+test/unit/.tox/
