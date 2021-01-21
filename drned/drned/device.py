@@ -755,7 +755,7 @@ class Device(object):
         self.last_prompt = None
         while True:
             e = self.ncs.expect(prompt if prompt
-                                else ["[^ ]# ", "--More--", "[\]\)\n]: "],
+                                else ["[^ ]# ", "--More--", "[\]\)\n]: $"],
                                 timeout=self.tmo+60)
             ncs_buf_raw = self.ncs.before + self.ncs.after
             with open("drned-work/stdout.txt", "a") as f:
