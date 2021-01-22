@@ -72,7 +72,7 @@ class _Coverage(object):
                 lpath = self.name[:self.name.rindex("]/")+1]
                 self.was_deleted_separately = (lpath in _Coverage.set_map)
                 if not self.was_deleted_separately:
-                    sname = re.sub("\[[^\]]*\]", "", lpath)
+                    sname = re.sub(r"\[[^\]]*\]", "", lpath)
                     node = _Coverage.schema.get_node(sname)
                     if (not node) or (not node.stmt):
                         print("NOTE: skipping delete of unknown element: '%s'" % compress_path(sname))
@@ -340,7 +340,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                                 current_list_prefix.pop()
                         if XVERBOSE and path != orig_path:
                             print("EXPANDED PATH %s" % path)
-                        sname = re.sub("\[[^\]]*\]", "", path)
+                        sname = re.sub(r"\[[^\]]*\]", "", path)
                         node = _Coverage.schema.get_node(sname)
                         if not node:
                             print("NOTE: skipping unknown element: '%s' (%s)" % (compress_path(path), sname))
@@ -366,7 +366,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                                 if XVERBOSE:
                                     print("ADD LIST PREFIX: %s - %s" % (path + "/", orig_path))
                                 current_list_prefix.append((orig_path, path))
-                                nokeys_path = re.sub("\[[^\]]*\]", "", path)
+                                nokeys_path = re.sub(r"\[[^\]]*\]", "", path)
                                 if nokeys_path not in list_keys:
                                     list_keys[nokeys_path] = set()
                                 list_keys[nokeys_path].add(current_key_vals)
@@ -440,7 +440,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
 
     # Consolidate lists into single entries
     for p in list(coverage):
-        nolist = re.sub("\[[^\]]*\]", "", p)
+        nolist = re.sub(r"\[[^\]]*\]", "", p)
         if nolist != p:
             # Ok, this path has at least one list, so move to common entry
             if not nolist in coverage:
