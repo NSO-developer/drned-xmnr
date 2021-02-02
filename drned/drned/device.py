@@ -22,6 +22,7 @@ Commit performed by .* via .* using .*
 
 pxargs = {"encoding": "utf-8"} if sys.version_info >= (3, 0) else {}
 
+
 class Device(object):
     """The abstraction of a NCS/NED device.
 
@@ -35,7 +36,7 @@ class Device(object):
             name = "netsim-0"
         self.cfg = name + ".cfg"
         self.cli = cli
-        self.request=request
+        self.request = request
         self.commit_id = []
         self.rollback_id = None
         self.rollback_xml = {}
@@ -157,12 +158,12 @@ class Device(object):
         if ned_id:
             self.ned_name = ned_id.group(1)
         # Fetch host keys?
-        if self.device_type != "generic" and not "protocol telnet" in self.ncs_buf:
+        if self.device_type != "generic" and "protocol telnet" not in self.ncs_buf:
             self.cmd("show full-configuration devices device %s ssh" % self.name)
-            if not "key-data" in self.ncs_buf:
+            if "key-data" not in self.ncs_buf:
                 try:
                     self.cmd("devices device %s ssh fetch-host-keys" % self.name)
-                except pytest.fail.Exception as e:
+                except pytest.fail.Exception:
                     raise
         self.cmd("commit") # Bypass normal commit
         # Timeouts are handled here to be able to expect with same value
@@ -213,7 +214,7 @@ class Device(object):
             self.covsession = str(int(time.time() * 1000))
             os.makedirs("drned-work/coverage/%s" % self.covsession)
         # Create an initial coverage report
-        xml = self._coverage()
+        self._coverage()
         self.cmd("top")
 
     def reset_cli(self):
@@ -514,7 +515,7 @@ class Device(object):
                 # Strip annotations and empty containers
                 def content(f):
                     s = re.sub(r"<(\S+) (annotation|xmlns)=[^>]*>", r"<\1>", f.read())
-                    for i in range(10): # Max depth 10
+                    for i in range(10):  # Max depth 10
                         r = re.sub(r"\n\s*<(\S+)[^>]*>\s*</\1>.*", "", s)
                         if s == r:
                             break
@@ -543,7 +544,7 @@ class Device(object):
                 print(inf.read())
         # Do compare-config before commit to compensate for the
         # removed transaction ID
-        if self.use_transaction_id == False \
+        if self.use_transaction_id is False \
            and not self.use_no_networking \
            and self.saw_compare_after_commit:
             self.compare_config(banner=False)
@@ -609,7 +610,7 @@ class Device(object):
         """
         if banner:
             self.trace(INDENT + inspect.stack()[0][3] + "()")
-        fmt = ("" if outformat == None else " outformat " + outformat)
+        fmt = ("" if outformat is None else " outformat " + outformat)
         if fname == None:
             # Use file also when printing to console, the dry-run data
             # may contain prompt patterns
@@ -694,7 +695,7 @@ class Device(object):
         return self
 
     def commit_rollback(self, dry_run=True):
-        """Do a commit and rollback with compare-config steps inbetween.
+        """Do a commit and rollback with compare-config steps in between.
 
         Args:
             dry_run: display dry-run data before committing
@@ -755,14 +756,14 @@ class Device(object):
         self.last_prompt = None
         while True:
             e = self.ncs.expect(prompt if prompt
-                                else ["[^ ]# ", "--More--", "[\]\)\n]: $"],
+                                else ["[^ ]# ", "--More--", r"[])\n]: $"],
                                 timeout=self.tmo+60)
             ncs_buf_raw = self.ncs.before + self.ncs.after
             with open("drned-work/stdout.txt", "a") as f:
                 f.write(ncs_buf_raw)
             if self.verbose:
                 print("<<<< %d: %s <<<<" % (e, ncs_buf_raw))
-            found_prompt = re.match(".*?(\([^\)]+\)#)",
+            found_prompt = re.match(r".*?(([^)]+)#)",
                                     ncs_buf_raw, re.MULTILINE + re.DOTALL)
             if found_prompt:
                 self.last_prompt = found_prompt.group(1)

@@ -9,8 +9,10 @@ import common.test_common as common
 
 DRY_RUN = False
 
+
 def _done():
     raise StopIteration
+
 
 class Xstr(str):
     """Extended string class for the drned_load and drned_rollback
@@ -51,10 +53,11 @@ class Xstr(str):
             indent = re.search("^ *", token).end()
             # Add regex for token
             regex += r"(?!^\1%s%s).*^\1%s" % (indent * " ", closure, token)
-        m = re.search(regex, self, re.MULTILINE|re.DOTALL)
+        m = re.search(regex, self, re.MULTILINE | re.DOTALL)
         if not m:
             pytest.fail("No match for %s, regex \"%s\"" % (tokens, regex))
         return m.start() if first else m.end()
+
 
 class Xrollback(object):
     """Extended rollback class to be able to fine-tune rollbacks.
@@ -117,6 +120,7 @@ class Xrollback(object):
             self.rollback(p, i - self.start)
         return True
 
+
 class Settings(object):
     def __init__(self):
         self.restore_data = {}
@@ -124,7 +128,7 @@ class Settings(object):
     def set_value(self, obj, attr, value):
         if obj:
             # Save for later restore
-            if not attr in self.restore_data:
+            if attr not in self.restore_data:
                 self.restore_data[attr] = (obj, getattr(obj, attr))
             # Set value
             setattr(obj, attr, value)
@@ -146,6 +150,7 @@ class Settings(object):
         for attr in list(self.restore_data):
             self.restore_value(attr)
 
+
 class Parameter(object):
     def __init__(self, device=None, settings=None,
                  drned_load=None, drned_rollback=None):
@@ -154,6 +159,7 @@ class Parameter(object):
         self.drned_load = Xstr(drned_load)
         self.drned_rollback = Xstr(drned_rollback)
         self.done = _done
+
 
 def test_here_single(device, config, name, usrparam=None, dry_run=DRY_RUN):
     """Test a configuration sequence.
@@ -198,7 +204,7 @@ def test_here_single(device, config, name, usrparam=None, dry_run=DRY_RUN):
         except StopIteration:
             device.sync_from()
             rollback_to_start(device, commit_id_base, dry_run)
-        except:
+        except Exception:
             rollback_to_start(device, commit_id_base, dry_run)
             raise
         else:
@@ -214,6 +220,7 @@ def test_here_single(device, config, name, usrparam=None, dry_run=DRY_RUN):
                               "drned-work/after-test.cfg"):
             pytest.fail("The state after rollback differs from before load. " +
                         "Please check before-test.cfg and after-test.cfg")
+
 
 def test_here_union(device, config, iteration=range(1, 7), dry_run=DRY_RUN):
     """Test different sequences of commands as a union.
@@ -242,6 +249,7 @@ def test_here_union(device, config, iteration=range(1, 7), dry_run=DRY_RUN):
             device.trace("\npy.test -k test_here_union --iteration=%d\n" % it)
             _here_union(device, config, it, dry_run=dry_run)
 
+
 def _here_union(device, config, it, dry_run=False):
     device.save("drned-work/before-test.cfg")
     names = sorted(config.keys())
@@ -254,11 +262,11 @@ def _here_union(device, config, it, dry_run=False):
             for name in names:
                 device.trace("\npy.test -k 'test_here_single[%s]'\n" % name)
                 # Commit loop
-                for i,conf in enumerate(config[name]):
+                for i, conf in enumerate(config[name]):
                     if it in [1, 2]:
-                        operations=["load", "commit", "compare-config"]
+                        operations = ["load", "commit", "compare-config"]
                     else:
-                        operations=["load"]
+                        operations = ["load"]
                     _chunk_part(device, i, name, conf,
                                 settings=settings, dry_run=dry_run,
                                 operations=operations, do_functions=False)
@@ -269,7 +277,7 @@ def _here_union(device, config, it, dry_run=False):
         except StopIteration:
             device.sync_from()
             rollback_to_start(device, commit_id_base, dry_run)
-        except:
+        except Exception:
             rollback_to_start(device, commit_id_base, dry_run)
             raise
         else:
@@ -286,23 +294,25 @@ def _here_union(device, config, it, dry_run=False):
             pytest.fail("The state after rollback differs from before load. " +
                         "Please check before-test.cfg and after-test.cfg")
 
+
 # Handle part of chunk
 def _chunk_part(device, no, name, conf, dry_run=False, operations=None,
                 settings=None, usrparam=None, do_functions=True):
-    if type(conf) == types.StringType:
+    if isinstance(type(conf), types.StringType):
         device.trace("\n%s\nPart %d of %s\n%s\n%s\n" %
-                   ("#" * 30, no, name, conf.strip(), "#" * 30))
+                     ("#" * 30, no, name, conf.strip(), "#" * 30))
         _chunk_part_string(device, conf, dry_run=dry_run,
                            operations=operations)
-    elif type(conf) == types.FunctionType and do_functions:
+    elif isinstance(type(conf), types.FunctionType) and do_functions:
         if hasattr(conf, "pretty"):
             desc = conf.pretty
         else:
             desc = inspect.getsource(conf).strip()
         device.trace("\n%s\nPart %d of %s\n%s\n%s\n" %
-                   ("#" * 30, no, name, desc, "#" * 30))
+                     ("#" * 30, no, name, desc, "#" * 30))
         _chunk_part_func(device, conf, settings=settings,
                          usrparam=usrparam, dry_run=dry_run)
+
 
 # Handle function part of chunk
 def _chunk_part_func(device, conf, settings=None, usrparam=None, dry_run=False):
@@ -331,7 +341,7 @@ def _chunk_part_func(device, conf, settings=None, usrparam=None, dry_run=False):
         # Pass this exception to be able to abort the test from the
         # lambda function
         raise
-    except Exception as e:
+    except Exception:
         success = False
     if not success:
         pretty = ""
@@ -346,6 +356,7 @@ def _chunk_part_func(device, conf, settings=None, usrparam=None, dry_run=False):
                     "\ndrned_load = \n%s" % p.drned_load +
                     "\ndrned_rollback = \n%s" % p.drned_rollback +
                     "\n\n%s" % pretty)
+
 
 # Handle string part of chunk
 def _chunk_part_string(device, conf, dry_run=False, operations=None):
@@ -393,6 +404,7 @@ def _chunk_part_string(device, conf, dry_run=False, operations=None):
                 i = i if i < 0 else commit_id_base + i
                 device.rollback(device.commit_id_next(i))
 
+
 # Load configuration by means of file, faster than CLI
 def _load(device, conf):
     with tempfile.NamedTemporaryFile(dir="drned-work",
@@ -402,6 +414,7 @@ def _load(device, conf):
         with open(temp.name, "w") as f:
             f.write(conf)
         device.rload(temp.name, banner=False)
+
 
 def rollback_to_start(device, commit_id_base, dry_run):
     # Single rollback to start

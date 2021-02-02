@@ -2,11 +2,10 @@ import drned
 import glob
 import os
 import pytest
-import pwd
-import sys
 import common.test_common as common
 
 SCOPE = "session"
+
 
 def pytest_addoption(parser):
     parser.addoption("--all", action="store_true", dest="all",
@@ -41,6 +40,7 @@ def pytest_addoption(parser):
                      help="add drned use_xxx parameter")
     parser.addoption("--yangpath", action="append", dest="yangpath",
                      help="specify colon-separated path list", default=[])
+
 
 def pytest_generate_tests(metafunc):
     # Traverse for config file list
@@ -77,11 +77,14 @@ def pytest_generate_tests(metafunc):
             with open("drned-work/fname-file.tmp", "w") as f:
                 f.write("\n".join(get_filenames()) + "\n")
 
+
 def none(p):
     return None if p == "none" else p
 
+
 def sh(cmd):
     return common.check_output(cmd)
+
 
 def rmf(p):
     try:
@@ -89,13 +92,16 @@ def rmf(p):
     except OSError:
         pass
 
+
 def touch(p):
     with open(p, "w"):
         pass
 
+
 dual_mode = {
     "reread":    ["", "-reread", ""],
 }
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def device(request):
@@ -128,7 +134,7 @@ def device(request):
         try:
             device.compare_config()
             break
-        except pytest.fail.Exception as e:
+        except pytest.fail.Exception:
             if i >= (laps - 1):
                 raise
     # Check if restore successful
@@ -137,6 +143,7 @@ def device(request):
                           "drned-work/after-session.cfg"):
         pytest.fail("Could not restore device to state before session. " +
                     "Please check before-session.cfg and after-session.cfg")
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def device_raw(request):
@@ -149,19 +156,22 @@ def device_raw(request):
     device.trace("\n%s\n" % request._pyfuncitem.name)
     yield device
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def yangpath(request):
     yield request.config.getoption("--yangpath")
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def ordered(request):
     option = request.config.getoption("--ordered")
     yield "true" if option is None else option
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def schema(request):
     yang = getattr(request.module, "yang")
-    if yang == None:
+    if yang is None:
         pytest.fail("Please enter a schema name using a \"yang\" variable " +
                     "in the test module")
     yang_leaf_map = None
@@ -181,8 +191,9 @@ def schema(request):
                            ("pattern_map", yang_pattern_map),
                            ("type_map", yang_type_map),
                            ("xpath_map", yang_xpath_map)])
-    assert schema != None
+    assert schema is not None
     yield schema
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def iteration(request):
@@ -200,29 +211,36 @@ def iteration(request):
         iterlist = range(0, 100)
     yield iterlist
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def all(request):
     yield request.config.getoption("--all")
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def diff(request):
     yield request.config.getoption("--diff")
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def devname(request):
     yield request.config.getoption("--device")
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def argv(request):
     yield request.config.getoption("--argv")
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def end_op(request):
     yield request.config.getoption("--end-op")
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def exclude(request):
     yield request.config.getoption("--exclude")
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def fname(request):
@@ -234,26 +252,32 @@ def fname(request):
                 files.extend(glob.glob(fn.replace("~", "-")))
     yield files
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def include(request):
     yield request.config.getoption("--include")
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def init(request):
     yield request.config.getoption("--init")
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def init_op(request):
     yield request.config.getoption("--init-op")
+
 
 @pytest.yield_fixture(scope=SCOPE)
 def op(request):
     yield request.config.getoption("--op")
 
+
 @pytest.yield_fixture(scope=SCOPE)
 def root(request):
     yield request.config.getoption("--root")
 
+
 @pytest.yield_fixture(scope=SCOPE)
-def root(request):
+def use(request):
     yield request.config.getoption("--use")

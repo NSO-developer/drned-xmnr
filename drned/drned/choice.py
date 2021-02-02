@@ -1,4 +1,3 @@
-
 class Choice(object):
     def __init__(self, children, name):
         self.children = {}
@@ -30,6 +29,7 @@ class Choice(object):
             else:
                 return True
         return False
+
 
 def get_choice(choices, path, children, name):
     if path in choices:
