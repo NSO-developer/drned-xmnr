@@ -2,15 +2,18 @@ import os
 import re
 import subprocess
 
+
 # Compare two config files but ignore comments
 def filecmp(a, b):
     return os.system("diff -I '^ *!' -I '^ */\*' %s %s" % (a, b)) == 0
+
 
 def check_output(command, **args):
     return subprocess.check_output(command,
                                    universal_newlines=True,
                                    shell=True,
                                    **args)
+
 
 def path_in_prefixes(path, prefixes):
     pathnons = path
@@ -21,12 +24,12 @@ def path_in_prefixes(path, prefixes):
             return True
     return False
 
+
 def gen_nodes(schema, skip_nodes, include_prefixes, exclude_prefixes, ntype):
     nodes = schema.list_nodes(ntype=ntype)
     for node in nodes:
         p = node.get_path()
-        if (not p in skip_nodes and
+        if (p not in skip_nodes and
             not path_in_prefixes(p, exclude_prefixes) and
-            (not include_prefixes or path_in_prefixes(p, include_prefixes))):
+                (not include_prefixes or path_in_prefixes(p, include_prefixes))):
             yield node
-

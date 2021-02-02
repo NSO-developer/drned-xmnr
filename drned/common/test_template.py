@@ -11,6 +11,7 @@ import common.test_common as common
 # parameters. The template fixture will therefore translate all hyphens
 # to tildes in filenames, and the test function will then translate back.
 
+
 def test_template_raw(device_raw, template, op):
     """Configurable test with template file.
 
@@ -43,9 +44,10 @@ def test_template_raw(device_raw, template, op):
         nothing
 
     """
-    if op == None:
+    if op is None:
         op = ["load", "commit", "compare-config"]
     _drned_single_file(device_raw, template, op)
+
 
 def test_template_single(device, template, op):
     """Normal test with template file.
@@ -80,7 +82,7 @@ def test_template_single(device, template, op):
         nothing
 
     """
-    if op == None:
+    if op is None:
         op = ["load", "commit", "compare-config",
               "rollback", "commit", "compare-config"]
     device.save("drned-work/before-test.cfg")
@@ -90,6 +92,7 @@ def test_template_single(device, template, op):
                                       "drned-work/after-test.cfg"):
         pytest.fail("The state after rollback differs from before load. " +
                     "Please check before-test.cfg and after-test.cfg")
+
 
 def test_template_set(device, init, fname, init_op, op, end_op, ordered):
     """Normal test of template file set, defined by naming convention:
@@ -148,6 +151,7 @@ def test_template_set(device, init, fname, init_op, op, end_op, ordered):
     """
     _drned_single_set(device, init, fname, init_op, op, end_op, 1, ordered)
 
+
 def test_template_union(device, init, fname, init_op, iteration, ordered):
     """Test of all combinations of file sets.
 
@@ -173,7 +177,7 @@ def test_template_union(device, init, fname, init_op, iteration, ordered):
     Iteration 6: Commit after all sets, descending order
     """
     for it in range(1, 7):
-        if iteration == None or it in iteration:
+        if iteration is None or it in iteration:
             if it in [1, 2]:
                 # Commit after each file
                 op = ["load", "commit", "compare-config"]
@@ -199,14 +203,15 @@ def test_template_union(device, init, fname, init_op, iteration, ordered):
             for i in reversed(range(commit_id_base, len(device.commit_id))):
                 device.rollback_compare(id=device.commit_id[i], dry_run=False)
 
+
 # Test single set
 def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
     src_in_set = False
     device.save("drned-work/before-test.cfg")
     # Load init files
     init_id_start = len(device.commit_id)
-    if init != None:
-        if init_op == None:
+    if init is not None:
+        if init_op is None:
             init_op = ["load", "commit", "compare-config"]
         for init_file in init:
             src,_,_ = _drned_single_file(device, init_file, init_op)
@@ -221,7 +226,7 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
         tsets = sorted(list(set(tsets)))
     if not it % 2:
         tsets = reversed(tsets)
-    if op == None:
+    if op is None:
         op = ["load", "commit", "compare-config"]
     pinit = " --init=" + " --init=".join(init) if init else ""
     piop = " --init-op=" + " --init-op=".join(init_op) if init_op else ""
@@ -270,6 +275,7 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
         pytest.fail("The state after rollback differs from before load. " +
                     "Please check before-test.cfg and after-test.cfg")
 
+
 # Test single file
 ctype = None
 def _drned_single_file(device, name, op, commit_id_base=None):
@@ -282,7 +288,7 @@ def _drned_single_file(device, name, op, commit_id_base=None):
     if commit_id_base == None:
         commit_id_base = len(device.commit_id)
     # Default set of operations
-    if op == None:
+    if op is None:
         op = ["load", "commit", "compare-config",
               "rollback", "commit", "compare-config"]
     end_op = None
@@ -372,7 +378,8 @@ def _drned_single_file(device, name, op, commit_id_base=None):
                 cid = int(o.replace("rollback", ""))
                 cid = cid if cid < 0 else commit_id_base + cid
                 device.rollback(device.commit_id_next(cid))
-    return False,end_op,set_op
+    return False, end_op, set_op
+
 
 # Load template
 def _drned_template_load(device, template, fail_on_errors=True):

@@ -3,6 +3,7 @@ from lxml import etree
 from . import node
 import re
 
+
 class Stage(object):
     XMLNS = "http://tail-f.com/ns/config/1.0"
     XML = "{%s}" % XMLNS
@@ -22,9 +23,9 @@ class Stage(object):
         if value == "<empty-false>":
             return
         # Provide sample?
-        if value == None:
+        if value is None:
             value = leaf.get_sample()
-        assert value != None
+        assert value is not None
         # Enter sequence number
         value = value.replace("%d", str(Stage.name_instance + 1))
         path = leaf.path
@@ -40,9 +41,9 @@ class Stage(object):
             key_index = None
             # Check which key
             stmt = leaf.stmt
-            while stmt.parent != None:
+            while stmt.parent is not None:
                 key = node._stmt_get_value(stmt, "key")
-                if key != None:
+                if key is not None:
                     key_index = key.split(" ").index(leaf.get_arg())
                     break
                 stmt = stmt.parent

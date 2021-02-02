@@ -15,14 +15,17 @@ import common.test_common as common
 VERBOSE = False
 XVERBOSE = False
 
+
 def compress_path(path):
     while re.match(".*?{([^}]+)}.*?({\\1}).*", path):
         path = re.sub("(.*?{([^}]+)}.*?)({\\2})(.*)", "\\1\\4", path)
     return path
 
+
 class _Coverage(object):
     set_map = {}
     schema = None
+
     def __init__(self, name):
         self.name = name
         self.value = None
@@ -63,7 +66,7 @@ class _Coverage(object):
 
     # Delete node
     def delete_node(self):
-        if self.is_set and not self.name in _Coverage.set_map:
+        if self.is_set and self.name not in _Coverage.set_map:
             self.was_deleted = True
             self.is_set = False
             if VERBOSE:
@@ -106,6 +109,7 @@ class _Coverage(object):
     # Update set map
     def update_set_map(self):
         _Coverage.set_map[self.name] = True
+
 
 def test_coverage(fname, argv, all, devname, yangpath=""):
     """Show test coverage since the last "make covstart" command.
@@ -306,15 +310,16 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                 if devname and devname != "none":
                     if devname == "real" and "netsim" in device.text:
                         continue
-                    if devname != "real" and not devname in device.text:
+                    if devname != "real" and devname not in device.text:
                         continue
                 cfg = root.find("//{http://tail-f.com/ns/ncs}config")
-                if not cfg is None:
+                if cfg is not None:
                     ddc = root.getelementpath(cfg)
                     cfgnodes = cfg.iter()
                     next(cfgnodes)  # skip cfg itself
                 else:
-                    # Empty DB -> noting set initially or all deleted in the end
+                    # Empty DB -> noting set initially or all deleted in the
+                    # end
                     cfgnodes = []
 
                 leaf_lists = dict()
@@ -382,13 +387,13 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                                 print("FOUND LEAFLIST: " + path)
                             if path[-1] == "]":
                                 path = path[:path.rfind("[")]
-                            if not path in leaf_lists:
+                            if path not in leaf_lists:
                                 leaf_lists[path] = list()
                             leaf_lists[path].append(e.text)
                             continue
                         # Ignore all but config
                         # Enter data
-                        if not path in coverage:
+                        if path not in coverage:
                             coverage[path] = _Coverage(path)
                         # First file only provides init values,
                         # and does no transitions
@@ -397,7 +402,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                         else:
                             coverage[path].init_node(e.text)
                 for (p, v) in leaf_lists.items():
-                    if not p in coverage:
+                    if p not in coverage:
                         coverage[p] = _Coverage(p)
                     v = ",".join(v)
                     if in_sync:
@@ -416,7 +421,8 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
             for p in coverage:
                 coverage[p].delete_node()
 
-        # We now have one coverage map per dir, unionize after each dir to avoid excessive calls to delete_node above
+        # We now have one coverage map per dir, unionize after each dir to
+        # avoid excessive calls to delete_node above
         for (p, cov) in coverage.items():
             if p in all_coverage:
                 all_coverage[p].union_node(cov)
@@ -576,7 +582,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                 print("  namespace: " + ns + "\n  " +
                         "\n  ".join(sorted(pl)))
         else:
-                print("  " + "\n  ".join(sorted(nsmap.values()[0])))
+            print("  " + "\n  ".join(sorted(nsmap.values()[0])))
 
     # Print result
     if all:
@@ -594,7 +600,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                     n = _Coverage.schema.get_node(p)
                     if not ("when already set" in name and n.get_type() == "empty") and \
                        not ("deleted separately" in name and _not_separately_deletable(n)):
-                          f.append(p)
+                        f.append(p)
             if f:
                 print(("\n### %s:" % name.replace("%s", "never")))
                 print_paths(f)
@@ -626,7 +632,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
         if (not coverage[c].found and
             not c in all_skip and
             not common.path_in_prefixes(c, exclude_prefixes) and
-            (not include_prefixes or common.path_in_prefixes(c, include_prefixes))):
+                (not include_prefixes or common.path_in_prefixes(c, include_prefixes))):
             n = _Coverage.schema.get_node(c)
             if not n:
                 not_found.append(c)
@@ -646,14 +652,17 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
               "were found empty (though not marked as presence):")
         print_paths(empty_containers)
 
+
 # Loop for all nodes of a certain type
 def _gen_nodes(skip_nodes, include_prefixes, exclude_prefixes, ntype):
     return common.gen_nodes(_Coverage.schema, skip_nodes, include_prefixes, exclude_prefixes, ntype)
+
 
 def _not_separately_deletable(node):
     return (node.get_tailf(("tailf-common", "cli-boolean-no")) or
             node.get_tailf(("tailf-common", "cli-prefix-key")) or
             node.is_mandatory())
+
 
 if __name__ == '__main__':
     usage = """%prog [options] [<path1> ... <pathN>

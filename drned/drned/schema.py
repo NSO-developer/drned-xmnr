@@ -7,13 +7,15 @@ from pyang import statements
 
 from .node import drned_node
 
+
 class Match(object):
     def __init__(self, root=None, depth=None, ntype=None):
         self.root = root
         self.ntype = ntype
 
     def equals(self, ntype):
-        return None == self.ntype or ntype in self.ntype
+        return None is self.ntype or ntype in self.ntype
+
 
 class Schema(object):
     def __init__(self, name, map_list=[], yangpath=""):
@@ -92,8 +94,8 @@ class Schema(object):
                     while re.match(".*?{([^}]+)}.*?({\\1}).*", name):
                         name = re.sub("(.*?{([^}]+)}.*?)({\\2})(.*)", "\\1\\4", name)
                 if name.startswith("/{"):
-                    if not "}" in name:
-                        raise KeyError();
+                    if "}" not in name:
+                        raise KeyError()
                     name = "/" + name[name.index("}")+1:]
                 return self.maps[map_name][name]
             except KeyError:
@@ -133,7 +135,7 @@ class Schema(object):
 
         for augment in module.search("augment"):
             if (hasattr(augment.i_target_node, "i_module") and
-                augment.i_target_node.i_module not in self.modules):
+               augment.i_target_node.i_module not in self.modules):
                 for y in _gen_children(augment.i_children, path):
                     if match.equals(ntype=y.keyword):
                         yield drned_node(self, y)
@@ -151,10 +153,12 @@ class Schema(object):
             prev = g
         return prev
 
+
 def _gen_children(i_children, path):
     for ch in i_children:
         for y in _gen_node(ch, path):
             yield y
+
 
 def _gen_node(s, path):
     yield s

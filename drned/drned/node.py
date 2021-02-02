@@ -3,8 +3,8 @@ import re
 import pytest
 import itertools
 from pyang import statements
+from .choice import get_choice
 
-from .choice import Choice, get_choice
 
 class Node(object):
     def __init__(self, schema, stmt, register=True):
@@ -16,7 +16,7 @@ class Node(object):
         if register \
            and stmt.keyword in ['container', 'leaf', 'leaf-list', 'list']:
             assert self.path not in schema.node_map
-            schema.node_map.update({self.path : self})
+            schema.node_map.update({self.path: self})
             schema.groupings.update(stmt.i_groupings)
 
     def __str__(self):
@@ -158,7 +158,7 @@ class Node(object):
 
     def get_enum(self):
         typenode = self.get_subnode("type")
-        if typenode != None:
+        if typenode is not None:
             return [e.arg for e in typenode.stmt.substmts
                     if e.keyword == "enum"]
         return []
@@ -167,7 +167,7 @@ class Node(object):
         stmt = self.stmt
         nodes = []
         typenode = self.get_subnode("type")
-        if typenode != None:
+        if typenode is not None:
             for s in typenode.stmt.substmts:
                 if s.keyword == "type":
                     # Create a fake parent
@@ -181,7 +181,7 @@ class Node(object):
 
     def get_integer(self):
         r = self.get_range()
-        if r != None:
+        if r is not None:
             if r.find("|") >= 0:
                 # Set of discrete values
                 value = []
@@ -212,8 +212,8 @@ class Node(object):
         value = None
         frac = self.get_fraction_digits()
         r = self.get_range()
-        if r != None:
-            f = 1 if frac == None else int(frac)
+        if r is not None:
+            f = 1 if frac is None else int(frac)
             if r.find("..") >= 0:
                 # Range
                 rs = r.split("..")
@@ -232,11 +232,10 @@ class Node(object):
                 tail = "." + ("0" * f)
                 return [(v + ("" if v.find(".") >= 0 else tail)) for v in value]
         # No range, use min/max for type
-        typename = self.get_type()
         value = ["-9223372036854775808",
                  "1111111111111111111",
                  "9223372036854775807"]
-        if frac != None:
+        if frac is not None:
             f = int(frac)
             val = []
             for v in value:
@@ -246,19 +245,19 @@ class Node(object):
 
     def get_string(self):
         pattern = self.get_pattern()
-        if pattern == None:
+        if pattern is None:
             # Create a value from the name and parent
             string = self.path.upper()[1:]
             string = "-".join(string.split("/")[-2:])
             length = self.get_length()
-            if length != None:
+            if length is not None:
                 # Truncate if too long
                 length = length.split("..")[1].strip()
                 string = string[:int(length)-1]
             return [string + "%d"]
         else:
             value = self.schema.lookup_map("pattern_map", pattern)
-            if value == None:
+            if value is None:
                 # Regular expressions are not handled, so on error, the
                 # user should create a new entry in the pattern_map.
                 pytest.fail("Missing pattern map entry at %s (type %s): %s" %
@@ -341,7 +340,7 @@ class Node(object):
 
     def set_leaf(self, value):
         self.valid = True
-        if value != None:
+        if value is not None:
             self.value = value
 
     def has_parent(self, parent):
@@ -390,14 +389,12 @@ class Node(object):
             grp = drned_node(self.schema, grp)
         return grp
 
-
     # Walk helpers
-
     def gen_parents(self, with_self=False):
         if with_self:
             yield self
         stmt = self.stmt
-        while stmt.parent != None:
+        while stmt.parent is not None:
             stmt = stmt.parent
             yield drned_node(self.schema, stmt)
 
@@ -471,7 +468,7 @@ class Node(object):
     def gen_walk_list(self):
         # Hints take preference
         value = self.schema.lookup_map("leaf_map", self.path)
-        if value != None:
+        if value is not None:
             yield value
         else:
             # Ignore annotations
@@ -488,7 +485,7 @@ class Node(object):
 
     def handle_type(self):
         typename = self.get_type()
-        assert typename != None
+        assert typename is not None
         if typename == "leafref" \
            or self.get_tailf(('tailf-common', 'non-strict-leafref')):
             # Will be handled later
@@ -527,7 +524,7 @@ class Node(object):
                 self.stmt.i_typedefs = self.stmt.parent.i_typedefs
             # Typedef?
             typedef = statements.search_typedef(self.stmt, typename)
-            if typedef == None:
+            if typedef is None:
                 statements.print_tree(self.stmt)
                 raise Exception("Unexpected type: " + typename)
             t = drned_node(self.schema, typedef)
@@ -564,13 +561,13 @@ class Node(object):
         # create a new entry for all non-trivial expressions in the
         # xpath_map.
         code = self.schema.lookup_map("xpath_map", text)
-        if code == None:
+        if code is None:
             pytest.fail("Missing xpath map entry at " +
                         self.path + ": " + text)
         retval = None
         try:
             exec(code)
-        except:
+        except Exception:
             pytest.fail("Exception when executing xpath code at " +
                         self.path + ": " + code)
         return retval
@@ -606,20 +603,23 @@ class Node(object):
                 return False
         return True
 
+
 # Collection of helpers that operate directly on pyang statements
 
+
 def drned_node(schema, stmt, register=True):
-    if stmt == None:
+    if stmt is None:
         return None
     if not hasattr(stmt, "drned_node"):
         stmt.drned_node = Node(schema, stmt, register)
     return stmt.drned_node
 
+
 def _stmt_get_path(stmt, raw=False):
     path = ""
     nsmodule = stmt.i_module
-    while stmt.parent != None:
-        if stmt.arg != None \
+    while stmt.parent is not None:
+        if stmt.arg is not None \
            and (raw or stmt.keyword not in ["choice", "case"]):
             module = stmt.i_module
             if nsmodule or module:
@@ -633,12 +633,15 @@ def _stmt_get_path(stmt, raw=False):
         stmt = stmt.parent
     return path
 
+
 def _stmt_get_pos(stmt):
     return (stmt.pos.ref,stmt.pos.line)
+
 
 def _stmt_get_value(stmt, name):
     node = stmt.search_one(name)
     return node.arg if node else None
+
 
 def _gen_children(stmt):
     yield stmt
@@ -647,11 +650,13 @@ def _gen_children(stmt):
             for y in _gen_children(s):
                 yield y
 
+
 _skip_substmts = [
     ("tailf-common", "info"),
     ("tailf-common", "cli-mode-name"),
 ]
 _skip_substmts += statements.data_definition_keywords
+
 
 def _hash_stmt(stmt):
     h = hash(stmt.keyword)
@@ -659,13 +664,14 @@ def _hash_stmt(stmt):
     h ^= _hash_substmts(stmt)
     return h
 
+
 def _hash_substmts(stmt):
     h = 0
     chk_order = False
     if stmt.keyword == 'type' and stmt.arg == 'enumeration':
         chk_order = True
     for s in stmt.substmts:
-        if not s.keyword in _skip_substmts:
+        if s.keyword not in _skip_substmts:
             if chk_order:
                 h += 1 # capture order
             h ^= hash(s.keyword)
