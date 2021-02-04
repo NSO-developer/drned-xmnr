@@ -272,12 +272,12 @@ module drned-xmnr {
               type uint16;
               default 120;
             }
-            leaf import-timeout {
-              tailf:info
-                "How long should NSO wait for the import command to complete.";
-              type uint16;
-              default 120;
-            }
+            //leaf import-timeout {
+            //  tailf:info
+            //    "How long should NSO wait for the import command to complete.";
+            //  type uint16;
+            //  default 120;
+            //}
           }
           output {
             uses action-output-common;
@@ -375,12 +375,12 @@ module drned-xmnr {
               type boolean;
               default false;
             }
-            leaf timeout {
-              tailf:info
-                "How long should NSO wait for the walk-states command to complete.";
-              type uint16;
-              default 120;
-            }
+            //leaf timeout {
+            //  tailf:info
+            //    "How long should NSO wait for the walk-states command to complete.";
+            //  type uint16;
+            //  default 120;
+            //}
           }
           output {
             uses action-output-common;

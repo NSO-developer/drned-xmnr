@@ -236,6 +236,19 @@ class DrnedCompareEvent(DrnedEvent):
         return self.indent_line(line)
 
 
+class DrnedFailedStates(DrnedEvent):
+    def __init__(self, failed_states):
+        super(DrnedFailedStates, self).__init__('')
+        self.failed_states = failed_states
+
+    def __str__(self):
+        return 'Drned walk-states failures: {}'.format(self.failed_states)
+
+    def produce_line(self):
+        line = 'failed states {}'.format(self.failed_states)
+        return self.indent_line(line)
+
+
 class DrnedTeardown(LineOutputEvent):
     def __init__(self):
         super(DrnedTeardown, self).__init__('')
@@ -298,7 +311,8 @@ line_regexp = re.compile('''\
 (?P<failure_reason> *reason (?P<reason>RPC error .*))|\
 (?P<teardown>### TEARDOWN, RESTORE DEVICE ###)|\
 (?P<restore>={30} load\\(drned-work/before-session.xml\\))|\
-(?P<diff>diff *)\
+(?P<diff>diff *)|\
+(?P<failed_states>.*Failed states:(?P<state_list> \\[.*\\]))\
 )$''')
 
 
@@ -351,6 +365,8 @@ def event_generator(consumer):
                 consumer.send(DrnedRestore())
             elif match.lastgroup == 'diff':
                 consumer.send(DrnedCompareEvent(False))
+            elif match.lastgroup == 'failed_states':
+                consumer.send(DrnedFailedStates(match.groupdict()['state_list']))
     except GeneratorExit:
         consumer.close()
 

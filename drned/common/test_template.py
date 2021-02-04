@@ -1,5 +1,4 @@
 from distutils.version import LooseVersion
-import drned
 import pytest
 import glob
 import os
@@ -242,38 +241,58 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
         set_all_operation = True
         # Use upper scheme as default
         the_end = end_op
-        for tset_file in tset_files:
-            src,eop,sop = _drned_single_file(device, tset_file, op)
-            src_in_set = src_in_set or src
-            set_all_operation = set_all_operation and sop
-            # Get end operations from file, if present
-            if eop:
-                # File operations override
-                the_end = eop
-        if the_end == None:
-            # Default action is to first rollback to start, then to
-            # end, then rollback all commits, one by one
-            if set_all_operation:
-                the_end = ["rollback+0", "commit", "compare-config"]
-                extra_rollback = 1
+        try:
+            for tset_file in tset_files:
+                src,eop,sop = _drned_single_file(device, tset_file, op)
+                src_in_set = src_in_set or src
+                set_all_operation = set_all_operation and sop
+                # Get end operations from file, if present
+                if eop:
+                    # File operations override
+                    the_end = eop
+
+            if the_end == None:
+                # Default action is to first rollback to start, then to
+                # end, then rollback all commits, one by one
+                if set_all_operation:
+                    the_end = ["rollback+0", "commit", "compare-config"]
+                    extra_rollback = 1
+                else:
+                    the_end = []
+                    extra_rollback = 0
+                for i in reversed(range(commit_id_base, len(device.commit_id) + extra_rollback)):
+                    the_end += ["rollback+%d" % (i - commit_id_base), "commit", "compare-config"]
+            # Use the file function also for rollbacks
+            _drned_single_file(device, None, the_end,
+                               commit_id_base=commit_id_base)
+        except BaseException:
+            # Record the failed state and, if this is not the last
+            # state in the list, restore the device to its original
+            # configuration and continue testing. If this is the last
+            # test, re-raise the exception and trigger regular
+            # cleanup/error reporting.
+            device.failed_states.append(os.path.basename(tset_file))
+            if tset != tsets[-1]:
+                # Re-raise walk states error to trigger error condition.
+                device.restore()
             else:
-                the_end = []
-                extra_rollback = 0
-            for i in reversed(range(commit_id_base, len(device.commit_id) + extra_rollback)):
-                the_end += ["rollback+%d" % (i - commit_id_base), "commit", "compare-config"]
-        # Use the file function also for rollbacks
-        _drned_single_file(device, None, the_end,
-                           commit_id_base=commit_id_base)
+                raise
+            continue
+
     # Rollback init files
     for i in reversed(range(init_id_start, init_id_stop)):
         device.rollback_compare(id=device.commit_id[i], dry_run=False)
     # Check that we're back
     device.save("drned-work/after-test.cfg")
-    if not src_in_set and end_op == None \
+    if not src_in_set and end_op is None \
        and not common.filecmp("drned-work/before-test.cfg",
                               "drned-work/after-test.cfg"):
         pytest.fail("The state after rollback differs from before load. " +
                     "Please check before-test.cfg and after-test.cfg")
+
+    # If any state transitions failed, raise an error to inform the CLI
+    if device.failed_states:
+        pytest.fail("Failed states: %s" % device.failed_states)
 
 
 # Test single file
@@ -284,8 +303,8 @@ def _drned_single_file(device, name, op, commit_id_base=None):
     if name and name.endswith(".src"):
         # Source file directly in the NCS CLI
         device.source(name, prompt="[^ ]# ", banner=False, rename_device=True)
-        return True,None,False
-    if commit_id_base == None:
+        return True, None, False
+    if commit_id_base is None:
         commit_id_base = len(device.commit_id)
     # Default set of operations
     if op is None:
@@ -295,7 +314,7 @@ def _drned_single_file(device, name, op, commit_id_base=None):
     set_op = True
     # Check if operations specified in .load file
     if name and os.path.isfile(name + ".load"):
-        with open (name + ".load", "r") as f:
+        with open(name + ".load", "r") as f:
             contents = f.read()
             reg_op = r"^\s*operations\s*=\s*(\S*)"
             reg_end = r"^\s*end-operations\s*=\s*(\S*)"

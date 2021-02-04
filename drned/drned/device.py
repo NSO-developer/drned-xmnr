@@ -38,6 +38,7 @@ class Device(object):
         self.cli = cli
         self.request = request
         self.commit_id = []
+        self.failed_states = []
         self.rollback_id = None
         self.rollback_xml = {}
         self.log = []
@@ -851,6 +852,32 @@ class Device(object):
         print(s)
         with open("drned-work/drned-dry-run-all.txt", "a") as f:
             f.write(s + "\n")
+
+    def restore(self):
+        print("\n### TEARDOWN, RESTORE DEVICE ###")
+        self.reset_cli()
+        self.cmd("no devices device %s config" % self.name)
+        self.cmd("top")
+        self.load("drned-work/before-session.xml")
+        self.cmd("show config")
+        self.commit(no_networking=True)
+        # Try to restore device twice, required for some NCS releases
+        laps = 2
+        for i in range(laps):
+            self.sync_to()
+            try:
+                self.compare_config()
+                break
+            except pytest.fail.Exception:
+                if i >= (laps - 1):
+                    raise
+
+        # Check if restore successful
+        self.save("drned-work/after-session.cfg")
+        if not common.filecmp("drned-work/before-session.cfg",
+                              "drned-work/after-session.cfg"):
+            pytest.fail("Could not restore device to state before session. " +
+                        "Please check before-session.cfg and after-session.cfg")
 
     def _set_rollback_xml(self, xml):
         rb_no = self._get_latest_rollback()

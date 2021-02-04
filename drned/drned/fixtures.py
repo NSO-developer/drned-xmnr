@@ -120,29 +120,8 @@ def device(request):
 
     yield device
 
-    print("\n### TEARDOWN, RESTORE DEVICE ###")
-    device.reset_cli()
-    device.cmd("no devices device %s config" % device.name)
-    device.cmd("top")
-    device.load("drned-work/before-session.xml")
-    device.cmd("show config")
-    device.commit(no_networking=True)
-    # Try to restore device twice, required for some NCS releases
-    laps = 2
-    for i in range(laps):
-        device.sync_to()
-        try:
-            device.compare_config()
-            break
-        except pytest.fail.Exception:
-            if i >= (laps - 1):
-                raise
-    # Check if restore successful
-    device.save("drned-work/after-session.cfg")
-    if not common.filecmp("drned-work/before-session.cfg",
-                          "drned-work/after-session.cfg"):
-        pytest.fail("Could not restore device to state before session. " +
-                    "Please check before-session.cfg and after-session.cfg")
+    # Restore device to initial state
+    device.restore()
 
 
 @pytest.yield_fixture(scope=SCOPE)
