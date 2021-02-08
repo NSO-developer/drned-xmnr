@@ -77,6 +77,9 @@ test_template_raw[../states/{state_from}.state.cfg]
 --generic drned data--
 ============================== commit()
 --generic drned data--
+commit dry-run
+% No modifications to commit.
+commit
 % No modifications to commit.
 ============================== compare_config()
 '''
@@ -109,6 +112,7 @@ test_template_single[../states/{state_to}.state.cfg]
 --generic drned data--
 ============================== commit()
 --generic drned data--
+commit commit-queue sync
 commit-queue {{
     id 1529558544009
     status failed
@@ -126,6 +130,7 @@ Commit complete.
 --generic drned data--
 ============================== commit()
 --generic drned data--
+commit commit-queue sync
 commit-queue {{
     id 1528715048477
     status completed
@@ -165,12 +170,14 @@ Commit complete.
 ============================== commit()
 --generic drned data--
 {commit_message}
+Commit complete.
 --generic drned data--
 ============================== compare_config()
 --generic drned data--
 '''
 
 commit_queue_message = '''\
+commit commit-queue sync
 commit-queue {{
     id 1529566674280
     status completed
@@ -188,6 +195,7 @@ drned_walk_output_outro = '''\
 --generic drned data--
 ============================== commit()
 --generic drned data--
+commit
 % No modifications to commit.
 --generic drned data--
 ============================== compare_config()
