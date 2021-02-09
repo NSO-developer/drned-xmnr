@@ -355,7 +355,7 @@ def event_generator(consumer):
         consumer.close()
 
 
-class LSMachine(object):
+class LogStateMachine(object):
     '''Simple state machine with a stack.
 
     Input (events) are passed for handling to states.  A state handler
@@ -365,7 +365,8 @@ class LSMachine(object):
     handled: Bool - it True, the current event has been processed
     and another one needs to be read (if True); otherwise it is used again.
 
-    states: [LS] - list of states to be used in place of the current state (an "expansion").
+    states: [LogState] - list of states to be used in place of the
+    current state (an "expansion").
 
     line: Str - output to be produced, if present; typically from `event.produce_line()`.
 
@@ -388,14 +389,14 @@ class LSMachine(object):
             self.stack.extend(reversed(expansion))
 
 
-class LS(object):
+class LogState(object):
     name = 'general logstate'
 
     def handle(self, event):
         return (False, [self], event.produce_line())
 
 
-class TransitionTestS(LS):
+class TransitionTestState(LogState):
     'Tinitial state for "transition" action output filtering.'
 
     name = 'transition-test'
@@ -406,10 +407,10 @@ class TransitionTestS(LS):
     def handle(self, event):
         if self.level == 'overview':
             return (True, [self])
-        return (False, [TransitionS()], DrnedPrepare().produce_line())
+        return (False, [TransitionState()], DrnedPrepare().produce_line())
 
 
-class TransitionS(LS):
+class TransitionState(LogState):
 
     '''
     Transition -> (Commit)* Load Commit Compare (Rollback Commit Compare)*
@@ -419,28 +420,28 @@ class TransitionS(LS):
     name = 'transition'
 
     def handle(self, event):
-        return (False, [CommitsS(),
-                        ActionS('load'),
-                        ActionS('commit', [CommitS()]),
-                        ActionS('compare_config', [CompareS()]),
-                        RollbacksS()])
+        return (False, [CommitsState(),
+                        ActionState('load'),
+                        ActionState('commit', [CommitState()]),
+                        ActionState('compare_config', [CompareState()]),
+                        RollbacksState()])
 
 
-class RollbacksS(LS):
+class RollbacksState(LogState):
     '''
     Rollbacks -> Rollback Commit Compare Rollbacks | []
     '''
     def handle(self, event):
         if event.__class__ == DrnedActionEvent and event.action == 'rollback':
-            return (False, [ActionS('rollback'),
-                            ActionS('commit', [CommitS()]),
-                            ActionS('compare_config', [CompareS()]),
+            return (False, [ActionState('rollback'),
+                            ActionState('commit', [CommitState()]),
+                            ActionState('compare_config', [CompareState()]),
                             self])
         else:
             return (False, [])
 
 
-class ExploreS(LS):
+class ExploreState(LogState):
     'Initial state for "explore" actions output filtering.'
 
     name = 'explore'
@@ -450,12 +451,12 @@ class ExploreS(LS):
 
     def handle(self, event):
         if self.level == 'overview':
-            return (False, [SilentTransitionsS()])
+            return (False, [BriefTransitionsState()])
         return (False,
-                [GenS(InitStates), ExploreTransitionsS()])
+                [GenState(InitStates), ExploreTransitionsState()])
 
 
-class WalkS(LS):
+class WalkState(LogState):
     'Initial state for "walk" actions output filtering.'
 
     name = 'walk'
@@ -465,11 +466,11 @@ class WalkS(LS):
 
     def handle(self, event):
         if self.level == 'overview':
-            return (True, [SilentTransitionsS()], event.produce_line())
-        return (True, [CommitsS(), WalkTransitionsS()], event.produce_line())
+            return (True, [BriefTransitionsState()], event.produce_line())
+        return (True, [CommitsState(), WalkTransitionsState()], event.produce_line())
 
 
-class ExploreTransitionsS(LS):
+class ExploreTransitionsState(LogState):
     '''
     ETs -> ((start | transition) prepare TransitionS (transfailed | initfailed)? )* teardown restore
     '''
@@ -479,22 +480,22 @@ class ExploreTransitionsS(LS):
     def handle(self, event):
         if isinstance(event, StartState) or isinstance(event, Transition):
             return (True,
-                    [GenS(DrnedPrepare), TransitionS(),
-                     GenS(TransFailed), GenS(InitFailed),
+                    [GenState(DrnedPrepare), TransitionState(),
+                     GenState(TransFailed), GenState(InitFailed),
                      self],
                     event.produce_line())
         if isinstance(event, DrnedTeardown):
-            return (True, [ActionS('restore')], event.produce_line())
+            return (True, [ActionState('restore')], event.produce_line())
         return (False, [])
 
 
-class GenS(LS):
+class GenState(LogState):
     '''A generic log state.
 
     Every event of given type is accepted (and its line is produced),
     everything else is left for further processing.
 
-    (So e.g. GenS(prepare) -> prepare | [])
+    (So e.g. GenState(prepare) -> prepare | [])
 
     '''
 
@@ -508,7 +509,7 @@ class GenS(LS):
         return (False, [])
 
 
-class WalkTransitionsS(LS):
+class WalkTransitionsState(LogState):
     '''
     WT -> (pytest Transition)* (teardown Restore Commit Compare)?
     '''
@@ -517,17 +518,18 @@ class WalkTransitionsS(LS):
 
     def handle(self, event):
         if isinstance(event, PyTest):
-            return (True, [TransitionS(), self], event.produce_line())
+            return (True, [TransitionState(), self], event.produce_line())
         if isinstance(event, DrnedTeardown):
             return (True,
-                    [GenS(DrnedRestore),
-                     ActionS('commit', [CommitS()]),
-                     ActionS('compare_config', [CompareS()])], event.produce_line())
+                    [GenState(DrnedRestore),
+                     ActionState('commit', [CommitState()]),
+                     ActionState('compare_config', [CompareState()])],
+                    event.produce_line())
 
         return (False, [])
 
 
-class SilentTransitionsS(LS):
+class BriefTransitionsState(LogState):
     'Produces output for the set of event types, ignores others.'
 
     name = 'silent-transitions'
@@ -543,7 +545,7 @@ class SilentTransitionsS(LS):
         return (True, [self])
 
 
-class ActionS(LS):
+class ActionState(LogState):
     '''
     Action(action) -> action | []
     '''
@@ -559,7 +561,7 @@ class ActionS(LS):
         return (False, [])
 
 
-class CommitS(LS):
+class CommitState(LogState):
     '''
     Commit -> (empty-commit)? (commit|commit-no-networking) CommitResult
     Commit -> (empty-commit)? commit-queue CommitQueueS
@@ -575,13 +577,13 @@ class CommitS(LS):
             return (True, [self])
         if isinstance(event, DrnedCommitNoqueueEvent) or \
            isinstance(event, DrnedCommitNNEvent):
-            return (True, [GenS(DrnedCommitResult)])
+            return (True, [GenState(DrnedCommitResult)])
         if isinstance(event, DrnedCommitQueueEvent):
-            return (True, [CommitQueueS()])
+            return (True, [CommitQueueState()])
         return (False, [])
 
 
-class CommitsS(LS):
+class CommitsState(LogState):
     '''A sequence of commit events, usually at the beginning of drned
     actions.  They are just ignored.'''
 
@@ -593,7 +595,7 @@ class CommitsS(LS):
         return (False, [])
 
 
-class CommitQueueS(LS):
+class CommitQueueState(LogState):
     '''"commit-queue" handling.
 
     It differs in that the result (success or failure) is followed by
@@ -609,11 +611,11 @@ class CommitQueueS(LS):
             return (True, [], event.produce_line())
         if isinstance(event, DrnedCommitResult) and \
            not event.success:
-            return (True, [CommitFailure(), CommitCompleteS()])
-        return (False, [GenS(DrnedCommitResult), CommitCompleteS()])
+            return (True, [CommitFailure(), CommitCompleteState()])
+        return (False, [GenState(DrnedCommitResult), CommitCompleteState()])
 
 
-class CommitFailure(LS):
+class CommitFailure(LogState):
     '''Report commit failure reason (if any).
     '''
 
@@ -623,7 +625,7 @@ class CommitFailure(LS):
         return (False, [], DrnedCommitResult(False).produce_line())
 
 
-class CommitCompleteS(LS):
+class CommitCompleteState(LogState):
     '''Just ignores the "Commit complete" message.'''
     name = 'commit-complete'
 
@@ -633,7 +635,7 @@ class CommitCompleteS(LS):
         return (isinstance(event, DrnedCommitComplete), [])
 
 
-class CompareS(LS):
+class CompareState(LogState):
     '''The event "compare-config" in case of a success may not be followed
     by a result event.
     '''
@@ -650,17 +652,17 @@ class CompareS(LS):
 
 
 def transition_output_filter(level, sink):
-    machine = LSMachine(TransitionTestS(level))
+    machine = LogStateMachine(TransitionTestState(level))
     return run_event_machine(machine, sink)
 
 
 def explore_output_filter(level, sink):
-    machine = LSMachine(ExploreS(level))
+    machine = LogStateMachine(ExploreState(level))
     return run_event_machine(machine, sink)
 
 
 def walk_output_filter(level, sink):
-    machine = LSMachine(WalkS(level))
+    machine = LogStateMachine(WalkState(level))
     handler = run_event_machine(machine, sink)
     handler.send(LineOutputEvent('Prepare the device'))
     return handler
