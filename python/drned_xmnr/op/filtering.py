@@ -4,6 +4,7 @@ Beazly's presentation
 <http://www.dabeaz.com/coroutines/Coroutines.pdf>`_ about coroutines.
 '''
 
+import sys
 import functools
 import re
 
@@ -53,13 +54,6 @@ class Closeable(object):
 # automaton takes care of state transitions during log processing - an
 # event can cause a state transition and an output in the form of a
 # line sent to the next filter in the chain.
-
-
-class StateTerminatedObject(object):
-    pass
-
-
-TERMINATED = StateTerminatedObject()
 
 
 class LineOutputEvent(object):
@@ -145,23 +139,23 @@ class DrnedCommitEvent(DrnedEvent):
     pass
 
 
-class DrnedEmptyCommit(DrnedCommitEvent):
+class DrnedCommitQueueEvent(DrnedCommitEvent):
     def __init__(self):
-        super(DrnedEmptyCommit, self).__init__('    (no modifications)')
-
-    def __str__(self):
-        return 'Drned empty commit event'
-
-    def produce_line(self):
-        return self.indent_line(self.line)
-
-
-class DrnedCommitLogEvent(DrnedCommitEvent):
-    def __init__(self):
-        super(DrnedCommitLogEvent, self).__init__('')
+        super(DrnedCommitQueueEvent, self).__init__('')
 
     def __str__(self):
         return 'Drned commit queue event'
+
+    def produce_line(self):
+        return self.indent_line('commit...')  # should not be used?
+
+
+class DrnedCommitNoqueueEvent(DrnedCommitEvent):
+    def __init__(self):
+        super(DrnedCommitNoqueueEvent, self).__init__('')
+
+    def __str__(self):
+        return 'Drned commit event'
 
     def produce_line(self):
         return self.indent_line('commit...')  # should not be used?
@@ -192,17 +186,23 @@ class DrnedCommitResult(DrnedCommitEvent):
         return self.indent_line(line)
 
 
-class DrnedCommitComplete(DrnedCommitEvent):
+class DrnedEmptyCommit(DrnedCommitResult):
+    def __init__(self):
+        super(DrnedEmptyCommit, self).__init__('    (no modifications)', True)
+
+    def __str__(self):
+        return 'Drned empty commit event'
+
+    def produce_line(self):
+        return self.indent_line(self.line)
+
+
+class DrnedCommitComplete(DrnedCommitResult):
     def __init__(self, line):
-        super(DrnedCommitComplete, self).__init__(line)
-        self.success = True
+        super(DrnedCommitComplete, self).__init__(line, True)
 
     def __str__(self):
         return 'Drned commit complete event'
-
-    def produce_line(self):
-        line = '    succeeded'
-        return self.indent_line(line)
 
 
 class DrnedFailureReason(DrnedCommitEvent):
@@ -290,7 +290,7 @@ line_regexp = re.compile('''\
 (?P<drned_load>={30} r?load\\(.*/states/.*\\))|\
 (?P<drned>={30} (?P<drned_op>commit|compare_config|rollback)\\(.*\\))|\
 (?P<no_modifs>% No modifications to commit\\.)|\
-(?P<commit_queue>commit-queue \\{)|\
+(?P<commit_queue>commit commit-queue sync)|\
 (?P<commit_noqueue>commit)|\
 (?P<commit_nn>commit no-networking)|\
 (?P<commit_complete>Commit complete\\.)|\
@@ -333,10 +333,9 @@ def event_generator(consumer):
             elif match.lastgroup == 'no_modifs':
                 consumer.send(DrnedEmptyCommit())
             elif match.lastgroup == 'commit_queue':
-                consumer.send(DrnedCommitLogEvent())
+                consumer.send(DrnedCommitQueueEvent())
             elif match.lastgroup == 'commit_noqueue':
-                consumer.send(DrnedCommitLogEvent())
-                consumer.send(DrnedCommitResult('commit', True))
+                consumer.send(DrnedCommitNoqueueEvent())
             elif match.lastgroup == 'commit_nn':
                 consumer.send(DrnedCommitNNEvent())
             elif match.lastgroup == 'commit_result':
@@ -357,183 +356,313 @@ def event_generator(consumer):
 
 
 class LogStateMachine(object):
-    '''Simple stack state machine.  Transition between states occur based
-    on `LineOutputEvent` instances.
+    '''Simple state machine with a stack.
+
+    Input (events) are passed for handling to states.  A state handler
+    returns a 2-tuple (handled, states) or a 3-tuple (handled, states,
+    line).
+
+    handled: Bool - it True, the current event has been processed
+    and another one needs to be read (if True); otherwise it is used again.
+
+    states: [LogState] - list of states to be used in place of the
+    current state (an "expansion").
+
+    line: Str - output to be produced, if present; typically from `event.produce_line()`.
+
     '''
+
     def __init__(self, init_state):
         self.stack = [init_state]
 
     def handle(self, event):
-        while not event.complete and self.stack != []:
-            # print('handling', event, self.stack)
-            state = self.stack[-1]
-            result = state.handle(event)
-            if isinstance(result, tuple):
-                line, newstate = result
-                if newstate is TERMINATED:
-                    self.stack.pop()
-                    yield line
-                else:
-                    self.stack.append(newstate)
-                    yield line
-            elif isinstance(result, str):
-                yield result
-            elif isinstance(result, LogState):
-                self.stack.append(result)
-            elif result is TERMINATED:
-                self.stack.pop()
+        handled = False
+        while not handled and self.stack:
+            # print('handling', event, [state.name for state in reversed(self.stack)])
+            state = self.stack.pop()
+            restuple = state.handle(event)
+            if len(restuple) == 2:
+                handled, expansion = restuple
+            else:
+                handled, expansion, line = restuple
+                yield line
+            self.stack.extend(reversed(expansion))
 
 
 class LogState(object):
+    name = 'general logstate'
+
     def handle(self, event):
-        return event.produce_line()
+        return (False, [self], event.produce_line())
 
 
-class TransitionLogState(LogState):
+class TransitionTestState(LogState):
+    'Tinitial state for "transition" action output filtering.'
+
+    name = 'transition-test'
+
     def __init__(self, level):
         self.level = level
-        self.initialized = False
 
     def handle(self, event):
         if self.level == 'overview':
-            event.mark_complete()
-            return None
-        if not self.initialized:
-            self.initialized = True
-            return (DrnedPrepare().produce_line(), DrnedLogState())
-        event.mark_complete()
-        return event.produce_line()
+            return (True, [self])
+        return (False, [TransitionState()], DrnedPrepare().produce_line())
 
 
-class ExploreLogState(LogState):
+class TransitionState(LogState):
+
+    '''
+    Transition -> (Commit)* Load Commit Compare (Rollback Commit Compare)*
+
+    The first commits are just ignored.
+    '''
+    name = 'transition'
+
+    def handle(self, event):
+        return (False, [CommitsState(),
+                        ActionState('load'),
+                        ActionState('commit', [CommitState()]),
+                        ActionState('compare_config', [CompareState()]),
+                        RollbacksState()])
+
+
+class RollbacksState(LogState):
+    '''
+    Rollbacks -> Rollback Commit Compare Rollbacks | []
+    '''
+    def handle(self, event):
+        if event.__class__ == DrnedActionEvent and event.action == 'rollback':
+            return (False, [ActionState('rollback'),
+                            ActionState('commit', [CommitState()]),
+                            ActionState('compare_config', [CompareState()]),
+                            self])
+        else:
+            return (False, [])
+
+
+class ExploreState(LogState):
+    'Initial state for "explore" actions output filtering.'
+
+    name = 'explore'
+
     def __init__(self, level):
         self.level = level
 
     def handle(self, event):
-        event.mark_complete()
-        if self.level == 'overview' and (isinstance(event, DrnedPrepare) or
-                                         isinstance(event, DrnedEvent)):
-            return None
+        if self.level == 'overview':
+            return (False, [BriefTransitionsState()])
+        return (False,
+                [GenState(InitStates), ExploreTransitionsState()])
+
+
+class WalkState(LogState):
+    'Initial state for "walk" actions output filtering.'
+
+    name = 'walk'
+
+    def __init__(self, level):
+        self.level = level
+
+    def handle(self, event):
+        if self.level == 'overview':
+            return (True, [BriefTransitionsState()], event.produce_line())
+        return (True, [CommitsState(), WalkTransitionsState()], event.produce_line())
+
+
+class ExploreTransitionsState(LogState):
+    '''
+    ETs -> ((start | transition) prepare TransitionS (transfailed | initfailed)? )* teardown restore
+    '''
+
+    name = 'transitions'
+
+    def handle(self, event):
+        if isinstance(event, StartState) or isinstance(event, Transition):
+            return (True,
+                    [GenState(DrnedPrepare), TransitionState(),
+                     GenState(TransFailed), GenState(InitFailed),
+                     self],
+                    event.produce_line())
         if isinstance(event, DrnedTeardown):
-            if self.level == 'overview':
-                return None
-            return (event.produce_line(), DrnedLogState())
-        if isinstance(event, DrnedPrepare):
-            return (event.produce_line(), DrnedLogState())
-        return event.produce_line()
+            return (True, [ActionState('restore')], event.produce_line())
+        return (False, [])
 
 
-class WalkLogState(LogState):
-    ignored_events = [DrnedEmptyCommit, DrnedCommitComplete, DrnedCommitLogEvent,
-                      DrnedCommitResult]
+class GenState(LogState):
+    '''A generic log state.
 
-    def __init__(self, level):
-        self.level = level
+    Every event of given type is accepted (and its line is produced),
+    everything else is left for further processing.
+
+    (So e.g. GenState(prepare) -> prepare | [])
+
+    '''
+
+    def __init__(self, eventclass):
+        self.eventclass = eventclass
+        self.name = 'gen({})'.format(eventclass.__name__)
 
     def handle(self, event):
-        event.mark_complete()
-        if self.level == 'overview' and isinstance(event, DrnedEvent):
-            return None
-        if isinstance(event, PyTest) or isinstance(event, DrnedTeardown):
-            if self.level == 'overview':
-                return event.produce_line()
-            return (event.produce_line(), DrnedLogState())
-        for clz in self.ignored_events:
-            if isinstance(event, clz):
-                # commits can occur on this level
-                return None
-        return event.produce_line()
+        if isinstance(event, self.eventclass):
+            return (True, [], event.produce_line())
+        return (False, [])
 
 
-class DrnedLogState(LogState):
+class WalkTransitionsState(LogState):
+    '''
+    WT -> (pytest Transition)* (teardown Restore Commit Compare)?
+    '''
+
+    name = 'transitions'
+
+    def handle(self, event):
+        if isinstance(event, PyTest):
+            return (True, [TransitionState(), self], event.produce_line())
+        if isinstance(event, DrnedTeardown):
+            return (True,
+                    [GenState(DrnedRestore),
+                     ActionState('commit', [CommitState()]),
+                     ActionState('compare_config', [CompareState()])],
+                    event.produce_line())
+
+        return (False, [])
+
+
+class BriefTransitionsState(LogState):
+    'Produces output for the set of event types, ignores others.'
+
+    name = 'silent-transitions'
+    evtclasses = {InitStates, StartState, Transition,
+                  InitFailed, TransFailed,
+                  PyTest, DrnedTeardown}
+
+    def handle(self, event):
+        # just report events in `evtclasses`; everything else is
+        # swallowed
+        if event.__class__ in self.evtclasses:
+            return (True, [self], event.produce_line())
+        return (True, [self])
+
+
+class ActionState(LogState):
+    '''
+    Action(action) -> action | []
+    '''
+
+    def __init__(self, action, expansion=[]):
+        self.action = action
+        self.expansion = expansion
+        self.name = 'action-' + action
+
+    def handle(self, event):
+        if isinstance(event, DrnedActionEvent) and event.action == self.action:
+            return (True, self.expansion, event.produce_line())
+        return (False, [])
+
+
+class CommitState(LogState):
+    '''
+    Commit -> (empty-commit)? (commit|commit-no-networking) CommitResult
+    Commit -> (empty-commit)? commit-queue CommitQueueS
+
+    The empty commit may be the result of "commit dry-run"; it is
+    ignored.
+    '''
+
+    name = 'commit'
+
+    def handle(self, event):
+        if isinstance(event, DrnedEmptyCommit):
+            return (True, [self])
+        if isinstance(event, DrnedCommitNoqueueEvent) or \
+           isinstance(event, DrnedCommitNNEvent):
+            return (True, [GenState(DrnedCommitResult)])
+        if isinstance(event, DrnedCommitQueueEvent):
+            return (True, [CommitQueueState()])
+        return (False, [])
+
+
+class CommitsState(LogState):
+    '''A sequence of commit events, usually at the beginning of drned
+    actions.  They are just ignored.'''
+
+    name = 'commits'
+
     def handle(self, event):
         if isinstance(event, DrnedCommitEvent):
-            event.mark_complete()
-            return None
-        if not isinstance(event, DrnedActionEvent):
-            return TERMINATED
-        event.mark_complete()
-        if event.action == 'commit':
-            return (event.produce_line(), DrnedCommitState())
-        elif event.action == 'compare_config':
-            return (event.produce_line(), DrnedCompareState())
-        else:
-            return event.produce_line()
+            return (True, [self])
+        return (False, [])
 
 
-class DrnedCommitState(LogState):
+class CommitQueueState(LogState):
+    '''"commit-queue" handling.
+
+    It differs in that the result (success or failure) is followed by
+    "Commit complete" message.
+
+    Failure -> failure FailureReason | []
+    '''
+
+    name = 'commit queue'
+
     def handle(self, event):
-        if isinstance(event, DrnedCommitLogEvent):
-            event.mark_complete()
-            return DrnedCommitResultState()
-        elif isinstance(event, DrnedCommitNNEvent):
-            event.mark_complete()
-            return DrnedCommitNNState()
-        elif isinstance(event, DrnedEmptyCommit):
-            event.mark_complete()
-            return (event.produce_line(), TERMINATED)
-        elif isinstance(event, DrnedCommitEvent):
-            event.mark_complete()
-            return TERMINATED
-        return TERMINATED
+        if isinstance(event, DrnedEmptyCommit):
+            return (True, [], event.produce_line())
+        if isinstance(event, DrnedCommitResult) and \
+           not event.success:
+            return (True, [CommitFailure(), CommitCompleteState()])
+        return (False, [GenState(DrnedCommitResult), CommitCompleteState()])
 
 
-class DrnedCommitResultState(LogState):
-    def handle(self, event):
-        if isinstance(event, DrnedCommitResult):
-            event.mark_complete()
-            if event.success:
-                return (event.produce_line(), TERMINATED)
-            else:
-                return DrnedFailureState()
-        return TERMINATED
+class CommitFailure(LogState):
+    '''Report commit failure reason (if any).
+    '''
 
-
-class DrnedCommitNNState(LogState):
-    def handle(self, event):
-        if isinstance(event, DrnedCommitComplete):
-            event.mark_complete()
-            return (event.produce_line(), TERMINATED)
-        elif isinstance(event, DrnedActionEvent) and event.action == 'commit':
-            event.mark_complete()
-            return (DrnedCommitComplete(event.line).produce_line(), TERMINATED)
-        elif isinstance(event, DrnedCommitComplete):
-            event.mark_complete()
-            return (event.produce_line(), TERMINATED)
-        return TERMINATED
-
-
-class DrnedFailureState(LogState):
     def handle(self, event):
         if isinstance(event, DrnedFailureReason):
-            event.mark_complete()
-            return (event.produce_line(), TERMINATED)
-        return TERMINATED
+            return (True, [], event.produce_line())
+        return (False, [], DrnedCommitResult(False).produce_line())
 
 
-class DrnedCompareState(LogState):
+class CommitCompleteState(LogState):
+    '''Just ignores the "Commit complete" message.'''
+    name = 'commit-complete'
+
+    def handle(self, event):
+        # a commit success/failure message can be followed by "Commit
+        # complete" - this needs to be swallowed
+        return (isinstance(event, DrnedCommitComplete), [])
+
+
+class CompareState(LogState):
+    '''The event "compare-config" in case of a success may not be followed
+    by a result event.
+    '''
+
+    name = 'compare'
+
     def handle(self, event):
         if isinstance(event, DrnedCompareEvent):
-            event.mark_complete()
-            return (event.produce_line(), TERMINATED)
+            return (True, [], event.produce_line())
         else:
             # need to produce a line, but the event is not handled yet
             art_event = DrnedCompareEvent(True)
-            return (art_event.produce_line(), TERMINATED)
+            return (False, [], art_event.produce_line())
 
 
 def transition_output_filter(level, sink):
-    machine = LogStateMachine(TransitionLogState(level))
+    machine = LogStateMachine(TransitionTestState(level))
     return run_event_machine(machine, sink)
 
 
 def explore_output_filter(level, sink):
-    machine = LogStateMachine(ExploreLogState(level))
+    machine = LogStateMachine(ExploreState(level))
     return run_event_machine(machine, sink)
 
 
 def walk_output_filter(level, sink):
-    machine = LogStateMachine(WalkLogState(level))
+    machine = LogStateMachine(WalkState(level))
     handler = run_event_machine(machine, sink)
     handler.send(LineOutputEvent('Prepare the device'))
     return handler
@@ -554,3 +683,20 @@ def build_filter(op, level, write):
     sink = filter_sink(write)
     lines = op.event_processor(level, sink)
     return EventGenerator(lines)
+
+
+def run_test_filter(outfilter, filename, level='drned-overview'):
+    '''
+    Testing and experimenting utility.  Can be used as
+
+       filtering.run_test_filter(filtering.transition_output_filter, "data.txt")
+    '''
+    sink = filter_sink(sys.stdout.write)
+    lines = outfilter(level, sink)
+    evts = EventGenerator(lines)
+    with open(filename) as data:
+        for line in data:
+            ln = line.strip()
+            if ln:
+                evts.send(ln)
+    evts.close()
