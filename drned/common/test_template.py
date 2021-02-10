@@ -271,7 +271,8 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
             # configuration and continue testing. If this is the last
             # test, re-raise the exception and trigger regular
             # cleanup/error reporting.
-            device.failed_states.append(os.path.basename(tset_file))
+            m = re.match(r".*/(\S*).state.(cfg|xml)", tset)
+            device.failed_states.append(m.group(1))
             if tset != tsets[-1]:
                 # Re-raise walk states error to trigger error condition.
                 device.restore()
