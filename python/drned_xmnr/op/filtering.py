@@ -223,7 +223,7 @@ class DrnedFailureReason(DrnedCommitEvent):
         return self.indent_line(line)
 
 
-class DrnedCompareEvent(DrnedEvent):
+class DrnedCompareEvent(LineOutputEvent):
     def __init__(self, success):
         super(DrnedCompareEvent, self).__init__('')
         self.success = success
@@ -236,17 +236,16 @@ class DrnedCompareEvent(DrnedEvent):
         return self.indent_line(line)
 
 
-class DrnedFailedStates(DrnedEvent):
+class DrnedFailedStatesEvent(LineOutputEvent):
     def __init__(self, failed_states):
-        super(DrnedFailedStates, self).__init__('')
+        super(DrnedFailedStatesEvent, self).__init__('')
         self.failed_states = failed_states
 
     def __str__(self):
         return 'Drned walk-states failures: {}'.format(self.failed_states)
 
     def produce_line(self):
-        line = 'failed states {}'.format(self.failed_states)
-        return self.indent_line(line)
+        return 'Failed States {}'.format(self.failed_states)
 
 
 class DrnedTeardown(LineOutputEvent):
@@ -366,7 +365,7 @@ def event_generator(consumer):
             elif match.lastgroup == 'diff':
                 consumer.send(DrnedCompareEvent(False))
             elif match.lastgroup == 'failed_states':
-                consumer.send(DrnedFailedStates(match.groupdict()['state_list']))
+                consumer.send(DrnedFailedStatesEvent(match.groupdict()['state_list']))
     except GeneratorExit:
         consumer.close()
 
