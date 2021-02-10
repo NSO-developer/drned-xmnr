@@ -302,7 +302,6 @@ class ImportConvertCliFiles(ImportOp):
         super(ImportConvertCliFiles, self)._init_params(params)
         self.devcli = self.param_default(params, "cli_device", self.dev_name)
         self.device_timeout = params.device_timeout
-        self.import_timeout = params.import_timeout
 
     def cli_filter(self, msg):
         match = self.filterrx.match(msg)
@@ -334,7 +333,6 @@ class ImportConvertCliFiles(ImportOp):
         self.failures = []
         self.devcli_error = None
 
-        self.extend_timeout(self.import_timeout)
         result, _ = self.run_in_drned_env(args, timeout=120, NC_WORKDIR=workdir)
         if self.devcli_error is not None:
             raise ActionError('No device driver definition found')
