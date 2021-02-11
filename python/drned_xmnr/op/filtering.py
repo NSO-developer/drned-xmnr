@@ -408,7 +408,7 @@ class LogState(object):
     name = 'general logstate'
 
     def handle(self, event):
-        return (False, [self], event.produce_line())
+        raise Exception('Unhandled event', event)
 
 
 class TransitionTestState(LogState):
@@ -446,6 +446,8 @@ class RollbacksState(LogState):
     '''
     Rollbacks -> Rollback Commit Compare Rollbacks | []
     '''
+    name = 'rollback'
+
     def handle(self, event):
         if event.__class__ == DrnedActionEvent and event.action == 'rollback':
             return (False, [ActionState('rollback'),
@@ -458,7 +460,6 @@ class RollbacksState(LogState):
 
 class ExploreState(LogState):
     'Initial state for "explore" actions output filtering.'
-
     name = 'explore'
 
     def __init__(self, level):
@@ -473,7 +474,6 @@ class ExploreState(LogState):
 
 class WalkState(LogState):
     'Initial state for "walk" actions output filtering.'
-
     name = 'walk'
 
     def __init__(self, level):
@@ -487,20 +487,36 @@ class WalkState(LogState):
 
 class ExploreTransitionsState(LogState):
     '''
-    ETs -> ((start | transition) prepare TransitionS (transfailed | initfailed)? )* teardown restore
+    ETs -> (start prepare TransitionS ExtTrans)*
     '''
-
-    name = 'transitions'
+    name = 'explore'
 
     def handle(self, event):
-        if isinstance(event, StartState) or isinstance(event, Transition):
+        if isinstance(event, StartState):
             return (True,
-                    [GenState(DrnedPrepare), TransitionState(),
-                     GenState(TransFailed), GenState(InitFailed),
-                     self],
+                    [GenState(DrnedPrepare), TransitionState(), ExtendedTransitionsState(), self],
                     event.produce_line())
-        if isinstance(event, DrnedTeardown):
-            return (True, [ActionState('restore')], event.produce_line())
+        return (False, [])
+
+
+class ExtendedTransitionsState(LogState):
+    '''
+    ExtTrans -> (transition prepare TransitionS transfailed? Teardown)*
+    ExtTrans -> initfailed
+
+    The second variant is handling state initialization failure from
+    ETs.
+    '''
+    name = 'extended-transitions'
+
+    def handle(self, event):
+        if isinstance(event, InitFailed):
+            return (True, [], event.produce_line())
+        if isinstance(event, Transition):
+            return (True, [GenState(DrnedPrepare), TransitionState(),
+                           GenState(TransFailed), GenState(InitFailed),
+                           TeardownState(), self],
+                    event.produce_line())
         return (False, [])
 
 
@@ -526,7 +542,7 @@ class GenState(LogState):
 
 class WalkTransitionsState(LogState):
     '''
-    WT -> (pytest Transition)* (teardown Restore Commit Compare)?
+    WT -> (pytest? Transition)* Teardown
     '''
 
     name = 'transitions'
@@ -534,13 +550,29 @@ class WalkTransitionsState(LogState):
     def handle(self, event):
         if isinstance(event, PyTest):
             return (True, [TransitionState(), self], event.produce_line())
+        if isinstance(event, DrnedActionEvent) and event.action == 'load':
+            # this happens in case of state groups; the first event of
+            # a state transition is load then
+            return (False, [TransitionState(), self])
+        if isinstance(event, DrnedTeardown):
+            return (False, [TeardownState()])
+        return (False, [])
+
+
+class TeardownState(LogState):
+    '''
+    Teardown -> teardown Restore Commit Compare TransFailed?
+    '''
+    name = 'teardown'
+
+    def handle(self, event):
         if isinstance(event, DrnedTeardown):
             return (True,
                     [GenState(DrnedRestore),
                      ActionState('commit', [CommitState()]),
-                     ActionState('compare_config', [CompareState()])],
+                     ActionState('compare_config', [CompareState()]),
+                     GenState(TransFailed)],
                     event.produce_line())
-
         return (False, [])
 
 

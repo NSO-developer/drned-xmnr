@@ -220,9 +220,18 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
     if not fname:
         pytest.fail("Please specify a file with the --fname option")
     # Divide in sets
-    tsets = [re.sub(r":[^\.]*", ":*", f) for f in fname]
+    file_sets = [re.sub(r":[^\.]*", ":*", f) for f in fname]
     if ordered == "true":
-        tsets = sorted(list(set(tsets)))
+        tsets = sorted(list(set(file_sets)))
+    else:
+        # need to preserve the tset order, but remove duplicities
+        t_set = set()
+        tsets = []
+        for fset in file_sets:
+            if fset not in t_set:
+                tsets.append(fset)
+                t_set.add(fset)
+    print('sets', ordered, fname, tsets, sorted(list(set(tsets))))
     if not it % 2:
         tsets = reversed(tsets)
     if op is None:
