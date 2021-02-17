@@ -488,6 +488,8 @@ class WalkState(LogState):
 class ExploreTransitionsState(LogState):
     '''
     ETs -> (start prepare TransitionS ExtTrans)*
+
+    It is a top-most state, it is always on the stack.
     '''
     name = 'explore'
 
@@ -496,7 +498,7 @@ class ExploreTransitionsState(LogState):
             return (True,
                     [GenState(DrnedPrepare), TransitionState(), ExtendedTransitionsState(), self],
                     event.produce_line())
-        return (False, [])
+        return (True, [self])
 
 
 class ExtendedTransitionsState(LogState):
@@ -543,6 +545,8 @@ class GenState(LogState):
 class WalkTransitionsState(LogState):
     '''
     WT -> (pytest? Transition)* Teardown
+
+    It is a top-most state, it is always on the stack.
     '''
 
     name = 'transitions'
@@ -555,8 +559,8 @@ class WalkTransitionsState(LogState):
             # a state transition is load then
             return (False, [TransitionState(), self])
         if isinstance(event, DrnedTeardown):
-            return (False, [TeardownState()])
-        return (False, [])
+            return (False, [TeardownState(), self])
+        return (True, [self])
 
 
 class TeardownState(LogState):

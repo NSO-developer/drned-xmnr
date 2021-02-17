@@ -59,6 +59,9 @@ class TestWalk(FilteringTest):
     def test_walk_groups(self):
         self.filter_test('walk-groups')
 
+    def test_walk_failure(self):
+        self.filter_test('walk-fail')
+
 
 class TestExplore(FilteringTest):
     filter = filtering.explore_output_filter

@@ -1,0 +1,631 @@
+=============================================== test session starts ================================================
+platform linux -- Python 3.8.5, pytest-6.2.2, py-1.9.0, pluggy-0.13.1
+rootdir: /opt/ncs/xmnr-run/dhcp0/test/drned-skeleton, configfile: setup.cfg
+plugins: nbval-0.9.6, cov-2.10.1, pyfakefs-4.3.3
+collected 633 items / 632 deselected / 1 selected
+
+src/test_builtin.py complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Wed Feb  17 13:28:41.863 UTC+01:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-02-17 13:28:40 terminal mode
+session paginate false
+Wed Feb  17 13:28:41.942 UTC+01:00
+do show ncs-state | include "ncs-state version"
+Wed Feb  17 13:28:42.700 UTC+01:00
+ncs-state version 5.4.1
+NOTE: Commit queues are enabled!
+============================== load(./dhcp0.cfg)
+load merge ./dhcp0.cfg | best-effort
+Wed Feb  17 13:28:42.215 UTC+01:00
+Loading.
+Warning: best-effort is not supported for XML files
+507 bytes parsed in 0.00 sec (139.27 KiB/sec)
+commit
+Wed Feb  17 13:28:42.275 UTC+01:00
+% No modifications to commit.
+no devices device dhcp0 ned-settings use-transaction-id
+Wed Feb  17 13:28:42.343 UTC+01:00
+commit
+Wed Feb  17 13:28:42.400 UTC+01:00
+% No modifications to commit.
+devices global-settings session-pool idle-time 600
+Wed Feb  17 13:28:42.462 UTC+01:00
+devices global-settings commit-queue retry-attempts 2
+Wed Feb  17 13:28:42.524 UTC+01:00
+devices device dhcp0 trace raw
+Wed Feb  17 13:28:42.584 UTC+01:00
+java-vm java-logging logger com.tailf.packages.ned level level-all
+Wed Feb  17 13:28:42.653 UTC+01:00
+show full-configuration devices device dhcp0
+devices device dhcp0
+ address         127.0.0.1
+ port            12022
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+ authgroup       default
+ device-type netconf ned-id dhcpned-nc-1.0
+ connect-timeout 60
+ read-timeout    7200
+ write-timeout   7200
+ trace           raw
+ no-lsa
+ state admin-state unlocked
+ config
+  dhcp default-lease-time 200s
+ !
+!
+
+show full-configuration devices device dhcp0 device-type
+Wed Feb  17 13:28:42.816 UTC+01:00
+devices device dhcp0
+ device-type netconf ned-id dhcpned-nc-1.0
+!
+show full-configuration devices device dhcp0 ssh
+Wed Feb  17 13:28:42.881 UTC+01:00
+devices device dhcp0
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+!
+commit
+Wed Feb  17 13:28:42.958 UTC+01:00
+% No modifications to commit.
+show full-configuration devices device dhcp0 read-timeout
+Wed Feb  17 13:28:43.210 UTC+01:00
+devices device dhcp0
+ read-timeout 7200
+!
+devices device dhcp0 connect
+Wed Feb  17 13:28:43.910 UTC+01:00
+result true
+info (admin) Connected to dhcp0 - 127.0.0.1:12022
+============================== sync_from()
+devices device dhcp0 sync-from
+Wed Feb  17 13:28:43.180 UTC+01:00
+result true
+top
+Wed Feb  17 13:28:43.320 UTC+01:00
+
+test_template_set
+
+============================== save(drned-work/before-session.xml)
+save drned-work/before-session.xml xml devices device dhcp0 config
+Wed Feb  17 13:28:43.389 UTC+01:00
+Saving parts of the configuration.
+============================== save(drned-work/before-session.cfg)
+save drned-work/before-session.cfg  devices device dhcp0 config
+Wed Feb  17 13:28:43.468 UTC+01:00
+Saving devices device dhcp0 config
+============================== save(drned-work/before-test.cfg)
+save drned-work/before-test.cfg  devices device dhcp0 config
+Wed Feb  17 13:28:43.562 UTC+01:00
+Saving devices device dhcp0 config
+sets false ['/opt/ncs/xmnr-run/dhcp0/test/states/empty.state.xml', '/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/s-subnet3:1.state.xml', '/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/s-subnet3:2.state.xml', '/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/s-subnet4.state.xml'] ['/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/empty.state.xml', '/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/s-subnet3:*.state.xml', '/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/s-subnet4.state.xml'] ['/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/empty.state.xml', '/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/s-subnet3:*.state.xml', '/home/martin/devel/xmnr/ncs/xmnr-run/dhcp0/test/states/s-subnet4.state.xml']
+
+py.test -k test_template_set --fname=/opt/ncs/xmnr-run/dhcp0/test/states/empty.state.xml --op=load --op=commit --op=compare-config --device=dhcp0
+
+============================== load(/opt/ncs/xmnr-run/dhcp0/test/states/empty.state.xml)
+NOTE: Get load parameters from /opt/ncs/xmnr-run/dhcp0/test/states/empty.state.xml.load
+no devices device dhcp0 config
+Wed Feb  17 13:28:43.664 UTC+01:00
+load merge /opt/ncs/xmnr-run/dhcp0/test/states/empty.state.xml
+Wed Feb  17 13:28:43.731 UTC+01:00
+Loading.
+169 bytes parsed in 0.00 sec (28.70 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:43.893 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="299">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                                         nc:operation="delete"/>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:43.979 UTC+01:00
+commit-queue {
+    id 1613564924008
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10884
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:44.317 UTC+01:00
+============================== rollback()
+rollback configuration 10884
+Wed Feb  17 13:28:44.399 UTC+01:00
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:44.705 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="309">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time>PT200S</default-lease-time>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:44.816 UTC+01:00
+commit-queue {
+    id 1613564924841
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10885
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:45.135 UTC+01:00
+============================== rollback()
+rollback configuration 10885
+Wed Feb  17 13:28:45.225 UTC+01:00
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:45.551 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="319">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                                         nc:operation="delete"/>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:45.632 UTC+01:00
+commit-queue {
+    id 1613564925661
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10886
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:46.260 UTC+01:00
+============================== rollback()
+rollback configuration 10884
+Wed Feb  17 13:28:46.120 UTC+01:00
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:46.480 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="329">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time>PT200S</default-lease-time>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:46.564 UTC+01:00
+commit-queue {
+    id 1613564926611
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10887
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:46.941 UTC+01:00
+
+py.test -k test_template_set --fname=/opt/ncs/xmnr-run/dhcp0/test/states/s-subnet3:*.state.xml --op=load --op=commit --op=compare-config --device=dhcp0
+
+============================== load(/opt/ncs/xmnr-run/dhcp0/test/states/s-subnet3:1.state.xml)
+NOTE: Get load parameters from /opt/ncs/xmnr-run/dhcp0/test/states/s-subnet3:1.state.xml.load
+no devices device dhcp0 config
+Wed Feb  17 13:28:47.980 UTC+01:00
+load merge /opt/ncs/xmnr-run/dhcp0/test/states/s-subnet3:1.state.xml
+Wed Feb  17 13:28:47.161 UTC+01:00
+Loading.
+589 bytes parsed in 0.00 sec (65.89 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:47.329 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="339">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                                         nc:operation="delete"/>
+                     <subnets>
+                       <subnet>
+                         <net>192.168.128.0</net>
+                         <mask>255.255.255.0</mask>
+                         <range>
+                           <high-addr>192.168.128.89</high-addr>
+                           <low-addr>192.168.128.60</low-addr>
+                         </range>
+                       </subnet>
+                     </subnets>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:47.428 UTC+01:00
+commit-queue {
+    id 1613564927475
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10888
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:47.816 UTC+01:00
+
+### TEARDOWN, RESTORE DEVICE ###
+complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Wed Feb  17 13:28:48.308 UTC+01:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-02-17 13:28:40 terminal mode
+session paginate false
+Wed Feb  17 13:28:48.383 UTC+01:00
+no devices device dhcp0 config
+Wed Feb  17 13:28:48.456 UTC+01:00
+top
+Wed Feb  17 13:28:48.517 UTC+01:00
+============================== load(drned-work/before-session.xml)
+load merge drned-work/before-session.xml
+Wed Feb  17 13:28:48.582 UTC+01:00
+Loading.
+332 bytes parsed in 0.00 sec (35.43 KiB/sec)
+show config
+Wed Feb  17 13:28:48.652 UTC+01:00
+devices device dhcp0
+ config
+  dhcp default-lease-time 200s
+  no dhcp subnets subnet 192.168.128.0 255.255.255.0
+ !
+!
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:48.833 UTC+01:00
+commit no-networking
+Wed Feb  17 13:28:48.919 UTC+01:00
+Commit complete.
+NOTE: Commit id: 10889
+============================== sync_to()
+devices device dhcp0 sync-to
+Wed Feb  17 13:28:49.119 UTC+01:00
+result true
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:49.331 UTC+01:00
+============================== save(drned-work/after-session.cfg)
+save drned-work/after-session.cfg  devices device dhcp0 config
+Wed Feb  17 13:28:49.480 UTC+01:00
+Saving devices device dhcp0 config
+
+py.test -k test_template_set --fname=/opt/ncs/xmnr-run/dhcp0/test/states/s-subnet4.state.xml --op=load --op=commit --op=compare-config --device=dhcp0
+
+============================== load(/opt/ncs/xmnr-run/dhcp0/test/states/s-subnet4.state.xml)
+NOTE: Get load parameters from /opt/ncs/xmnr-run/dhcp0/test/states/s-subnet4.state.xml.load
+no devices device dhcp0 config
+Wed Feb  17 13:28:49.578 UTC+01:00
+load merge /opt/ncs/xmnr-run/dhcp0/test/states/s-subnet4.state.xml
+Wed Feb  17 13:28:49.643 UTC+01:00
+Loading.
+589 bytes parsed in 0.01 sec (50.03 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:49.788 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="361">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                                         nc:operation="delete"/>
+                     <subnets>
+                       <subnet>
+                         <net>192.168.128.0</net>
+                         <mask>255.255.255.0</mask>
+                         <range>
+                           <high-addr>192.168.128.89</high-addr>
+                           <low-addr>192.168.128.60</low-addr>
+                         </range>
+                       </subnet>
+                     </subnets>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:49.874 UTC+01:00
+commit-queue {
+    id 1613564929891
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10890
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:50.151 UTC+01:00
+============================== rollback()
+rollback configuration 10890
+Wed Feb  17 13:28:50.293 UTC+01:00
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:50.577 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="371">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time>PT200S</default-lease-time>
+                     <subnets>
+                       <subnet xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                               nc:operation="delete">
+                         <net>192.168.128.0</net>
+                         <mask>255.255.255.0</mask>
+                       </subnet>
+                     </subnets>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:50.712 UTC+01:00
+commit-queue {
+    id 1613564930766
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10891
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:51.144 UTC+01:00
+============================== rollback()
+rollback configuration 10891
+Wed Feb  17 13:28:51.270 UTC+01:00
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:51.580 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="381">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                                         nc:operation="delete"/>
+                     <subnets>
+                       <subnet>
+                         <net>192.168.128.0</net>
+                         <mask>255.255.255.0</mask>
+                         <range>
+                           <high-addr>192.168.128.89</high-addr>
+                           <low-addr>192.168.128.60</low-addr>
+                         </range>
+                       </subnet>
+                     </subnets>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:51.663 UTC+01:00
+commit-queue {
+    id 1613564931697
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10892
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:52.280 UTC+01:00
+============================== rollback()
+rollback configuration 10890
+Wed Feb  17 13:28:52.156 UTC+01:00
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:52.470 UTC+01:00
+native {
+    device {
+        name dhcp0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="391">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <dhcp xmlns="http://tail-f.com/ns/example/dhcpd">
+                     <default-lease-time>PT200S</default-lease-time>
+                     <subnets>
+                       <subnet xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                               nc:operation="delete">
+                         <net>192.168.128.0</net>
+                         <mask>255.255.255.0</mask>
+                       </subnet>
+                     </subnets>
+                   </dhcp>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Wed Feb  17 13:28:52.554 UTC+01:00
+commit-queue {
+    id 1613564932604
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10893
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:52.955 UTC+01:00
+============================== save(drned-work/after-test.cfg)
+save drned-work/after-test.cfg  devices device dhcp0 config
+Wed Feb  17 13:28:53.660 UTC+01:00
+Saving devices device dhcp0 config
+F
+### TEARDOWN, RESTORE DEVICE ###
+complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Wed Feb  17 13:28:53.589 UTC+01:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-02-17 13:28:40 terminal mode
+session paginate false
+Wed Feb  17 13:28:53.665 UTC+01:00
+no devices device dhcp0 config
+Wed Feb  17 13:28:53.738 UTC+01:00
+top
+Wed Feb  17 13:28:53.798 UTC+01:00
+============================== load(drned-work/before-session.xml)
+load merge drned-work/before-session.xml
+Wed Feb  17 13:28:53.863 UTC+01:00
+Loading.
+332 bytes parsed in 0.00 sec (45.35 KiB/sec)
+show config
+Wed Feb  17 13:28:53.930 UTC+01:00
+% No configuration changes found.
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Wed Feb  17 13:28:54.780 UTC+01:00
+commit no-networking
+Wed Feb  17 13:28:54.138 UTC+01:00
+% No modifications to commit.
+NOTE: Commit id: None
+============================== sync_to()
+devices device dhcp0 sync-to
+Wed Feb  17 13:28:54.258 UTC+01:00
+result true
+============================== compare_config()
+devices device dhcp0 compare-config
+Wed Feb  17 13:28:54.405 UTC+01:00
+============================== save(drned-work/after-session.cfg)
+save drned-work/after-session.cfg  devices device dhcp0 config
+Wed Feb  17 13:28:54.540 UTC+01:00
+Saving devices device dhcp0 config
+
+
+===================================================== FAILURES =====================================================
+________________________________________________ test_template_set _________________________________________________
+../drned/common/test_template.py:151: in test_template_set
+    _drned_single_set(device, init, fname, init_op, op, end_op, 1, ordered)
+../drned/common/test_template.py:307: in _drned_single_set
+    pytest.fail("Failed states: %s" % device.failed_states)
+E   Failed: Failed states: ['s-subnet3:*']
+============================================= short test summary info ==============================================
+FAILED src/test_builtin.py::test_template_set - Failed: Failed states: ['s-subnet3:*']
+================================= 1 failed, 632 deselected, 19 warnings in 13.20s ==================================
