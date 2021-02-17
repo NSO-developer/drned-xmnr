@@ -1,0 +1,90 @@
+Prepare the device
+Test transition to empty
+   load empty
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Test transition to s-subnet3:*
+   load s-subnet3:1
+   commit
+       succeeded
+   compare config
+       succeeded
+   load s-subnet3:2
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Test transition to s-subnet3:*
+   load s-subnet3:1
+   commit
+       succeeded
+   compare config
+       succeeded
+   load s-subnet3:2
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       (no modifications)
+   compare config
+       succeeded

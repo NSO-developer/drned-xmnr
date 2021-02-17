@@ -1,0 +1,6 @@
+   prepare the device
+   load empty
+   commit
+       (no modifications)
+   compare config
+       succeeded

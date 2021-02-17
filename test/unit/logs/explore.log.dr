@@ -1,0 +1,73 @@
+Found 3 states recorded for device mock-device which gives a total of 6 transitions.
+Starting with state state1
+   prepare the device
+   load state1
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 1/6: state1 ==> state2
+   prepare the device
+   load state2
+   commit
+       failed (RPC error towards test device)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition 2/6: state1 ==> otherstate1
+   prepare the device
+   load otherstate1
+   commit
+       failed (RPC error towards test device)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition failed
+Starting with state state2
+   prepare the device
+   load state2
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 3/6: state2 ==> state1
+   prepare the device
+   load state1
+   commit
+       failed (RPC error towards test device)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition 4/6: state2 ==> otherstate1
+   prepare the device
+   load otherstate1
+   commit
+       failed (RPC error towards test device)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition failed
+Starting with state otherstate1
+   prepare the device
+   load otherstate1
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Failed to initialize state otherstate1

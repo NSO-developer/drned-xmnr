@@ -1,0 +1,132 @@
+Found 3 states recorded for device dhcp0 which gives a total of 6 transitions.
+Starting with state empty
+   prepare the device
+   load empty
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 1/6: empty ==> s-subnet3:1
+   prepare the device
+   load s-subnet3:1
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 2/6: empty ==> s-subnet3:2
+   prepare the device
+   load s-subnet3:2
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Starting with state s-subnet3:1
+   prepare the device
+   load s-subnet3:1
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition 3/6: s-subnet3:1 ==> empty
+   prepare the device
+   load empty
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 4/6: s-subnet3:1 ==> s-subnet3:2
+   prepare the device
+   load s-subnet3:2
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition failed
+Starting with state s-subnet3:2
+   prepare the device
+   load s-subnet3:2
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 5/6: s-subnet3:2 ==> empty
+   prepare the device
+   load empty
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 6/6: s-subnet3:2 ==> s-subnet3:1
+   prepare the device
+   load s-subnet3:1
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition failed

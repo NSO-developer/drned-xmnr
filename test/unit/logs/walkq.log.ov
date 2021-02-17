@@ -1,0 +1,5 @@
+Prepare the device
+Test transition to empty
+Test transition to subnet1
+Test transition to dhcp-ls
+Device cleanup

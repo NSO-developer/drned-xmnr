@@ -1,0 +1,6 @@
+   prepare the device
+   load subnet1
+   commit
+       succeeded
+   compare config
+       succeeded

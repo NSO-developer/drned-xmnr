@@ -1,0 +1,70 @@
+Prepare the device
+Test transition to empty
+   load empty
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Test transition to subnet1
+   load subnet1
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+   rollback
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Test transition to dhcp-ls
+   load dhcp-ls
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+   rollback
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       (no modifications)
+   compare config
+       succeeded

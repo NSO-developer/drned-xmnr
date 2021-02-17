@@ -1,0 +1,94 @@
+NOTE: Commit queues are disabled!
+============================== load(./dhcp0.cfg)
+load merge ./dhcp0.cfg | best-effort
+Tue Feb  2  19:12:41.516 UTC+01:00
+Loading.
+Warning: best-effort is not supported for XML files
+505 bytes parsed in 0.00 sec (55.29 KiB/sec)
+commit
+Tue Feb  2  19:12:41.581 UTC+01:00
+% No modifications to commit.
+no devices device dhcp0 ned-settings use-transaction-id
+Tue Feb  2  19:12:41.646 UTC+01:00
+commit
+Tue Feb  2  19:12:41.702 UTC+01:00
+% No modifications to commit.
+devices global-settings session-pool idle-time 600
+Tue Feb  2  19:12:41.763 UTC+01:00
+devices global-settings commit-queue retry-attempts 2
+Tue Feb  2  19:12:41.823 UTC+01:00
+devices device dhcp0 trace raw
+Tue Feb  2  19:12:41.883 UTC+01:00
+java-vm java-logging logger com.tailf.packages.ned level level-all
+Tue Feb  2  19:12:41.952 UTC+01:00
+show full-configuration devices device dhcp0
+devices device dhcp0
+ address         127.0.0.1
+ port            12022
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+ authgroup       default
+ device-type netconf ned-id dhcpned-nc-1.0
+ connect-timeout 60
+ read-timeout    7200
+ write-timeout   7200
+ trace           raw
+ no-lsa
+ state admin-state unlocked
+!
+
+show full-configuration devices device dhcp0 device-type
+Tue Feb  2  19:12:42.115 UTC+01:00
+devices device dhcp0
+ device-type netconf ned-id dhcpned-nc-1.0
+!
+show full-configuration devices device dhcp0 ssh
+Tue Feb  2  19:12:42.184 UTC+01:00
+devices device dhcp0
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+!
+commit
+Tue Feb  2  19:12:42.250 UTC+01:00
+% No modifications to commit.
+show full-configuration devices device dhcp0 read-timeout
+Tue Feb  2  19:12:42.324 UTC+01:00
+devices device dhcp0
+ read-timeout 7200
+!
+devices device dhcp0 connect
+Tue Feb  2  19:12:42.398 UTC+01:00
+result true
+info (admin) Connected to dhcp0 - 127.0.0.1:12022
+============================== sync_from()
+devices device dhcp0 sync-from
+Tue Feb  2  19:12:42.497 UTC+01:00
+result true
+top
+Tue Feb  2  19:12:42.594 UTC+01:00
+
+test_template_raw[empty.state.xml]
+
+============================== load(../states/empty.state.xml)
+NOTE: Get load parameters from ../states/empty.state.xml.load
+no devices device dhcp0 config
+Tue Feb  2  19:12:42.658 UTC+01:00
+load merge ../states/empty.state.xml
+Tue Feb  2  19:12:42.720 UTC+01:00
+Loading.
+169 bytes parsed in 0.00 sec (29.80 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device dhcp0" | save overwrite drned-work/drned-dry-run.txt
+Tue Feb  2  19:12:42.866 UTC+01:00
+% No modifications to commit.
+
+commit
+Tue Feb  2  19:12:42.924 UTC+01:00
+% No modifications to commit.
+NOTE: Commit id: None
+============================== compare_config()
+devices device dhcp0 compare-config
+Tue Feb  2  19:12:43.160 UTC+01:00
+.

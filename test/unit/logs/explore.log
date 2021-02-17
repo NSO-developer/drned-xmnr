@@ -1,0 +1,190 @@
+Found 3 states recorded for device mock-device which gives a total of 6 transitions.
+Starting with state state1
+--generic drned data--
+============================== sync_from()
+--generic drned data--
+test_template_raw[../states/state1.state.cfg]
+============================== rload(../states/state1.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit dry-run
+% No modifications to commit.
+commit
+% No modifications to commit.
+============================== compare_config()
+Transition 1/6: state1 ==> state2
+--generic drned data--
+============================== load(./mockdevice.cfg)
+--generic drned data--
+============================== sync_from()
+test_template_single[../states/state2.state.cfg]
+--generic drned data--
+============================== rload(../states/state2.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1529558544009
+    status failed
+    failed-device {
+        name mockdevice
+        reason RPC error towards test device
+    }
+}
+Commit complete.
+============================== compare_config()
+--generic drned data--
+
+--generic drned data--
+============================== rollback()
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1528715048477
+    status completed
+}
+Commit complete.
+============================== compare_config()
+Transition 2/6: state1 ==> otherstate1
+--generic drned data--
+============================== load(./mockdevice.cfg)
+--generic drned data--
+============================== sync_from()
+test_template_single[../states/otherstate1.state.cfg]
+--generic drned data--
+============================== rload(../states/otherstate1.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1529558544009
+    status failed
+    failed-device {
+        name mockdevice
+        reason RPC error towards test device
+    }
+}
+Commit complete.
+============================== compare_config()
+--generic drned data--
+
+--generic drned data--
+============================== rollback()
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1528715048477
+    status completed
+}
+Commit complete.
+============================== compare_config()
+Transition failed
+Starting with state state2
+--generic drned data--
+============================== sync_from()
+--generic drned data--
+test_template_raw[../states/state2.state.cfg]
+============================== rload(../states/state2.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit dry-run
+% No modifications to commit.
+commit
+% No modifications to commit.
+============================== compare_config()
+Transition 3/6: state2 ==> state1
+--generic drned data--
+============================== load(./mockdevice.cfg)
+--generic drned data--
+============================== sync_from()
+test_template_single[../states/state1.state.cfg]
+--generic drned data--
+============================== rload(../states/state1.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1529558544009
+    status failed
+    failed-device {
+        name mockdevice
+        reason RPC error towards test device
+    }
+}
+Commit complete.
+============================== compare_config()
+--generic drned data--
+
+--generic drned data--
+============================== rollback()
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1528715048477
+    status completed
+}
+Commit complete.
+============================== compare_config()
+Transition 4/6: state2 ==> otherstate1
+--generic drned data--
+============================== load(./mockdevice.cfg)
+--generic drned data--
+============================== sync_from()
+test_template_single[../states/otherstate1.state.cfg]
+--generic drned data--
+============================== rload(../states/otherstate1.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1529558544009
+    status failed
+    failed-device {
+        name mockdevice
+        reason RPC error towards test device
+    }
+}
+Commit complete.
+============================== compare_config()
+--generic drned data--
+
+--generic drned data--
+============================== rollback()
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit commit-queue sync
+commit-queue {
+    id 1528715048477
+    status completed
+}
+Commit complete.
+============================== compare_config()
+Transition failed
+Starting with state otherstate1
+--generic drned data--
+============================== sync_from()
+--generic drned data--
+test_template_raw[../states/otherstate1.state.cfg]
+============================== rload(../states/otherstate1.state.cfg)
+--generic drned data--
+============================== commit()
+--generic drned data--
+commit dry-run
+% No modifications to commit.
+commit
+% No modifications to commit.
+============================== compare_config()
+Failed to initialize state otherstate1
