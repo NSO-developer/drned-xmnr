@@ -5,6 +5,7 @@ import time
 import random
 import re
 import itertools
+from contextlib import closing
 
 from ncs import maagic
 
@@ -19,13 +20,11 @@ class TransitionsOp(base_op.ActionBase):
         self.filter_cr = None
         if redirect is not None:
             with self.open_log_file(redirect) as rfile:
-                self.filter_cr = self.build_filter(detail, rfile.write)
-                result = self.perform_transitions()
-                self.filter_cr.close()
+                with closing(self.build_filter(detail, rfile.write)) as self.filter_cr:
+                    result = self.perform_transitions()
         elif self.uinfo.context == 'cli':
-            self.filter_cr = self.build_filter(detail, self.cli_write)
-            result = self.perform_transitions()
-            self.filter_cr.close()
+            with closing(self.build_filter(detail, self.cli_write)) as self.filter_cr:
+                result = self.perform_transitions()
         else:
             result = self.perform_transitions()
         return result
