@@ -393,7 +393,7 @@ class LogStateMachine(object):
     def handle(self, event):
         handled = False
         while not handled and self.stack:
-            # print('handling', event, [state.name for state in reversed(self.stack)])
+            # print('handling "', event, '"', "[state.name for state in reversed(self.stack)])
             state = self.stack.pop()
             restuple = state.handle(event)
             if len(restuple) == 2:
@@ -554,6 +554,8 @@ class WalkTransitionsState(LogState):
     def handle(self, event):
         if isinstance(event, PyTest):
             return (True, [TransitionState(), self], event.produce_line())
+        if isinstance(event, DrnedFailedStatesEvent):
+            return (True, [], event.produce_line())
         if isinstance(event, DrnedActionEvent) and event.action == 'load':
             # this happens in case of state groups; the first event of
             # a state transition is load then

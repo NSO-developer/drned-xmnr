@@ -300,10 +300,6 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
         pytest.fail("The state after rollback differs from before load. " +
                     "Please check before-test.cfg and after-test.cfg")
 
-    # If any state transitions failed, raise an error to inform the CLI
-    if device.failed_states:
-        pytest.fail("Failed states: %s" % device.failed_states)
-
 
 # Test single file
 ctype = None
