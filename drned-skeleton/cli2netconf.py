@@ -12,6 +12,7 @@ import pexpect
 import re
 import sys
 import types
+from time import sleep
 
 import drned
 
@@ -90,6 +91,7 @@ class Devcli:
                 e = exc
             else:
                 return self.cli
+            sleep(2)
         else:
             raise e
 

@@ -122,6 +122,8 @@ def device(request):
 
     # Restore device to initial state
     device.restore()
+    if device.failed_states:
+        print('Failed states:', device.failed_states)
 
 
 @pytest.yield_fixture(scope=SCOPE)
