@@ -188,7 +188,7 @@ class ActionBase(XmnrBase):
                     data = text_data(buf)
                     self.log.debug("run_outputfun, output len=" + str(len(data)))
                     outputfun(data)
-                    self.extend_timeout(120)
+                    self.extend_timeout(timeout)
                     stdoutdata += data
             else:
                 self.progress_msg("Silence timeout, terminating process")
