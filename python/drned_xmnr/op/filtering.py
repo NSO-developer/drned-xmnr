@@ -675,7 +675,7 @@ class CommitFailure(LogState):
     def handle(self, event):
         if isinstance(event, DrnedFailureReason):
             return (True, [], event.produce_line())
-        return (False, [], DrnedCommitResult(False).produce_line())
+        return (False, [], DrnedCommitResult('', False).produce_line())
 
 
 class CommitCompleteState(LogState):
