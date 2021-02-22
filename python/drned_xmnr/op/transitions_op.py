@@ -188,6 +188,7 @@ class WalkTransitionsOp(TransitionsOp):
         self.state_filenames = [self.state_name_to_filename(state)
                                 for state in pstates]
         self.rollback = params.rollback
+        self.device_timeout = params.device_timeout
 
     def filter_state_sets(self, states):
         """Filter out duplicate representatives of "state sets".
@@ -217,7 +218,8 @@ class WalkTransitionsOp(TransitionsOp):
         fname_args = ["--fname=" + filename for filename in self.state_filenames]
         end_op = [] if self.rollback else ["--end-op", ""]
         result, _ = self.drned_run(fname_args + end_op +
-                                   ["--ordered=false", "-k", "test_template_set"])
+                                   ["--ordered=false", "-k", "test_template_set"],
+                                   timeout=self.device_timeout)
         self.log.debug("DrNED completed: {0}".format(result))
         if result != 0:
             raise ActionError("drned failed")
