@@ -274,6 +274,9 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
             # Use the file function also for rollbacks
             _drned_single_file(device, None, the_end,
                                commit_id_base=commit_id_base)
+        except KeyboardInterrupt:
+            # do not intercept CTRL-C
+            raise
         except BaseException:
             # Record the failed state and, if this is not the last
             # state in the list, restore the device to its original
