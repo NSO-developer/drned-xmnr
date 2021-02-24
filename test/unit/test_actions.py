@@ -799,7 +799,7 @@ class TestTransitions(TransitionsTestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
                                     rollback=False,
-                                    timeout=10,
+                                    device_timeout=10,
                                     states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
@@ -811,7 +811,7 @@ class TestTransitions(TransitionsTestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
                                     rollback=True,
-                                    timeout=10,
+                                    device_timeout=10,
                                     states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
@@ -980,7 +980,7 @@ class TransitionsLogFiltersTestBase(TransitionsTestBase):
 
     def walk_filter_test_run(self, xpatch, filter_type):
         self.filter_test_run(xpatch, filter_type, DrnedWalkOutput, self.states,
-                             'walk-states', timeout=10, states=self.states, rollback=False)
+                             'walk-states', device_timeout=10, states=self.states, rollback=False)
 
 
 class TestTransitionsLogFilters(TransitionsLogFiltersTestBase):
@@ -1047,7 +1047,7 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_filter(xpatch, 'drned-overview', 'redirect.output')
         self.setup_states_data(xpatch.system)
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
-        output = self.invoke_action('walk-states', states=self.states, timeout=10, rollback=False)
+        output = self.invoke_action('walk-states', states=self.states, device_timeout=10, rollback=False)
         self.check_output(output)
         with open(os.path.join(self.test_run_dir, 'redirect.output')) as r_out:
             assert r_out.readline() == '\n'
@@ -1062,7 +1062,7 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_filter(xpatch, 'all')
         self.setup_states_data(xpatch.system)
         DrnedWalkOutput(self.states, 'none', xpatch.system)
-        output = self.invoke_action('walk-states', states=self.states, rollback=False, timeout=10)
+        output = self.invoke_action('walk-states', states=self.states, rollback=False, device_timeout=10)
         self.check_output(output)
         calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
         assert ''.join(call[0][2] for call in calls) == ''

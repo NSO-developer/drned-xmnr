@@ -12,6 +12,8 @@ two filtering modes.
 
 '''
 
+from __future__ import print_function
+
 import os
 import six
 
@@ -32,13 +34,15 @@ class FilteringTest(object):
         for level, ext in [('overview', self.log_overview_ext),
                            ('drned-overview', self.log_dred_ext)]:
             out = six.StringIO()
-            filtering.run_test_filter(self.__class__.filter, logfile, out=out, level=level)
+            filtering.run_test_filter(self.filter, logfile, out=out, level=level)
             with open(logbase + ext) as res:
                 assert res.read() == out.getvalue()
 
 
 class TestTransitions(FilteringTest):
-    filter = filtering.transition_output_filter
+    @staticmethod
+    def filter(*args):
+        return filtering.transition_output_filter(*args)
 
     def test_trans_nonempty(self):
         self.filter_test('trans-nonempty')
@@ -48,7 +52,9 @@ class TestTransitions(FilteringTest):
 
 
 class TestWalk(FilteringTest):
-    filter = filtering.walk_output_filter
+    @staticmethod
+    def filter(*args):
+        return filtering.walk_output_filter(*args)
 
     def test_walk(self):
         self.filter_test('walk')
@@ -64,7 +70,9 @@ class TestWalk(FilteringTest):
 
 
 class TestExplore(FilteringTest):
-    filter = filtering.explore_output_filter
+    @staticmethod
+    def filter(*args):
+        return filtering.explore_output_filter(*args)
 
     def test_explore(self):
         self.filter_test('explore')
