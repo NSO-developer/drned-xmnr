@@ -45,6 +45,9 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_collect_: coverage_op.CoverageOp,
     }
 
+    def init(self):
+        self.running_handler = None
+
     @dp.Action.action
     def cb_action(self, uinfo, op_name, kp, params, output):
         self.log.debug("========== drned_xmnr cb_action() ==========")
@@ -55,8 +58,8 @@ class ActionHandler(dp.Action):
             if op_name not in self.handlers:
                 raise ActionError({'failure': "Operation not implemented: {0}".format(op_name)})
             handler_cls = self.handlers[op_name]
-            handler = handler_cls(uinfo, dev_name, params, self.log)
-            result = handler.perform_action()
+            self.running_handler = handler_cls(uinfo, dev_name, params, self.log)
+            result = self.running_handler.perform_action()
             return self.action_response(uinfo, result, output)
 
         except ActionError as ae:
@@ -66,6 +69,15 @@ class ActionHandler(dp.Action):
         except Exception:
             self.log.debug("Other exception: " + repr(traceback.format_exception(*sys.exc_info())))
             output.failure = "Operation failed"
+
+        finally:
+            self.running_handler = None
+
+    def cb_abort(self, uinfo):
+        self.log.debug('aborting the action')
+        handler = self.running_handler
+        if handler is not None:
+            handler.abort_action()
 
     def action_response(self, uinfo, result, output):
         if 'error' in result:

@@ -98,6 +98,13 @@ module drned-xmnr {
 
   augment /ncs:devices/ncs:device {
     container drned-xmnr {
+      leaf cleanup-timeout {
+        type uint16;
+        default 5;
+        tailf:info
+          "How long should XMNR wait for a test to do clean-up in case
+           of an action abort.";
+      }
       container setup {
         tailf:action setup-xmnr {
           tailf:info

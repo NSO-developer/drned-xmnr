@@ -7,6 +7,8 @@ import select
 import glob
 import socket
 import subprocess
+import threading
+import signal
 from datetime import datetime as dt
 from contextlib import contextmanager
 
@@ -37,7 +39,7 @@ class XmnrBase(object):
         self.dev_name = dev_name
         self.log = log_obj
 
-    def _setup_directories(self, trans):
+    def _setup_xmnr(self, trans):
         root = maagic.get_root(trans)
         self.xmnr_directory = os.path.abspath(root.drned_xmnr.xmnr_directory)
         self.log_filename = root.drned_xmnr.xmnr_log_file
@@ -45,6 +47,7 @@ class XmnrBase(object):
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
         self.using_builtin_drned = root.drned_xmnr.drned_directory == "builtin"
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
+        self.cleanup_timeout = root.devices.device[self.dev_name].drned_xmnr.cleanup_timeout
         try:
             os.makedirs(self.states_dir)
         except OSError:
@@ -130,8 +133,11 @@ class ActionBase(XmnrBase):
     def __init__(self, uinfo, dev_name, params, log_obj):
         super(ActionBase, self).__init__(dev_name, log_obj)
         self.uinfo = uinfo
+        self.drned_process = None
+        self.aborted = False
+        self.abort_lock = threading.Lock()
         self.maapi = maapi.Maapi()
-        self.run_with_trans(self._setup_directories)
+        self.run_with_trans(self._setup_xmnr)
         self._init_params(params)
 
     def _init_params(self, params):
@@ -152,6 +158,11 @@ class ActionBase(XmnrBase):
         else:
             self.log_file = None
             return self.perform()
+
+    def abort_action(self):
+        with self.abort_lock:
+            self.aborted = True
+            self.terminate_drned_process()
 
     def param_default(self, params, name, default):
         value = getattr(params, name)
@@ -174,16 +185,16 @@ class ActionBase(XmnrBase):
     def extend_timeout(self, timeout_extension):
         dp.action_set_timeout(self.uinfo, timeout_extension)
 
-    def proc_run(self, proc, outputfun, timeout):
-        fd = proc.stdout.fileno()
+    def proc_run(self, outputfun, timeout):
+        fd = self.drned_process.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
         stdoutdata = ""
-        while proc.poll() is None:
+        while self.drned_process.poll() is None:
             rlist, wlist, xlist = select.select([fd], [], [fd], timeout)
             if rlist:
-                buf = proc.stdout.read()
+                buf = self.drned_process.stdout.read()
                 if buf is not None and len(buf) != 0:
                     data = text_data(buf)
                     self.log.debug("run_outputfun, output len=" + str(len(data)))
@@ -192,13 +203,25 @@ class ActionBase(XmnrBase):
                     stdoutdata += data
             else:
                 self.progress_msg("Silence timeout, terminating process")
-                proc.kill()
+                self.terminate_drned_process()
 
         self.log.debug("run_finished, output len=" + str(len(stdoutdata)))
-        return proc.wait(), stdoutdata
+        return self.drned_process.wait(), stdoutdata
+
+    def terminate_drned_process(self):
+        if self.drned_process is None:
+            return
+        try:
+            self.drned_process.send_signal(signal.SIGINT)
+            self.drned_process.wait(self.cleanup_timeout)
+        except subprocess.TimeoutExpired:
+            self.log.debug("process not responding to SIGINT - killing instead")
+            self.drned_process.kill()
 
     def cli_write(self, msg):
-        _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
+        if not self.aborted:
+            # cannot write to CLI after an abort
+            _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
 
     def cli_filter(self, msg):
         if self.uinfo.context == 'cli':
@@ -267,16 +290,21 @@ class ActionBase(XmnrBase):
         self.log.debug("using env {0}\n".format(env))
         self.log.debug("running", args)
         try:
-            proc = subprocess.Popen(args,
-                                    env=env,
-                                    cwd=self.drned_run_directory,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
+            with self.abort_lock:
+                if self.aborted:
+                    raise ActionError("action aborted")
+                self.drned_process = subprocess.Popen(args,
+                                                      env=env,
+                                                      cwd=self.drned_run_directory,
+                                                      stdout=subprocess.PIPE,
+                                                      stderr=subprocess.STDOUT)
             self.log.debug("run_in_drned_env, going in")
+            return self.proc_run(Progressor(self).progress, timeout)
         except OSError:
             msg = 'PyTest not installed or DrNED running directory ({0}) not set up'
             raise ActionError(msg.format(self.drned_run_directory))
-        return self.proc_run(proc, Progressor(self).progress, timeout)
+        finally:
+            self.drned_process = None
 
     def save_config(self, trans, config_type, path):
         save_id = trans.save_config(config_type, path)
@@ -310,4 +338,4 @@ class XmnrDeviceData(XmnrBase):
 
     def __init__(self, device, log, trans):
         super(XmnrDeviceData, self).__init__(device, log)
-        self._setup_directories(trans)
+        self._setup_xmnr(trans)

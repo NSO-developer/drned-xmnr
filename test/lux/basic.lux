@@ -123,5 +123,39 @@
     """
     [timeout]
 
+    [progress aborting transitions]
+[shell os]
+    !tail -f $ned0_log
+[shell ncs-cli]
+    [timeout 5]
+    !drned-xmnr transitions walk-states
+    ?Test transition
+    ~$_CTRL_C_
+    ?Aborted
+    ???admin@ncs(config-config)
+[shell os]
+    ?walk states
+    ?KeyboardInterrupt
+[shell ncs-cli]
+    !drned-xmnr transitions explore-transitions
+    ?load
+    ~$_CTRL_C_
+    ?Aborted
+[shell os]
+    ?explore transitions
+    ?KeyboardInterrupt
+[shell ncs-cli]
+    !drned-xmnr transitions explore-transitions
+    ?Transition 1/.
+    ?commit
+    ~$_CTRL_C_
+    ?Aborted
+    [timeout]
+[shell os]
+    ?explore transitions
+    ?KeyboardInterrupt
+    ~$_CTRL_C_
+    ?SH-PROMPT
+
 [cleanup]
     [invoke cleanup]

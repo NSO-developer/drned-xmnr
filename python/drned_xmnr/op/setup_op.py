@@ -97,12 +97,12 @@ class SetupOp(base_op.ActionBase):
 
     def setup_drned(self):
         env = self.run_with_trans(self.setup_drned_env)
-        proc = subprocess.Popen(['make', 'env.sh'],
-                                env=env,
-                                cwd=self.drned_run_directory,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        result, _ = self.proc_run(proc, base_op.Progressor(self).progress, 120)
+        self.drned_process = subprocess.Popen(['make', 'env.sh'],
+                                              env=env,
+                                              cwd=self.drned_run_directory,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.STDOUT)
+        result, _ = self.proc_run(lambda *ignore: None, 120)
         if result != 0:
             raise ActionError("Failed to set up env.sh for DrNED")
         self.cfg_file = os.path.join(self.drned_run_directory, self.dev_name + '.cfg')
