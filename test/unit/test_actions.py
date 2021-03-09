@@ -306,6 +306,9 @@ class TestBase(object):
 
 
 class TestStartup(TestBase):
+    """Simple action registration and setup test.
+
+    """
     def test_registry(self):
         xmnr = action.Xmnr()
         xmnr.setup()
@@ -317,6 +320,9 @@ class TestStartup(TestBase):
 
 
 class TestSetup(TestBase):
+    """Test of the action `setup-xmnr`.
+
+    """
     def setup_fs_data(self, system):
         system.ff_patcher.fs.create_dir(mocklib.XMNR_DIRECTORY)
         system.ff_patcher.fs.create_file(os.path.join(mocklib.XMNR_INSTALL,
@@ -345,6 +351,9 @@ class TestSetup(TestBase):
 
 
 class TestPytestEnv(TestBase):
+    """Test lookup for available `pytest` exacutable.
+
+    """
     def set_env(self, executable):
         base_op.ActionBase._pytest_executable = None
         self.xpatch.system.set_pytest_env(executable)
@@ -402,6 +411,12 @@ class LoadSaveConfig(object):
 
 
 class TestStates(TestBase):
+    """Test recording, importing, deleting and listing of device states.
+
+    Involves mocking of the states data on the fake filesystem, done
+    in `TestBase.setup_states_data`.
+
+    """
     def state_files(self, states):
         return sorted(itertools.chain(*((st + '.state.cfg', st + '.state.cfg.load')
                                         for st in states)))
@@ -539,6 +554,14 @@ class TestStates(TestBase):
 
 
 class TestConvertMessage(TestBase):
+    """Test the `import-convert` action.
+
+    The action is invoked, but the `Popen` call to run the conversion
+    itself is mocked and a fake data is inserted as its standard
+    output.  The tests verify that the standard output data is
+    interpreted correctly.
+
+    """
     config_states = ['clistate1', 'clistate2', 'otherclistate', 'clistate3']
     config_path = '/cfgpath'
 
@@ -649,6 +672,12 @@ class TransitionsTestBase(TestBase):
 
 
 class TestTransitions(TransitionsTestBase):
+    """Basic tests the three transitions actions.
+
+    All state data is mocked, all that is verified is that DrNED
+    `pytest` is called with correct arguments.
+
+    """
     def check_drned_call(self, call, state=None, rollback=False, fnames=None, builtin_drned=False):
         if fnames is None:
             test = 'test_template_single' if rollback else 'test_template_raw'
@@ -984,6 +1013,14 @@ class TransitionsLogFiltersTestBase(TransitionsTestBase):
 
 
 class TestTransitionsLogFilters(TransitionsLogFiltersTestBase):
+    """Test DrNED output filtering.
+
+    In these tests one of the three transition actions is run, but the
+    `Popen` calls are captured and prepared data is inserted as their
+    standard output.  It is subsequently verified that the filtered
+    output corresponds to the prepared filtered data.
+
+    """
     def action_uinfo(self):
         return mock.Mock(context='cli')
 
@@ -1042,12 +1079,17 @@ class TestTransitionsLogFilters(TransitionsLogFiltersTestBase):
 
 
 class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
+    """Test DrNED output redirecting and behavior in other context than
+    CLI.
+
+    """
     @xtest_patch
     def test_filter_redirect(self, xpatch):
         self.setup_filter(xpatch, 'drned-overview', 'redirect.output')
         self.setup_states_data(xpatch.system)
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
-        output = self.invoke_action('walk-states', states=self.states, device_timeout=10, rollback=False)
+        output = self.invoke_action('walk-states', states=self.states, device_timeout=10,
+                                    rollback=False)
         self.check_output(output)
         with open(os.path.join(self.test_run_dir, 'redirect.output')) as r_out:
             assert r_out.readline() == '\n'
@@ -1062,13 +1104,21 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_filter(xpatch, 'all')
         self.setup_states_data(xpatch.system)
         DrnedWalkOutput(self.states, 'none', xpatch.system)
-        output = self.invoke_action('walk-states', states=self.states, rollback=False, device_timeout=10)
+        output = self.invoke_action('walk-states', states=self.states, rollback=False,
+                                    device_timeout=10)
         self.check_output(output)
         calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
         assert ''.join(call[0][2] for call in calls) == ''
 
 
 class TestCoverage(TestBase):
+    """Test coverage actions and operational data.
+
+    For the `collect` action, the coverage data is mocked, stored in
+    `unit.mocklib.SystemMock.proc_data` and returned as a process
+    output.
+
+    """
     collect_groups = {'nodes': ['read-or-set', 'set', 'deleted', 'set-set', 'deleted-separately'],
                       'lists': ['read-or-set', 'deleted', 'multi-read-or-set'],
                       'grouping-nodes': ['read-or-set', 'set', 'deleted', 'set-set',
