@@ -231,7 +231,6 @@ def _drned_single_set(device, init, fname, init_op, op, end_op, it, ordered):
             if fset not in t_set:
                 tsets.append(fset)
                 t_set.add(fset)
-    print('sets', ordered, fname, tsets, sorted(list(set(tsets))))
     if not it % 2:
         tsets = reversed(tsets)
     if op is None:
