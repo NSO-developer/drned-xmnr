@@ -43,7 +43,7 @@ class MockDevcli(object):
     def __getattr__(self, attr):
         if attr in self.methods:
             return functools.partial(self.gen_method, attr)
-        raise AttributeError('MookDevcli has no attribute ' + attr)
+        raise AttributeError('MockDevcli has no attribute ' + attr)
 
 
 # convenience function for prints to stdout during tests; the print
@@ -60,6 +60,14 @@ def cnv_patch(*patch_args, **patch_kwargs):
 
 
 class ConvertPatch(object):
+    '''A wrapper class whose instance is passed to test methods as an argument.
+
+    An instance of this class is callable (so that it can be used as a
+    return value of a function decorator).  The `__call__` method
+    creates a function wrapper, that creates a Devcli and XDevice mock
+    (there is only one common for both classes).
+    '''
+    
     def __init__(self, failures={'load': [], 'sync': []}):
         self.failures = failures
         self.attribute_name = None

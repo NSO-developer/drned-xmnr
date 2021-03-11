@@ -37,7 +37,7 @@ def nest_mgrs(mgrs):
 
 
 class XtestPatch(object):
-    """Mimic `unittest.mock.patch' behavior to make pytest ignore test
+    """Mimic `unittest.mock.patch` behavior to make pytest ignore test
     function arguments."""
 
     def __init__(self, mock_gens):
@@ -99,28 +99,6 @@ def ncs_mock():
                                       device=device,
                                       ncs=dict(zip(items, reversed(ncs_patches))))
                 yield mock_inst
-
-
-class FileData(object):
-    def __init__(self, name, data=None):
-        self.name = name
-        self.data = data
-
-    def read(self):
-        if self.data is None:
-            raise RuntimeError('Cannot read from {}'.format(self.name))
-        return self.data
-
-    def write(self, data):
-        if self.data is None:
-            self.data = b''
-        self.data += data
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        pass
 
 
 class StreamData(object):
@@ -263,7 +241,7 @@ def init_mocks():
     before the modules using them are imported; this applies mostly to
     classes used as superclasses and decorator functions. These
     patchings remains active for the rest of the Python environment
-    lifetime, the patchers' `stop' method is never called!
+    lifetime, the patchers' `stop` method is never called!
     """
     patch('ncs.application.Application', new=mock.Mock).start()
     patch('ncs.dp.Action.action', side_effect=lambda fn: fn).start()
