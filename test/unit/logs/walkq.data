@@ -1,0 +1,3 @@
+[TransitionDesc('(init)', 'empty', None, None),
+ TransitionDesc('empty', 'subnet1', None, None),
+ TransitionDesc('subnet1', 'dhcp-ls', None, None)]

@@ -1,0 +1,9 @@
+Found 2 states recorded for device hook0 which gives a total of 2 transitions.
+Starting with state empty
+Transition 1/2: empty ==> ip1
+failed to commit, configuration refused by the device
+Device cleanup
+Transition failed
+Starting with state ip1
+failed to commit, configuration refused by the device
+Failed to initialize state ip1

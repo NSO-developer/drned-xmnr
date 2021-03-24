@@ -1,0 +1,13 @@
+[TransitionDesc('(init)', 'state1', None, None),
+ TransitionDesc('state1', 'state2', 'commit',
+                'RPC error towards test device'),
+ TransitionDesc('state1', 'otherstate1', 'commit',
+                'RPC error towards test device'),
+ TransitionDesc('state1', 'state2', None, None),
+ TransitionDesc('state2', 'state1', 'commit',
+                'RPC error towards test device'),
+ TransitionDesc('state2', 'otherstate1', 'commit',
+                'RPC error towards test device'),
+
+ # failure, actually, but invisible to filtering
+ TransitionDesc('state2', 'otherstate1', None, None)]

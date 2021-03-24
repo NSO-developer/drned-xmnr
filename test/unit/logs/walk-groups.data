@@ -1,0 +1,5 @@
+[TransitionDesc('(init)', 'empty', None, None),
+ TransitionDesc('empty', 's-subnet3:1', None, None),
+ TransitionDesc('s-subnet3:1', 's-subnet3:2', None, None),
+ TransitionDesc('s-subnet3:2',  's-subnet3:1', None, None),
+ TransitionDesc('s-subnet3:1', 's-subnet3:2', None, None)]

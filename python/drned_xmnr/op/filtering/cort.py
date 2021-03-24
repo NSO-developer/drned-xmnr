@@ -23,6 +23,14 @@ def drop():
 
 
 @coroutine
+def fork(c1, c2):
+    while True:
+        item = yield
+        c1.send(item)
+        c2.send(item)
+
+
+@coroutine
 def filter_sink(writer):
     while True:
         item = yield

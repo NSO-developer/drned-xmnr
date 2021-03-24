@@ -1,14 +1,91 @@
-'''Simple pushodwn automaton implementing a LL(1) grammar with DrNED
+'''Simple pushodwn automaton implementing a LL(1) "grammar" with DrNED
 output events as terminals.
+
+In the module `drned_xmnr.op.filtering.events`, the DrNED output is processed to
+DrNED events; these events are handled by the automaton states with following
+two effects:
+
+* the events are filtered according to filtering level (only "overview" and
+  "drned-overview") and sent to the next consumer in the pipe (such as stdout or
+  CLI write);
+
+* an instance of `TransitionEventContext` is informed about new transition or
+  other test events or their failures.
 
 '''
 
+import collections
+
 from .events import DrnedPrepare, DrnedLoadEvent, DrnedActionEvent, InitStates, StartState, \
-    InitFailed, Transition, TransFailed, PyTest, DrnedFailedStatesEvent, DrnedTeardown, \
-    DrnedRestore, DrnedEmptyCommit, DrnedCommitNoqueueEvent, DrnedCommitNNEvent, \
+    InitFailed, Transition, InitialPrepareEvent, TransFailed, PyTest, DrnedFailedStatesEvent, \
+    DrnedTeardown, DrnedRestore, DrnedEmptyCommit, DrnedCommitNoqueueEvent, DrnedCommitNNEvent, \
     DrnedCommitResult, DrnedCommitQueueEvent, DrnedCommitEvent, DrnedFailureReason, \
     DrnedCommitComplete, DrnedCompareEvent
 from .cort import coroutine
+
+
+TransitionDesc = collections.namedtuple('TransitionDesc',
+                                        ['start', 'to', 'failure', 'failure_message'])
+
+
+class TransitionEventContext(object):
+    '''Transition event context.
+
+    An instance of the context stores events of all transitions.  An event is a
+    state file load, commit, rollback and so on; an event is also a failure of
+    any of these actions.
+
+    '''
+    def __init__(self):
+        self.state = '(init)'
+        self.test_events = []
+        self.exploring_from = None
+        self.cleanup()
+
+    def cleanup(self):
+        self.event = None
+        self.rollback = False
+        self.to = None
+
+    def start_explore(self, state):
+        self.complete_transition()
+        self.exploring_from = state
+
+    def start_transition(self, to):
+        self.complete_transition()
+        self.to = to
+        self.rollback = False
+        self.event = 'load'
+
+    def transition_event(self, event_type):
+        self.event = event_type
+        if event_type == 'rollback':
+            self.rollback = True
+
+    def fail_transition(self, msg=None):
+        event = 'rollback' if self.rollback else self.event
+        self.complete_transition(event, msg)
+        return self.failure_comment(event)
+
+    failure_comments = {
+        'compare_config': 'configuration comparison failed, configuration artifacts on the device',
+        'load': 'failed to load the state, state file appears to be invalid',
+        'commit': 'failed to commit, configuration refused by the device',
+        'rollback': 'failed to apply rollback'}
+
+    @staticmethod
+    def failure_comment(event_type):
+        return TransitionEventContext.failure_comments.get(event_type, '')
+
+    def complete_transition(self, failure=None, msg=None):
+        if self.to is None:
+            return
+        self.test_events.append(TransitionDesc(self.state, self.to, failure, msg))
+        self.state = self.exploring_from if self.exploring_from is not None else self.to
+        self.cleanup()
+
+    def close(self):
+        self.complete_transition()
 
 
 class LogStateMachine(object):
@@ -16,7 +93,7 @@ class LogStateMachine(object):
 
     Input (events) are passed for handling to states.  A state handler
     returns a 2-tuple (handled, states) or a 3-tuple (handled, states,
-    line).
+    event).
 
     handled: Bool - it True, the current event has been processed
     and another one needs to be read (if True); otherwise it is used again.
@@ -24,32 +101,66 @@ class LogStateMachine(object):
     states: [LogState] - list of states to be used in place of the
     current state (an "expansion").
 
-    line: Str - output to be produced, if present; typically from `event.produce_line()`.
+    event: LineOutputEvent - the event output to be produced, if present;
+    typically it is the same as the input argument.
 
     '''
 
-    def __init__(self, init_state):
+    evtclasses = {InitStates, StartState, Transition,
+                  InitFailed, TransFailed, InitialPrepareEvent,
+                  PyTest, DrnedTeardown}
+
+    def __init__(self, level, init_state, context=None):
         self.stack = [init_state]
+        self.level = level
+        self.context = context if context is not None else TransitionEventContext()
 
     def handle(self, event):
-        handled = False
-        while not handled and self.stack:
+        while self.stack:
             # print('handling "', event, '"', [state.name for state in reversed(self.stack)])
             state = self.stack.pop()
             restuple = state.handle(event)
             if len(restuple) == 2:
                 handled, expansion = restuple
             else:
-                handled, expansion, line = restuple
-                yield line
+                handled, expansion, line_event = restuple
+                if self.level != 'overview' or line_event.__class__ in self.evtclasses:
+                    yield line_event.produce_line()
             self.stack.extend(reversed(expansion))
+            if handled:
+                msg = state.update_context(self.context, event)
+                if msg:
+                    yield msg
+                break
 
 
 class LogState(object):
     name = 'general logstate'
 
     def handle(self, event):
+        '''Do a state expansion based on a log event.
+
+        The method should return (handled, expansion) or (handled, expansion,
+        event) where handled is a boolean indicating whether the event has been
+        handled successfully, expansion is a list of state instances, event is a
+        event (usually the input argument) whose line to be sent to the filtered
+        output.
+
+        '''
         raise Exception('Unhandled event', event)
+
+    def update_context(self, context, event):
+        '''Update the transition context if needed.
+
+        The method is invoked only in case the state instance reported the event
+        as handled.
+
+        Args:
+            context: The transition event context.
+            event: The last event successfully processed by the state instance.
+
+        '''
+        pass
 
 
 class TransitionTestState(LogState):
@@ -57,13 +168,8 @@ class TransitionTestState(LogState):
 
     name = 'transition-test'
 
-    def __init__(self, level):
-        self.level = level
-
     def handle(self, event):
-        if self.level == 'overview':
-            return (True, [self])
-        return (False, [TransitionState()], DrnedPrepare().produce_line())
+        return (False, [TransitionState()], DrnedPrepare())
 
 
 class TransitionState(LogState):
@@ -77,7 +183,7 @@ class TransitionState(LogState):
 
     def handle(self, event):
         return (False, [CommitsState(),
-                        GenState(DrnedLoadEvent),
+                        LoadState(),
                         ActionState('commit', [CommitState()]),
                         ActionState('compare_config', [CompareState()]),
                         RollbacksState()])
@@ -103,12 +209,7 @@ class ExploreState(LogState):
     'Initial state for "explore" actions output filtering.'
     name = 'explore'
 
-    def __init__(self, level):
-        self.level = level
-
     def handle(self, event):
-        if self.level == 'overview':
-            return (False, [BriefTransitionsState()])
         return (False,
                 [GenState(InitStates), ExploreTransitionsState()])
 
@@ -117,13 +218,9 @@ class WalkState(LogState):
     'Initial state for "walk" actions output filtering.'
     name = 'walk'
 
-    def __init__(self, level):
-        self.level = level
-
     def handle(self, event):
-        if self.level == 'overview':
-            return (True, [BriefTransitionsState()], event.produce_line())
-        return (True, [CommitsState(), WalkTransitionsState()], event.produce_line())
+        # expecting only InitialPrepareEvent
+        return (True, [CommitsState(), WalkTransitionsState()], event)
 
 
 class ExploreTransitionsState(LogState):
@@ -138,8 +235,12 @@ class ExploreTransitionsState(LogState):
         if isinstance(event, StartState):
             return (True,
                     [GenState(DrnedPrepare), TransitionState(), ExtendedTransitionsState(), self],
-                    event.produce_line())
+                    event)
         return (True, [self])
+
+    def update_context(self, context, event):
+        if isinstance(event, StartState):
+            context.start_explore(event.state)
 
 
 class ExtendedTransitionsState(LogState):
@@ -154,12 +255,12 @@ class ExtendedTransitionsState(LogState):
 
     def handle(self, event):
         if isinstance(event, InitFailed):
-            return (True, [], event.produce_line())
+            return (True, [], event)
         if isinstance(event, Transition):
             return (True, [GenState(DrnedPrepare), TransitionState(),
                            GenState(TransFailed), GenState(InitFailed),
                            TeardownState(), self],
-                    event.produce_line())
+                    event)
         return (False, [])
 
 
@@ -179,7 +280,7 @@ class GenState(LogState):
 
     def handle(self, event):
         if isinstance(event, self.eventclass):
-            return (True, [], event.produce_line())
+            return (True, [], event)
         return (False, [])
 
 
@@ -194,9 +295,9 @@ class WalkTransitionsState(LogState):
 
     def handle(self, event):
         if isinstance(event, PyTest):
-            return (True, [TransitionState(), self], event.produce_line())
+            return (True, [TransitionState(), self], event)
         if isinstance(event, DrnedFailedStatesEvent):
-            return (True, [], event.produce_line())
+            return (True, [], event)
         if isinstance(event, DrnedLoadEvent):
             # this happens in case of state groups; the first event of
             # a state transition is load then
@@ -219,24 +320,38 @@ class TeardownState(LogState):
                      ActionState('commit', [CommitState()]),
                      ActionState('compare_config', [CompareState()]),
                      GenState(TransFailed)],
-                    event.produce_line())
+                    event)
         return (False, [])
 
 
-class BriefTransitionsState(LogState):
-    'Produces output for the set of event types, ignores others.'
-
-    name = 'silent-transitions'
-    evtclasses = {InitStates, StartState, Transition,
-                  InitFailed, TransFailed,
-                  PyTest, DrnedTeardown}
+class LoadState(LogState):
+    '''
+    Load -> load LoadFailure?
+    '''
+    name = 'load'
 
     def handle(self, event):
-        # just report events in `evtclasses`; everything else is
-        # swallowed
-        if event.__class__ in self.evtclasses:
-            return (True, [self], event.produce_line())
-        return (True, [self])
+        if isinstance(event, DrnedLoadEvent):
+            return (True, [LoadFailureState()], event)
+        else:
+            return (False, [])
+
+    def update_context(self, context, event):
+        context.start_transition(event.state)
+
+
+class LoadFailureState(LogState):
+    '''
+    LoadFailure -> loadfailure
+    '''
+    name = 'load-failure'
+
+    def handle(self, event):
+        # TODO: not implemented yet
+        return (False, [])
+
+    def update_context(self, context, _event):
+        return context.fail_transition()
 
 
 class ActionState(LogState):
@@ -251,8 +366,11 @@ class ActionState(LogState):
 
     def handle(self, event):
         if isinstance(event, DrnedActionEvent) and event.action == self.action:
-            return (True, self.expansion, event.produce_line())
+            return (True, self.expansion, event)
         return (False, [])
+
+    def update_context(self, context, event):
+        context.transition_event(self.action)
 
 
 class CommitState(LogState):
@@ -302,7 +420,7 @@ class CommitQueueState(LogState):
 
     def handle(self, event):
         if isinstance(event, DrnedEmptyCommit):
-            return (True, [], event.produce_line())
+            return (True, [], event)
         if isinstance(event, DrnedCommitResult) and \
            not event.success:
             return (True, [CommitFailure(), CommitCompleteState()])
@@ -315,8 +433,11 @@ class CommitFailure(LogState):
 
     def handle(self, event):
         if isinstance(event, DrnedFailureReason):
-            return (True, [], event.produce_line())
-        return (False, [], DrnedCommitResult('', False).produce_line())
+            return (True, [], event)
+        return (False, [], DrnedCommitResult('', False))
+
+    def update_context(self, context, event):
+        return context.fail_transition(event.reason)
 
 
 class CommitCompleteState(LogState):
@@ -338,11 +459,17 @@ class CompareState(LogState):
 
     def handle(self, event):
         if isinstance(event, DrnedCompareEvent):
-            return (True, [], event.produce_line())
+            return (True, [], event)
         else:
             # need to produce a line, but the event is not handled yet
             art_event = DrnedCompareEvent(True)
-            return (False, [], art_event.produce_line())
+            return (False, [], art_event)
+
+    def update_context(self, context, event):
+        if not event.success:
+            # TODO: for a compare failure we can have the full diff message; is
+            # it useful?
+            return context.fail_transition()
 
 
 @coroutine

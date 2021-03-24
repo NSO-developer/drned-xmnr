@@ -7,32 +7,43 @@ import re
 import itertools
 from contextlib import closing
 
+import _ncs
 from ncs import maagic
 
 from . import base_op
 from . import filtering
-from .ex import ActionError
 
 
 class TransitionsOp(base_op.ActionBase):
     def perform(self):
+        '''Performs the transition action and process DrNED output.
+
+        The DrNED output is filtered and sent to right destinations
+        (CLI and/or a log file); also, `event_context` is populated
+        with transition events that are stored in operational CDB.
+
+        '''
         detail, redirect = self.run_with_trans(self.get_log_detail)
         self.filter_cr = None
         if redirect is not None:
             with self.open_log_file(redirect) as rfile:
-                with closing(self.build_filter(detail, rfile.write)) as self.filter_cr:
-                    result = self.perform_transitions()
+                result = self.perform_with_output(detail, rfile.write)
         elif self.uinfo.context == 'cli':
-            with closing(self.build_filter(detail, self.cli_write)) as self.filter_cr:
-                result = self.perform_transitions()
+            result = self.perform_with_output(detail, self.cli_write)
         else:
-            result = self.perform_transitions()
+            result = self.perform_with_output('none', None)
+        self.run_with_trans(self.store_transition_events, write=True, db=_ncs.OPERATIONAL)
         return result
+
+    def perform_with_output(self, detail, output):
+        self.event_context = filtering.TransitionEventContext()
+        with closing(self.event_context):
+            with closing(self.build_filter(detail, output)) as self.filter_cr:
+                return self.perform_transitions()
 
     def get_log_detail(self, trans):
         root = maagic.get_root(trans)
         detail = root.drned_xmnr.log_detail
-        self.log.debug('CLI detail: ', detail.cli, detail.redirect)
         return detail.cli, detail.redirect
 
     def cli_filter(self, msg):
@@ -40,11 +51,26 @@ class TransitionsOp(base_op.ActionBase):
             self.filter_cr.send(msg)
 
     def build_filter(self, level, writer):
-        if level == 'none':
-            return filtering.drop()
+        '''Builds a pipe to process DrNED output lines.
+
+        Lines from the DrNED output need all to be processed by the
+        filtering event processor.  The event processor does two tasks:
+
+        * reformat and filter the output according to the logging
+          level (distinguishes "overview" and "drned-overview");
+
+        * populate the `event_context` instance with test/transition
+          events.
+
+        '''
+        if level in ('none', 'all'):
+            sink = filtering.drop()
+        else:
+            sink = filtering.filter_sink(writer)
+        events = filtering.EventGenerator(self.event_processor(level, sink))
         if level == 'all':
-            return filtering.filter_sink(writer)
-        return filtering.build_filter(self, level, writer)
+            return filtering.fork(events, filtering.filter_sink(writer))
+        return events
 
     def drned_run(self, drned_args, timeout=120):
         args = ["-s", "--tb=short", "--device="+self.dev_name] + drned_args
@@ -69,6 +95,29 @@ class TransitionsOp(base_op.ActionBase):
             return "drned failed"
         return True
 
+    failure_types = {'compare_config': 'compare',
+                     'commit': 'commit',
+                     'load': 'load',
+                     'rollback': 'rollback'}
+
+    def store_transition_events(self, trans):
+        '''Cleanup and populate the `last_test_results` container.
+
+        '''
+        root = maagic.get_root(trans)
+        results = root.drned_xmnr.last_test_results.create()
+        results.device = self.dev_name
+        results.transition.delete()
+        for i, event in enumerate(self.event_context.test_events):
+            tsinst = results.transition.create(i)
+            tsinst['from'] = event.start
+            tsinst.to = event.to
+            if event.failure is not None:
+                failure = tsinst.failure.create()
+                failure.type = self.failure_types.get(event.failure, '')
+                failure.comment = self.event_context.failure_comment(event.failure)
+        trans.apply()
+
 
 class TransitionToStateOp(TransitionsOp):
     action_name = 'transition to state'
@@ -78,7 +127,7 @@ class TransitionToStateOp(TransitionsOp):
         self.rollback = params.rollback
 
     def event_processor(self, level, sink):
-        return filtering.transition_output_filter(level, sink)
+        return filtering.transition_output_filter(level, sink, self.event_context)
 
     def perform_transitions(self):
         msg = "config_transition_to_state() with device {0} to state {1}" \
@@ -95,7 +144,7 @@ class ExploreTransitionsOp(TransitionsOp):
     action_name = 'explore transitions'
 
     def event_processor(self, level, sink):
-        return filtering.explore_output_filter(level, sink)
+        return filtering.explore_output_filter(level, sink, self.event_context)
 
     def _init_params(self, params):
         pstates = list(params.states)
@@ -221,9 +270,10 @@ class WalkTransitionsOp(TransitionsOp):
                                    ["--ordered=false", "-k", "test_template_set"],
                                    timeout=self.device_timeout)
         self.log.debug("DrNED completed: {0}".format(result))
-        if result != 0:
-            raise ActionError("drned failed")
+        ops = [tr.to for tr in self.event_context.test_events if tr.failure is not None]
+        if result != 0 or ops:
+            return {'failure': "failed to transition to states: " + ", ".join(ops)}
         return {'success': "Completed successfully"}
 
     def event_processor(self, level, sink):
-        return filtering.walk_output_filter(level, sink)
+        return filtering.walk_output_filter(level, sink, self.event_context)

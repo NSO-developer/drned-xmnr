@@ -1,0 +1,28 @@
+Found 2 states recorded for device hook0 which gives a total of 2 transitions.
+Starting with state empty
+   prepare the device
+   load empty
+   commit
+       (no modifications)
+   compare config
+       succeeded
+Transition 1/2: empty ==> ip1
+   prepare the device
+   load ip1
+   commit
+       failed (RPC error towards hook0: operation_faile...)
+failed to commit, configuration refused by the device
+Device cleanup
+   load before-session
+   commit
+       succeeded
+   compare config
+       succeeded
+Transition failed
+Starting with state ip1
+   prepare the device
+   load ip1
+   commit
+       failed (RPC error towards hook0: operation_faile...)
+failed to commit, configuration refused by the device
+Failed to initialize state ip1

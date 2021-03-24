@@ -1,0 +1,77 @@
+module hooks {
+  namespace "http://tail-f.com/ns/example/hooks";
+  prefix hooks;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+
+  organization "Tail-f Systems (a Cisco company)";
+
+  contact "info@tail-f.com";
+
+  description
+    "YANG datamodel for Hooks in the data model example
+     (C) 2005-2018 Tail-f Systems
+
+     Permission to use this code as a starting point hereby granted
+     This is ConfD Sample Code.
+
+     See the README file for more information";
+
+  revision 2019-02-14 {
+    description "Normalized YANG identifier names.";
+  }
+
+  revision 2018-11-27 {
+    description "YANG header information updated";
+  }
+
+  revision 2017-05-17 {
+    description "Initial revision.";
+  }
+
+  list hosts {
+    tailf:callpoint trans-hosts {
+      tailf:transaction-hook subtree {
+        tailf:invocation-mode per-transaction;
+      }
+    }
+    key name;
+    leaf name {
+      type string;
+    }
+    leaf ip {
+      tailf:callpoint ip-mask {
+        tailf:set-hook node;
+      }
+      type inet:ipv4-address;
+    }
+    leaf netmask {
+      tailf:callpoint ip-mask {
+        tailf:set-hook node;
+      }
+      type inet:ipv4-address;
+    }
+    leaf gw {
+      type inet:ipv4-address;
+    }
+  }
+
+  list hosts-ipv6 {
+    key name;
+    leaf name {
+      type string;
+    }
+    leaf ip {
+      type inet:ipv6-address;
+    }
+    leaf gw {
+      type inet:ipv6-address;
+    }
+  }
+
+}

@@ -31,12 +31,19 @@ class LineOutputEvent(object):
         return self.line
 
 
+class InitialPrepareEvent(LineOutputEvent):
+    def __init__(self):
+        super(InitialPrepareEvent, self).__init__('Prepare the device')
+
+
 class InitStates(LineOutputEvent):
     pass
 
 
 class StartState(LineOutputEvent):
-    pass
+    def __init__(self, line, state):
+        super(StartState, self).__init__(line)
+        self.state = state
 
 
 class Transition(LineOutputEvent):
@@ -252,7 +259,7 @@ class EventGenerator(object):
 line_regexp = re.compile('''\
 (?:\
 (?P<init_states>Found [0-9]* states recorded for device .*)|\
-(?P<start>Starting with state .*)|\
+(?P<start>Starting with state (?P<state>.*))|\
 (?P<py_test>py.test -k test_template_set --fname=[^ ]*.state.(cfg|xml)\
 (?: --op=[^ ]*)*(?: --end-op=)? --device=[^ ]*)|\
 (?P<transition>Transition [0-9]*/[0-9]*: .* ==> .*)|\
@@ -285,7 +292,7 @@ def event_generator(consumer):
             if match is None:
                 continue
             if match.lastgroup == 'start':
-                consumer.send(StartState(match.string))
+                consumer.send(StartState(match.string, match.groupdict()['state']))
                 consumer.send(DrnedPrepare())
             elif match.lastgroup == 'init_failed':
                 consumer.send(InitFailed(match.string))

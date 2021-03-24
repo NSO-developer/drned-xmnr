@@ -56,7 +56,7 @@
     # set things up and start the simple ned
 [shell os]
     [invoke ned-test-setup]
-    !ncs-make-package --netconf-ned ../../yang ned
+    !ncs-make-package --netconf-ned ../../base-ned ned
     [invoke shell-check-prompt make-package]
     [timeout 10]
     !make -C ned/src all

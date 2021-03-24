@@ -1,0 +1,7 @@
+[TransitionDesc('(init)', 'empty', None, None),
+
+ # failure, but invisible to filtering
+ TransitionDesc('empty', 's-subnet3:1', None, None),
+
+ # this actually starts with (init) due to cleanup
+ TransitionDesc('s-subnet3:1', 's-subnet4', None, None)]
