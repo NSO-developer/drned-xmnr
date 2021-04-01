@@ -170,13 +170,13 @@ class ActionBase(XmnrBase):
             return default
         return value
 
-    def run_with_trans(self, callback, write=False):
+    def run_with_trans(self, callback, write=False, db=_ncs.RUNNING):
         if write:
             # we do not want to write to the user's transaction
-            with maapi.single_write_trans(self.uinfo.username, self.uinfo.context) as trans:
+            with maapi.single_write_trans(self.uinfo.username, self.uinfo.context, db=db) as trans:
                 return callback(trans)
         elif self.uinfo.actx_thandle == -1:
-            with maapi.single_read_trans(self.uinfo.username, self.uinfo.context) as trans:
+            with maapi.single_read_trans(self.uinfo.username, self.uinfo.context, db=db) as trans:
                 return callback(trans)
         else:
             mp = maapi.Maapi()

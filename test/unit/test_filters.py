@@ -18,6 +18,7 @@ import os
 import six
 
 from drned_xmnr.op import filtering
+from drned_xmnr.op.filtering.states import TransitionDesc
 
 
 class FilteringTest(object):
@@ -25,18 +26,22 @@ class FilteringTest(object):
     log_extension = '.log'
     log_overview_ext = '.log.ov'
     log_dred_ext = '.log.dr'
+    log_data_ext = '.data'
 
     filter = None
 
     def filter_test(self, logname):
         logbase = os.path.join(self.log_directory, logname)
         logfile = logbase + self.log_extension
+        with open(logbase + self.log_data_ext) as data:
+            events = eval(data.read())
         for level, ext in [('overview', self.log_overview_ext),
                            ('drned-overview', self.log_dred_ext)]:
             out = six.StringIO()
-            filtering.run_test_filter(self.filter, logfile, out=out, level=level)
+            ctx = filtering.run_test_filter(self.filter, logfile, out=out, level=level)
             with open(logbase + ext) as res:
-                assert res.read() == out.getvalue()
+                assert out.getvalue() == res.read()
+            assert(ctx.test_events == events)
 
 
 class TestTransitions(FilteringTest):
@@ -79,3 +84,6 @@ class TestExplore(FilteringTest):
 
     def test_expl_groups(self):
         self.filter_test('expl-groups')
+
+    def test_expl_commit_failure(self):
+        self.filter_test('explore-commitfail')

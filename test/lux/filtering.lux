@@ -1,0 +1,168 @@
+[doc Testing event filtering and processing for DrNED transitions]
+
+[include common.luxinc]
+
+
+[shell os]
+    [invoke ned-test-setup]
+    !ncs-make-package --netconf-ned ../../hooks/ hooks
+    [invoke shell-check]
+    !echo include Makefile.inc >> hooks/netsim/Makefile
+    [invoke shell-check]
+    !sed -i 's/^exit .*/.\/hooks \&\n&/' hooks/netsim/start.sh
+    [invoke shell-check]
+    !cp ../../hooks/Makefile.inc ../../hooks/traceh.h ../../hooks/hooks.c hooks/netsim
+    [invoke shell-check]
+    [timeout 10]
+    !make -C hooks/src all
+    [invoke shell-check]
+    !cd ..
+    [invoke start-ncs-netsim hooks]
+    [timeout]
+
+[shell ncs-cli]
+
+    [invoke prepare-test hooks0]
+
+    ~drned-xmnr state import-state-files format c-style
+    ! file-path-pattern ../hooks/host.cfg merge false overwrite true
+    ???success
+    ???Imported states: host
+    ~drned-xmnr state import-state-files format c-style
+    ! file-path-pattern ../hooks/bad-host.cfg merge false overwrite true
+    ???success
+    ???Imported states: bad-host
+    [progress walk-states]
+    [timeout 10]
+    !drned-xmnr transitions walk-states states [ empty host bad-host ]
+    """???
+    Prepare the device
+    Test transition to empty
+       load empty
+       commit
+           (no modifications)
+       compare config
+           succeeded
+    Test transition to host
+       load host
+       commit
+           succeeded
+       compare config
+           failed
+    configuration comparison failed, configuration artifacts on the device
+    Device cleanup
+       load before-session
+       commit
+           succeeded
+       compare config
+           succeeded
+    Test transition to bad-host
+       load bad-host
+       commit
+           failed (RPC error towards hooks0: operation_fail...)
+    failed to commit, configuration refused by the device
+    Device cleanup
+       load before-session
+       commit
+           succeeded
+       compare config
+           succeeded
+    Failed States  ['host', 'bad-host']
+    """
+    [timeout]
+
+    !do show drned-xmnr last-test-results | tab
+    # this is actually incorrect, after every failure the state is
+    # changed back to the initial one
+    """?
+    FROM * TO * TYPE * MESSAGE * COMMENT *
+    -----------------------------------* *
+    \(init\) * empty * - * - * - *
+    empty * host * compare * - * configuration comparison.*
+    host * bad-host * commit * - * failed to commit.*
+
+    admin@ncs.*
+    """
+    
+    [progress explore-transitions]
+    [timeout 30]
+    !drned-xmnr transitions explore-transitions states [ bad-host empty host ]
+    """?
+    Found 3 states.*
+    Starting with state bad-host
+       prepare the device
+       load bad-host
+       commit
+           failed \(RPC error towards hooks0: operation_fail...\)
+    failed to commit, configuration refused by the device
+    Failed to initialize state bad-host
+    Starting with state empty
+       prepare the device
+       load empty
+       commit
+           (\(no modifications\)|succeeded)
+       compare config
+           succeeded
+    Transition 3/6: empty ==> bad-host
+       prepare the device
+       load bad-host
+       commit
+           failed \(RPC error towards hooks0: operation_fail...\)
+    failed to commit, configuration refused by the device
+    Device cleanup
+       load before-session
+       commit
+           succeeded
+       compare config
+           succeeded
+    Transition failed
+    Transition 4/6: empty ==> host
+       prepare the device
+       load host
+       commit
+           succeeded
+       compare config
+           failed
+    configuration comparison failed, configuration artifacts on the device
+    Device cleanup
+       load before-session
+       commit
+           succeeded
+       compare config
+           succeeded
+    Transition failed
+    Starting with state host
+       prepare the device
+       load host
+       commit
+           succeeded
+       compare config
+           failed
+    configuration comparison failed, configuration artifacts on the device
+    Failed to initialize state host
+    error Failed to initialize state bad-host
+    Failed to initialize state host
+    failure drned failed: empty ==> bad-host
+    drned failed: empty ==> host
+    """
+    [timeout]
+
+    !do show drned-xmnr last-test-results | tab
+    # again - incorrect, the failures are followed by a cleanup and
+    # revert, but this is ignored by filtering state machine
+    """?
+    FROM * TO * TYPE * MESSAGE * COMMENT *
+    -----------------------------------* *
+    \(init\) * bad-host * commit * - * failed to commit.*
+    bad-host * empty * - * - * - *
+    empty * bad-host * commit * - * failed to commit.*
+    empty * host * compare * - * configuration comparison.*
+    empty * host * compare * - * configuration comparison.*
+
+    ?admin@ncs.*
+    """
+    
+
+
+[cleanup]
+    [invoke cleanup]

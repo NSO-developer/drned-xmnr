@@ -1,0 +1,10 @@
+The code here serves to create a troublesome netsim device.  It is based on the
+c-hooks example and is troublesome for two reasons:
+
+1. There are transaction and set hooks that modify the configuration, so from
+   the NSO perspective it appears as autoconfig.
+
+2. The hooks also fail the transaction if the host name is longer than 4
+   characters, but this is not obvious from the data model.
+
+The netsim is used in the filtering.lux test case.

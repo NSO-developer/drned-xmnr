@@ -144,6 +144,7 @@ drned_transition_output_filtered = '''\
    load {state_to}
    commit
        failed (RPC error towards test device)
+failed to commit, configuration refused by the device
    compare config
        {compare_result}
    rollback
@@ -877,6 +878,8 @@ class DrnedTransitionOutput(DrnedOutput):
             compare_success = ''
         elif self.filter_type == 'drned-overview':
             transition_output = drned_transition_output_filtered
+        elif self.filter_type == 'overview':
+            transition_output = 'failed to commit, configuration refused by the device\n'
         else:
             transition_output = ''
         yield transition_output.format(state_to=self.state_data, compare_result=compare_success)
@@ -887,8 +890,10 @@ class DrnedTransitionOutput(DrnedOutput):
 
 class DrnedTransitionOutputFailure(DrnedOutput):
     def expected_output(self):
+        compare_result = 'failed\n' \
+            'configuration comparison failed, configuration artifacts on the device'
         yield drned_transition_output_filtered.format(state_to=self.state_data,
-                                                      compare_result='failed')
+                                                      compare_result=compare_result)
 
     def output(self):
         yield drned_transition_output.format(state_to=self.state_data, compare_result='diff ')
@@ -911,6 +916,10 @@ class DrnedExploreOutput(DrnedOutput):
             start_output = drned_explore_start_output_filtered
             transition_output = drned_transition_output_filtered
             compare_success = 'succeeded'
+        elif self.filter_type == 'overview':
+            start_output = ''
+            compare_success = ''
+            transition_output = 'failed to commit, configuration refused by the device\n'
         else:
             start_output = transition_output = ''
         for from_state in self.state_data:
@@ -926,9 +935,8 @@ class DrnedExploreOutput(DrnedOutput):
                 index += 1
                 yield 'Transition {}/{}: {} ==> {}\n'.format(
                     index, num_transitions, from_state, to_state)
-                if self.filter_type != 'overview':
-                    yield transition_output.format(state_to=to_state,
-                                                   compare_result=compare_success)
+                yield transition_output.format(state_to=to_state,
+                                               compare_result=compare_success)
                 if to_state == 'otherstate1':
                     yield drned_transition_failed
 
@@ -1090,7 +1098,8 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
         output = self.invoke_action('walk-states', states=self.states, device_timeout=10,
                                     rollback=False)
-        self.check_output(output)
+        assert output.error is None
+        assert output.failure == 'Operation failed'
         with open(os.path.join(self.test_run_dir, 'redirect.output')) as r_out:
             assert r_out.readline() == '\n'
             assert re.match('-+$', r_out.readline()) is not None
@@ -1106,7 +1115,8 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         DrnedWalkOutput(self.states, 'none', xpatch.system)
         output = self.invoke_action('walk-states', states=self.states, rollback=False,
                                     device_timeout=10)
-        self.check_output(output)
+        assert output.error is None
+        assert output.failure == 'Operation failed'
         calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
         assert ''.join(call[0][2] for call in calls) == ''
 

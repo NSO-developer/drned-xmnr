@@ -94,6 +94,39 @@ module drned-xmnr {
         type string;
       }
     }
+    container last-test-results {
+      config false;
+      presence last-test;
+
+      leaf device {
+        type string;
+      }
+      list transition {
+        leaf from {
+          type string;
+        }
+        leaf to {
+          type string;
+        }
+        container failure {
+          presence failure;
+          leaf type {
+            type enumeration {
+              enum load;
+              enum commit;
+              enum compare;
+              enum rollback;
+            }
+          }
+          leaf message {
+            type string;
+          }
+          leaf comment {
+            type string;
+          }
+        }
+      }
+    }
   }
 
   augment /ncs:devices/ncs:device {

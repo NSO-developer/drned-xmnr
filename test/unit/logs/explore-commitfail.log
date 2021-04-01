@@ -1,0 +1,805 @@
+Found 2 states recorded for device hook0 which gives a total of 2 transitions.
+Starting with state empty
+=============================================== test session starts ================================================
+platform linux -- Python 3.8.5, pytest-6.2.2, py-1.9.0, pluggy-0.13.1
+rootdir: /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned-skeleton, configfile: setup.cfg
+plugins: nbval-0.9.6, cov-2.10.1, pyfakefs-4.3.3
+collected 19 items / 18 deselected / 1 selected
+
+src/test_builtin.py complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Tue Mar  30 15:21:33.225 UTC+02:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-03-30 15:21:32 terminal mode
+session paginate false
+Tue Mar  30 15:21:33.315 UTC+02:00
+do show ncs-state | include "ncs-state version"
+Tue Mar  30 15:21:33.379 UTC+02:00
+ncs-state version 5.4.1
+NOTE: Commit queues are enabled!
+============================== load(./hook0.cfg)
+load merge ./hook0.cfg | best-effort
+Tue Mar  30 15:21:33.709 UTC+02:00
+Loading.
+Warning: best-effort is not supported for XML files
+483 bytes parsed in 0.01 sec (28.58 KiB/sec)
+commit
+Tue Mar  30 15:21:33.786 UTC+02:00
+% No modifications to commit.
+no devices device hook0 ned-settings use-transaction-id
+Tue Mar  30 15:21:33.859 UTC+02:00
+commit
+Tue Mar  30 15:21:33.923 UTC+02:00
+% No modifications to commit.
+devices global-settings session-pool idle-time 600
+Tue Mar  30 15:21:33.990 UTC+02:00
+devices global-settings commit-queue retry-attempts 2
+Tue Mar  30 15:21:34.570 UTC+02:00
+devices device hook0 trace raw
+Tue Mar  30 15:21:34.119 UTC+02:00
+java-vm java-logging logger com.tailf.packages.ned level level-all
+Tue Mar  30 15:21:34.194 UTC+02:00
+show full-configuration devices device hook0
+devices device hook0
+ address         127.0.0.1
+ port            12023
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+ authgroup       default
+ device-type netconf ned-id hooks-nc-1.0
+ connect-timeout 60
+ read-timeout    7200
+ write-timeout   7200
+ trace           raw
+ state admin-state unlocked
+!
+
+show full-configuration devices device hook0 device-type
+Tue Mar  30 15:21:34.390 UTC+02:00
+devices device hook0
+ device-type netconf ned-id hooks-nc-1.0
+!
+show full-configuration devices device hook0 ssh
+Tue Mar  30 15:21:34.457 UTC+02:00
+devices device hook0
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+!
+commit
+Tue Mar  30 15:21:34.545 UTC+02:00
+% No modifications to commit.
+show full-configuration devices device hook0 read-timeout
+Tue Mar  30 15:21:34.613 UTC+02:00
+devices device hook0
+ read-timeout 7200
+!
+devices device hook0 connect
+Tue Mar  30 15:21:34.691 UTC+02:00
+result true
+info (admin) Connected to hook0 - 127.0.0.1:12023
+============================== sync_from()
+devices device hook0 sync-from
+Tue Mar  30 15:21:34.803 UTC+02:00
+result true
+top
+Tue Mar  30 15:21:34.980 UTC+02:00
+
+test_template_raw[empty.state.xml]
+
+============================== load(../states/empty.state.xml)
+NOTE: Get load parameters from ../states/empty.state.xml.load
+no devices device hook0 config
+Tue Mar  30 15:21:35.510 UTC+02:00
+load merge ../states/empty.state.xml
+Tue Mar  30 15:21:35.113 UTC+02:00
+Loading.
+169 bytes parsed in 0.01 sec (10.49 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device hook0" | save overwrite drned-work/drned-dry-run.txt
+Tue Mar  30 15:21:35.289 UTC+02:00
+% No modifications to commit.
+
+commit commit-queue sync
+Tue Mar  30 15:21:35.350 UTC+02:00
+% No modifications to commit.
+NOTE: Commit id: None
+============================== compare_config()
+devices device hook0 compare-config
+Tue Mar  30 15:21:35.474 UTC+02:00
+.
+
+================================================= warnings summary =================================================
+../drned/drned/fixtures.py:106
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:106: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:129
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:129: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:141
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:141: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:146
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:146: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:152
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:152: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:179
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:179: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:196
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:196: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:201
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:201: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:206
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:206: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:211
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:211: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:216
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:216: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:221
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:221: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:226
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:226: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:237
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:237: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:242
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:242: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:247
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:247: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:252
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:252: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:257
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:257: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:262
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:262: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+-- Docs: https://docs.pytest.org/en/stable/warnings.html
+================================== 1 passed, 18 deselected, 19 warnings in 2.89s ===================================
+Transition 1/2: empty ==> ip1
+=============================================== test session starts ================================================
+platform linux -- Python 3.8.5, pytest-6.2.2, py-1.9.0, pluggy-0.13.1
+rootdir: /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned-skeleton, configfile: setup.cfg
+plugins: nbval-0.9.6, cov-2.10.1, pyfakefs-4.3.3
+collected 19 items / 18 deselected / 1 selected
+
+src/test_builtin.py complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Tue Mar  30 15:21:36.698 UTC+02:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-03-30 15:21:32 terminal mode
+session paginate false
+Tue Mar  30 15:21:36.784 UTC+02:00
+do show ncs-state | include "ncs-state version"
+Tue Mar  30 15:21:36.846 UTC+02:00
+ncs-state version 5.4.1
+NOTE: Commit queues are enabled!
+============================== load(./hook0.cfg)
+load merge ./hook0.cfg | best-effort
+Tue Mar  30 15:21:37.113 UTC+02:00
+Loading.
+Warning: best-effort is not supported for XML files
+483 bytes parsed in 0.01 sec (38.10 KiB/sec)
+commit
+Tue Mar  30 15:21:37.181 UTC+02:00
+% No modifications to commit.
+no devices device hook0 ned-settings use-transaction-id
+Tue Mar  30 15:21:37.246 UTC+02:00
+commit
+Tue Mar  30 15:21:37.303 UTC+02:00
+% No modifications to commit.
+devices global-settings session-pool idle-time 600
+Tue Mar  30 15:21:37.371 UTC+02:00
+devices global-settings commit-queue retry-attempts 2
+Tue Mar  30 15:21:37.434 UTC+02:00
+devices device hook0 trace raw
+Tue Mar  30 15:21:37.494 UTC+02:00
+java-vm java-logging logger com.tailf.packages.ned level level-all
+Tue Mar  30 15:21:37.562 UTC+02:00
+show full-configuration devices device hook0
+devices device hook0
+ address         127.0.0.1
+ port            12023
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+ authgroup       default
+ device-type netconf ned-id hooks-nc-1.0
+ connect-timeout 60
+ read-timeout    7200
+ write-timeout   7200
+ trace           raw
+ state admin-state unlocked
+!
+
+show full-configuration devices device hook0 device-type
+Tue Mar  30 15:21:37.734 UTC+02:00
+devices device hook0
+ device-type netconf ned-id hooks-nc-1.0
+!
+show full-configuration devices device hook0 ssh
+Tue Mar  30 15:21:37.812 UTC+02:00
+devices device hook0
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+!
+commit
+Tue Mar  30 15:21:37.904 UTC+02:00
+% No modifications to commit.
+show full-configuration devices device hook0 read-timeout
+Tue Mar  30 15:21:37.977 UTC+02:00
+devices device hook0
+ read-timeout 7200
+!
+devices device hook0 connect
+Tue Mar  30 15:21:38.510 UTC+02:00
+result true
+info (admin) Connected to hook0 - 127.0.0.1:12023
+============================== sync_from()
+devices device hook0 sync-from
+Tue Mar  30 15:21:38.155 UTC+02:00
+result true
+top
+Tue Mar  30 15:21:38.314 UTC+02:00
+
+test_template_single[ip1.state.xml]
+
+============================== save(drned-work/before-session.xml)
+save drned-work/before-session.xml xml devices device hook0 config
+Tue Mar  30 15:21:38.396 UTC+02:00
+Saving parts of the configuration.
+============================== save(drned-work/before-session.cfg)
+save drned-work/before-session.cfg  devices device hook0 config
+Tue Mar  30 15:21:38.494 UTC+02:00
+Saving devices device hook0 config
+============================== save(drned-work/before-test.cfg)
+save drned-work/before-test.cfg  devices device hook0 config
+Tue Mar  30 15:21:38.602 UTC+02:00
+Saving devices device hook0 config
+============================== load(../states/ip1.state.xml)
+NOTE: Get load parameters from ../states/ip1.state.xml.load
+no devices device hook0 config
+Tue Mar  30 15:21:38.694 UTC+02:00
+load merge ../states/ip1.state.xml
+Tue Mar  30 15:21:38.758 UTC+02:00
+Loading.
+397 bytes parsed in 0.01 sec (31.26 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device hook0" | save overwrite drned-work/drned-dry-run.txt
+Tue Mar  30 15:21:38.908 UTC+02:00
+native {
+    device {
+        name hook0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="17">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <hosts xmlns="http://tail-f.com/ns/example/hooks">
+                     <name>aa</name>
+                     <gw>1.2.0.1</gw>
+                     <netmask>255.255.0.0</netmask>
+                     <ip>1.2.3.4</ip>
+                   </hosts>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Tue Mar  30 15:21:39.110 UTC+02:00
+commit-queue {
+    id 1617110499034
+    status failed
+    failed-device {
+        name hook0
+        reason RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external
+    }
+}
+Commit complete.
+F
+### TEARDOWN, RESTORE DEVICE ###
+complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Tue Mar  30 15:21:39.654 UTC+02:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-03-30 15:21:32 terminal mode
+session paginate false
+Tue Mar  30 15:21:39.738 UTC+02:00
+no devices device hook0 config
+Tue Mar  30 15:21:39.812 UTC+02:00
+top
+Tue Mar  30 15:21:39.875 UTC+02:00
+============================== load(drned-work/before-session.xml)
+load merge drned-work/before-session.xml
+Tue Mar  30 15:21:39.949 UTC+02:00
+Loading.
+0 bytes parsed in 0.02 sec (0 bytes/sec)
+show config
+Tue Mar  30 15:21:40.400 UTC+02:00
+devices device hook0
+ config
+  no hosts aa
+ !
+!
+============================== commit()
+commit dry-run  outformat native  | exclude "device hook0" | save overwrite drned-work/drned-dry-run.txt
+Tue Mar  30 15:21:40.250 UTC+02:00
+commit no-networking
+Tue Mar  30 15:21:40.362 UTC+02:00
+Commit complete.
+NOTE: Commit id: 10153
+============================== sync_to()
+devices device hook0 sync-to
+Tue Mar  30 15:21:40.547 UTC+02:00
+result true
+============================== compare_config()
+devices device hook0 compare-config
+Tue Mar  30 15:21:40.691 UTC+02:00
+============================== save(drned-work/after-session.cfg)
+save drned-work/after-session.cfg  devices device hook0 config
+Tue Mar  30 15:21:40.779 UTC+02:00
+Saving devices device hook0 config
+
+
+===================================================== FAILURES =====================================================
+_______________________________________ test_template_single[ip1.state.xml] ________________________________________
+../drned/common/test_template.py:88: in test_template_single
+    src,_,_ = _drned_single_file(device, template, op)
+../drned/common/test_template.py:393: in _drned_single_file
+    device.commit(show_dry_run=True)
+../drned/drned/device.py:560: in commit
+    self.cmd("commit commit-queue sync")
+../drned/drned/device.py:803: in cmd
+    self.saw_not("((ERROR|[Ee]rror|[Ff]ailed|[Aa]borted):)|([Ee]rror when|[Ee]xternal error|[Ii]nternal error)")
+../drned/drned/device.py:830: in saw_not
+    pytest.fail("Did not expect \"%s\" in:\n%s" %
+E   Failed: Did not expect "((ERROR|[Ee]rror|[Ff]ailed|[Aa]borted):)|([Ee]rror when|[Ee]xternal error|[Ii]nternal error)" in:
+E   commit commit-queue sync
+E   Tue Mar  30 15:21:39.110 UTC+02:00
+E   commit-queue {
+E       id 1617110499034
+E       status failed
+E       failed-device {
+E           name hook0
+E           reason RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external
+E       }
+E   }
+E   Commit complete.
+================================================= warnings summary =================================================
+../drned/drned/fixtures.py:106
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:106: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:129
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:129: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:141
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:141: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:146
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:146: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:152
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:152: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:179
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:179: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:196
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:196: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:201
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:201: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:206
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:206: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:211
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:211: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:216
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:216: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:221
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:221: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:226
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:226: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:237
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:237: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:242
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:242: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:247
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:247: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:252
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:252: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:257
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:257: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:262
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:262: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+-- Docs: https://docs.pytest.org/en/stable/warnings.html
+============================================= short test summary info ==============================================
+FAILED src/test_builtin.py::test_template_single[ip1.state.xml] - Failed: Did not expect "((ERROR|[Ee]rror|[Ff]ai...
+================================== 1 failed, 18 deselected, 19 warnings in 4.55s ===================================
+Transition failed
+Starting with state ip1
+=============================================== test session starts ================================================
+platform linux -- Python 3.8.5, pytest-6.2.2, py-1.9.0, pluggy-0.13.1
+rootdir: /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned-skeleton, configfile: setup.cfg
+plugins: nbval-0.9.6, cov-2.10.1, pyfakefs-4.3.3
+collected 19 items / 18 deselected / 1 selected
+
+src/test_builtin.py complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Tue Mar  30 15:21:42.200 UTC+02:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-03-30 15:21:32 terminal mode
+session paginate false
+Tue Mar  30 15:21:42.830 UTC+02:00
+do show ncs-state | include "ncs-state version"
+Tue Mar  30 15:21:42.147 UTC+02:00
+ncs-state version 5.4.1
+NOTE: Commit queues are enabled!
+============================== load(./hook0.cfg)
+load merge ./hook0.cfg | best-effort
+Tue Mar  30 15:21:42.439 UTC+02:00
+Loading.
+Warning: best-effort is not supported for XML files
+483 bytes parsed in 0.01 sec (25.66 KiB/sec)
+commit
+Tue Mar  30 15:21:42.523 UTC+02:00
+% No modifications to commit.
+no devices device hook0 ned-settings use-transaction-id
+Tue Mar  30 15:21:42.600 UTC+02:00
+commit
+Tue Mar  30 15:21:42.659 UTC+02:00
+% No modifications to commit.
+devices global-settings session-pool idle-time 600
+Tue Mar  30 15:21:42.728 UTC+02:00
+devices global-settings commit-queue retry-attempts 2
+Tue Mar  30 15:21:42.803 UTC+02:00
+devices device hook0 trace raw
+Tue Mar  30 15:21:42.867 UTC+02:00
+java-vm java-logging logger com.tailf.packages.ned level level-all
+Tue Mar  30 15:21:42.931 UTC+02:00
+show full-configuration devices device hook0
+devices device hook0
+ address         127.0.0.1
+ port            12023
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+ authgroup       default
+ device-type netconf ned-id hooks-nc-1.0
+ connect-timeout 60
+ read-timeout    7200
+ write-timeout   7200
+ trace           raw
+ state admin-state unlocked
+!
+
+show full-configuration devices device hook0 device-type
+Tue Mar  30 15:21:43.119 UTC+02:00
+devices device hook0
+ device-type netconf ned-id hooks-nc-1.0
+!
+show full-configuration devices device hook0 ssh
+Tue Mar  30 15:21:43.187 UTC+02:00
+devices device hook0
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+!
+commit
+Tue Mar  30 15:21:43.282 UTC+02:00
+% No modifications to commit.
+show full-configuration devices device hook0 read-timeout
+Tue Mar  30 15:21:43.349 UTC+02:00
+devices device hook0
+ read-timeout 7200
+!
+devices device hook0 connect
+Tue Mar  30 15:21:43.435 UTC+02:00
+result true
+info (admin) Connected to hook0 - 127.0.0.1:12023
+============================== sync_from()
+devices device hook0 sync-from
+Tue Mar  30 15:21:43.550 UTC+02:00
+result true
+top
+Tue Mar  30 15:21:43.724 UTC+02:00
+
+test_template_raw[ip1.state.xml]
+
+============================== load(../states/ip1.state.xml)
+NOTE: Get load parameters from ../states/ip1.state.xml.load
+no devices device hook0 config
+Tue Mar  30 15:21:43.799 UTC+02:00
+load merge ../states/ip1.state.xml
+Tue Mar  30 15:21:43.860 UTC+02:00
+Loading.
+397 bytes parsed in 0.01 sec (27.22 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device hook0" | save overwrite drned-work/drned-dry-run.txt
+Tue Mar  30 15:21:44.120 UTC+02:00
+native {
+    device {
+        name hook0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="7">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <hosts xmlns="http://tail-f.com/ns/example/hooks">
+                     <name>aa</name>
+                     <gw>1.2.0.1</gw>
+                     <netmask>255.255.0.0</netmask>
+                     <ip>1.2.3.4</ip>
+                   </hosts>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Tue Mar  30 15:21:44.112 UTC+02:00
+commit-queue {
+    id 1617110504206
+    status failed
+    failed-device {
+        name hook0
+        reason RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external
+    }
+}
+Commit complete.
+F
+
+===================================================== FAILURES =====================================================
+_________________________________________ test_template_raw[ip1.state.xml] _________________________________________
+../drned/common/test_template.py:48: in test_template_raw
+    _drned_single_file(device_raw, template, op)
+../drned/common/test_template.py:393: in _drned_single_file
+    device.commit(show_dry_run=True)
+../drned/drned/device.py:560: in commit
+    self.cmd("commit commit-queue sync")
+../drned/drned/device.py:803: in cmd
+    self.saw_not("((ERROR|[Ee]rror|[Ff]ailed|[Aa]borted):)|([Ee]rror when|[Ee]xternal error|[Ii]nternal error)")
+../drned/drned/device.py:830: in saw_not
+    pytest.fail("Did not expect \"%s\" in:\n%s" %
+E   Failed: Did not expect "((ERROR|[Ee]rror|[Ff]ailed|[Aa]borted):)|([Ee]rror when|[Ee]xternal error|[Ii]nternal error)" in:
+E   commit commit-queue sync
+E   Tue Mar  30 15:21:44.112 UTC+02:00
+E   commit-queue {
+E       id 1617110504206
+E       status failed
+E       failed-device {
+E           name hook0
+E           reason RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external
+E       }
+E   }
+E   Commit complete.
+================================================= warnings summary =================================================
+../drned/drned/fixtures.py:106
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:106: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:129
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:129: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:141
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:141: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:146
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:146: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:152
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:152: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:179
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:179: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:196
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:196: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:201
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:201: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:206
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:206: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:211
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:211: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:216
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:216: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:221
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:221: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:226
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:226: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:237
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:237: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:242
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:242: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:247
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:247: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:252
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:252: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:257
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:257: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:262
+  /home/martin/devel/xmnr/ncs/xmnr-run/hook0/test/drned/drned/fixtures.py:262: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+-- Docs: https://docs.pytest.org/en/stable/warnings.html
+============================================= short test summary info ==============================================
+FAILED src/test_builtin.py::test_template_raw[ip1.state.xml] - Failed: Did not expect "((ERROR|[Ee]rror|[Ff]ailed...
+================================== 1 failed, 18 deselected, 19 warnings in 2.86s ===================================
+Failed to initialize state ip1
