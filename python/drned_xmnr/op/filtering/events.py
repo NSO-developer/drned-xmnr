@@ -36,37 +36,37 @@ class InitialPrepareEvent(LineOutputEvent):
         super(InitialPrepareEvent, self).__init__('Prepare the device')
 
 
-class InitStates(LineOutputEvent):
+class InitStatesEvent(LineOutputEvent):
     pass
 
 
-class StartState(LineOutputEvent):
+class StartStateEvent(LineOutputEvent):
     def __init__(self, line, state):
-        super(StartState, self).__init__(line)
+        super(StartStateEvent, self).__init__(line)
         self.state = state
 
 
-class Transition(LineOutputEvent):
+class TransitionEvent(LineOutputEvent):
     pass
 
 
-class InitFailed(LineOutputEvent):
+class InitFailedEvent(LineOutputEvent):
     pass
 
 
-class TransFailed(LineOutputEvent):
+class TransFailedEvent(LineOutputEvent):
     pass
 
 
-class PyTest(LineOutputEvent):
+class PyTestEvent(LineOutputEvent):
     def produce_line(self):
         state = self.state_name_regexp.search(self.line).groups()[0]
         return 'Test transition to {}'.format(state)
 
 
-class DrnedPrepare(LineOutputEvent):
+class DrnedPrepareEvent(LineOutputEvent):
     def __init__(self):
-        super(DrnedPrepare, self).__init__('')
+        super(DrnedPrepareEvent, self).__init__('')
 
     def produce_line(self):
         return self.indent_line('prepare the device')
@@ -136,9 +136,9 @@ class DrnedCommitNNEvent(DrnedCommitEvent):
         return self.indent_line('commit no networking...')
 
 
-class DrnedCommitResult(DrnedCommitEvent):
+class DrnedCommitResultEvent(DrnedCommitEvent):
     def __init__(self, line, success):
-        super(DrnedCommitResult, self).__init__(line)
+        super(DrnedCommitResultEvent, self).__init__(line)
         self.success = success
 
     def __str__(self):
@@ -149,9 +149,9 @@ class DrnedCommitResult(DrnedCommitEvent):
         return self.indent_line(line)
 
 
-class DrnedEmptyCommit(DrnedCommitResult):
+class DrnedEmptyCommitEvent(DrnedCommitResultEvent):
     def __init__(self):
-        super(DrnedEmptyCommit, self).__init__('    (no modifications)', True)
+        super(DrnedEmptyCommitEvent, self).__init__('    (no modifications)', True)
 
     def __str__(self):
         return 'Drned empty commit event'
@@ -160,17 +160,17 @@ class DrnedEmptyCommit(DrnedCommitResult):
         return self.indent_line(self.line)
 
 
-class DrnedCommitComplete(DrnedCommitResult):
+class DrnedCommitCompleteEvent(DrnedCommitResultEvent):
     def __init__(self, line):
-        super(DrnedCommitComplete, self).__init__(line, True)
+        super(DrnedCommitCompleteEvent, self).__init__(line, True)
 
     def __str__(self):
         return 'Drned commit complete event'
 
 
-class DrnedFailureReason(DrnedCommitEvent):
+class DrnedFailureReasonEvent(DrnedCommitEvent):
     def __init__(self, reason):
-        super(DrnedFailureReason, self).__init__('')
+        super(DrnedFailureReasonEvent, self).__init__('')
         self.reason = reason
 
     def __str__(self):
@@ -211,9 +211,9 @@ class DrnedFailedStatesEvent(LineOutputEvent):
         return 'Failed States {}'.format(self.failed_states)
 
 
-class DrnedTeardown(LineOutputEvent):
+class DrnedTeardownEvent(LineOutputEvent):
     def __init__(self):
-        super(DrnedTeardown, self).__init__('')
+        super(DrnedTeardownEvent, self).__init__('')
 
     def __str__(self):
         return 'Drned teardown event'
@@ -222,9 +222,9 @@ class DrnedTeardown(LineOutputEvent):
         return 'Device cleanup'
 
 
-class DrnedRestore(DrnedActionEvent):
+class DrnedRestoreEvent(DrnedActionEvent):
     def __init__(self):
-        super(DrnedRestore, self).__init__('restore', 'load before-session')
+        super(DrnedRestoreEvent, self).__init__('restore', 'load before-session')
 
 
 class TerminateEvent(LineOutputEvent):
@@ -292,25 +292,25 @@ def event_generator(consumer):
             if match is None:
                 continue
             if match.lastgroup == 'start':
-                consumer.send(StartState(match.string, match.groupdict()['state']))
-                consumer.send(DrnedPrepare())
+                consumer.send(StartStateEvent(match.string, match.groupdict()['state']))
+                consumer.send(DrnedPrepareEvent())
             elif match.lastgroup == 'init_failed':
-                consumer.send(InitFailed(match.string))
+                consumer.send(InitFailedEvent(match.string))
             elif match.lastgroup == 'trans_failed':
-                consumer.send(TransFailed(match.string))
+                consumer.send(TransFailedEvent(match.string))
             elif match.lastgroup == 'transition':
-                consumer.send(Transition(match.string))
-                consumer.send(DrnedPrepare())
+                consumer.send(TransitionEvent(match.string))
+                consumer.send(DrnedPrepareEvent())
             elif match.lastgroup == 'py_test':
-                consumer.send(PyTest(match.string))
+                consumer.send(PyTestEvent(match.string))
             elif match.lastgroup == 'init_states':
-                consumer.send(InitStates(match.string))
+                consumer.send(InitStatesEvent(match.string))
             elif match.lastgroup == 'drned_load':
                 consumer.send(DrnedLoadEvent(match.string))
             elif match.lastgroup == 'drned':
                 consumer.send(DrnedActionEvent(match.string, match.groupdict()['drned_op']))
             elif match.lastgroup == 'no_modifs':
-                consumer.send(DrnedEmptyCommit())
+                consumer.send(DrnedEmptyCommitEvent())
             elif match.lastgroup == 'commit_queue':
                 consumer.send(DrnedCommitQueueEvent())
             elif match.lastgroup == 'commit_noqueue':
@@ -318,16 +318,16 @@ def event_generator(consumer):
             elif match.lastgroup == 'commit_nn':
                 consumer.send(DrnedCommitNNEvent())
             elif match.lastgroup == 'commit_result':
-                consumer.send(DrnedCommitResult(match.string,
+                consumer.send(DrnedCommitResultEvent(match.string,
                                                 match.groupdict()['result'] == 'completed'))
             elif match.lastgroup == 'commit_complete':
-                consumer.send(DrnedCommitComplete(match.string))
+                consumer.send(DrnedCommitCompleteEvent(match.string))
             elif match.lastgroup == 'failure_reason':
-                consumer.send(DrnedFailureReason(match.groupdict()['reason']))
+                consumer.send(DrnedFailureReasonEvent(match.groupdict()['reason']))
             elif match.lastgroup == 'teardown':
-                consumer.send(DrnedTeardown())
+                consumer.send(DrnedTeardownEvent())
             elif match.lastgroup == 'restore':
-                consumer.send(DrnedRestore())
+                consumer.send(DrnedRestoreEvent())
             elif match.lastgroup == 'diff':
                 consumer.send(DrnedCompareEvent(False))
             elif match.lastgroup == 'failed_states':

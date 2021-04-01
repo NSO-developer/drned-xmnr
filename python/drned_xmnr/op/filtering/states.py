@@ -16,11 +16,11 @@ two effects:
 
 import collections
 
-from .events import DrnedPrepare, DrnedLoadEvent, DrnedActionEvent, InitStates, StartState, \
-    InitFailed, Transition, InitialPrepareEvent, TransFailed, PyTest, DrnedFailedStatesEvent, \
-    DrnedTeardown, DrnedRestore, DrnedEmptyCommit, DrnedCommitNoqueueEvent, DrnedCommitNNEvent, \
-    DrnedCommitResult, DrnedCommitQueueEvent, DrnedCommitEvent, DrnedFailureReason, \
-    DrnedCommitComplete, DrnedCompareEvent
+from .events import DrnedPrepareEvent, DrnedLoadEvent, DrnedActionEvent, InitStatesEvent, StartStateEvent, \
+    InitFailedEvent, TransitionEvent, InitialPrepareEvent, TransFailedEvent, PyTestEvent, DrnedFailedStatesEvent, \
+    DrnedTeardownEvent, DrnedRestoreEvent, DrnedEmptyCommitEvent, DrnedCommitNoqueueEvent, DrnedCommitNNEvent, \
+    DrnedCommitResultEvent, DrnedCommitQueueEvent, DrnedCommitEvent, DrnedFailureReasonEvent, \
+    DrnedCommitCompleteEvent, DrnedCompareEvent
 from .cort import coroutine
 
 
@@ -29,7 +29,7 @@ TransitionDesc = collections.namedtuple('TransitionDesc',
 
 
 class TransitionEventContext(object):
-    '''Transition event context.
+    '''TransitionEvent event context.
 
     An instance of the context stores events of all transitions.  An event is a
     state file load, commit, rollback and so on; an event is also a failure of
@@ -106,9 +106,9 @@ class LogStateMachine(object):
 
     '''
 
-    evtclasses = {InitStates, StartState, Transition,
-                  InitFailed, TransFailed, InitialPrepareEvent,
-                  PyTest, DrnedTeardown}
+    evtclasses = {InitStatesEvent, StartStateEvent, TransitionEvent,
+                  InitFailedEvent, TransFailedEvent, InitialPrepareEvent,
+                  PyTestEvent, DrnedTeardownEvent}
 
     def __init__(self, level, init_state, context=None):
         self.stack = [init_state]
@@ -169,13 +169,13 @@ class TransitionTestState(LogState):
     name = 'transition-test'
 
     def handle(self, event):
-        return (False, [TransitionState()], DrnedPrepare())
+        return (False, [TransitionState()], DrnedPrepareEvent())
 
 
 class TransitionState(LogState):
 
     '''
-    Transition -> (Commit)* Load Commit Compare (Rollback Commit Compare)*
+    TransitionEvent -> (Commit)* Load Commit Compare (Rollback Commit Compare)*
 
     The first commits are just ignored.
     '''
@@ -211,7 +211,7 @@ class ExploreState(LogState):
 
     def handle(self, event):
         return (False,
-                [GenState(InitStates), ExploreTransitionsState()])
+                [GenState(InitStatesEvent), ExploreTransitionsState()])
 
 
 class WalkState(LogState):
@@ -232,14 +232,14 @@ class ExploreTransitionsState(LogState):
     name = 'explore'
 
     def handle(self, event):
-        if isinstance(event, StartState):
+        if isinstance(event, StartStateEvent):
             return (True,
-                    [GenState(DrnedPrepare), TransitionState(), ExtendedTransitionsState(), self],
+                    [GenState(DrnedPrepareEvent), TransitionState(), ExtendedTransitionsState(), self],
                     event)
         return (True, [self])
 
     def update_context(self, context, event):
-        if isinstance(event, StartState):
+        if isinstance(event, StartStateEvent):
             context.start_explore(event.state)
 
 
@@ -254,11 +254,11 @@ class ExtendedTransitionsState(LogState):
     name = 'extended-transitions'
 
     def handle(self, event):
-        if isinstance(event, InitFailed):
+        if isinstance(event, InitFailedEvent):
             return (True, [], event)
-        if isinstance(event, Transition):
-            return (True, [GenState(DrnedPrepare), TransitionState(),
-                           GenState(TransFailed), GenState(InitFailed),
+        if isinstance(event, TransitionEvent):
+            return (True, [GenState(DrnedPrepareEvent), TransitionState(),
+                           GenState(TransFailedEvent), GenState(InitFailedEvent),
                            TeardownState(), self],
                     event)
         return (False, [])
@@ -286,7 +286,7 @@ class GenState(LogState):
 
 class WalkTransitionsState(LogState):
     '''
-    WT -> (pytest? Transition)* Teardown
+    WT -> (pytest? TransitionEvent)* Teardown
 
     It is a top-most state, it is always on the stack.
     '''
@@ -294,7 +294,7 @@ class WalkTransitionsState(LogState):
     name = 'transitions'
 
     def handle(self, event):
-        if isinstance(event, PyTest):
+        if isinstance(event, PyTestEvent):
             return (True, [TransitionState(), self], event)
         if isinstance(event, DrnedFailedStatesEvent):
             return (True, [], event)
@@ -302,24 +302,24 @@ class WalkTransitionsState(LogState):
             # this happens in case of state groups; the first event of
             # a state transition is load then
             return (False, [TransitionState(), self])
-        if isinstance(event, DrnedTeardown):
+        if isinstance(event, DrnedTeardownEvent):
             return (False, [TeardownState(), self])
         return (True, [self])
 
 
 class TeardownState(LogState):
     '''
-    Teardown -> teardown Restore Commit Compare TransFailed?
+    Teardown -> teardown Restore Commit Compare TransFailedEvent?
     '''
     name = 'teardown'
 
     def handle(self, event):
-        if isinstance(event, DrnedTeardown):
+        if isinstance(event, DrnedTeardownEvent):
             return (True,
-                    [GenState(DrnedRestore),
+                    [GenState(DrnedRestoreEvent),
                      ActionState('commit', [CommitState()]),
                      ActionState('compare_config', [CompareState()]),
-                     GenState(TransFailed)],
+                     GenState(TransFailedEvent)],
                     event)
         return (False, [])
 
@@ -385,11 +385,11 @@ class CommitState(LogState):
     name = 'commit'
 
     def handle(self, event):
-        if isinstance(event, DrnedEmptyCommit):
+        if isinstance(event, DrnedEmptyCommitEvent):
             return (True, [self])
         if isinstance(event, DrnedCommitNoqueueEvent) or \
            isinstance(event, DrnedCommitNNEvent):
-            return (True, [GenState(DrnedCommitResult)])
+            return (True, [GenState(DrnedCommitResultEvent)])
         if isinstance(event, DrnedCommitQueueEvent):
             return (True, [CommitQueueState()])
         return (False, [])
@@ -419,12 +419,12 @@ class CommitQueueState(LogState):
     name = 'commit queue'
 
     def handle(self, event):
-        if isinstance(event, DrnedEmptyCommit):
+        if isinstance(event, DrnedEmptyCommitEvent):
             return (True, [], event)
-        if isinstance(event, DrnedCommitResult) and \
+        if isinstance(event, DrnedCommitResultEvent) and \
            not event.success:
             return (True, [CommitFailure(), CommitCompleteState()])
-        return (False, [GenState(DrnedCommitResult), CommitCompleteState()])
+        return (False, [GenState(DrnedCommitResultEvent), CommitCompleteState()])
 
 
 class CommitFailure(LogState):
@@ -432,9 +432,9 @@ class CommitFailure(LogState):
     '''
 
     def handle(self, event):
-        if isinstance(event, DrnedFailureReason):
+        if isinstance(event, DrnedFailureReasonEvent):
             return (True, [], event)
-        return (False, [], DrnedCommitResult('', False))
+        return (False, [], DrnedCommitResultEvent('', False))
 
     def update_context(self, context, event):
         return context.fail_transition(event.reason)
@@ -447,7 +447,7 @@ class CommitCompleteState(LogState):
     def handle(self, event):
         # a commit success/failure message can be followed by "Commit
         # complete" - this needs to be swallowed
-        return (isinstance(event, DrnedCommitComplete), [])
+        return (isinstance(event, DrnedCommitCompleteEvent), [])
 
 
 class CompareState(LogState):
