@@ -333,7 +333,7 @@ class ImportConvertCliFiles(ImportOp):
         self.failures = []
         self.devcli_error = None
 
-        result, _ = self.run_in_drned_env(args, timeout=120, NC_WORKDIR=workdir)
+        result, _ = self.run_in_drned_env(args, timeout=self.device_timeout, NC_WORKDIR=workdir)
         if self.devcli_error is not None:
             raise ActionError('No device driver definition found')
         if result != 0 and not self.failures:
