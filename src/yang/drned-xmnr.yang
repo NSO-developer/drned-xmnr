@@ -140,6 +140,12 @@ module drned-xmnr {
           "How long should XMNR wait for a test to do clean-up in case
            of an action abort.";
       }
+      leaf driver {
+        type string;
+        tailf:info
+          "Absolute filesystem path to a file of the device driver
+           implementation to service the device-dependent DrNED XMNR actions.";
+      }
       container setup {
         tailf:action setup-xmnr {
           tailf:info
@@ -295,13 +301,6 @@ module drned-xmnr {
             leaf file-path-pattern {
               type filepath-pattern-type;
               mandatory true;
-            }
-            leaf cli-device {
-              tailf:info
-                "The identification of the CLI device and its device
-                 driver; the name of the current device is used as the
-                 default.";
-              type string;
             }
             leaf overwrite {
               type boolean;
@@ -502,6 +501,24 @@ module drned-xmnr {
               uses node-coverage;
             }
           }
+        }
+      }
+      tailf:action load-default-config {
+        tailf:info
+          "Reset device to the default state by loading a previously stored
+           configuration file in native CLI format.";
+        tailf:actionpoint drned-xmnr;
+        input {
+          leaf device-timeout {
+            tailf:info
+              "How long should XMNR wait for a device to respond (or
+                how long to wait for an expected response).";
+            type uint16;
+            default 120;
+          }
+        }
+        output {
+          uses action-output-common;
         }
       }
     }
