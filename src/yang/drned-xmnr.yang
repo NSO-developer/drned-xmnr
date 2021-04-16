@@ -140,6 +140,13 @@ module drned-xmnr {
           "How long should XMNR wait for a test to do clean-up in case
            of an action abort.";
       }
+      leaf driver-name {
+        type string;
+        default 'device-driver.py';
+        tailf:info
+          "Filename of the device driver implementation to service
+           the device-dependent DrNED XMNR actions.";
+      }
       container setup {
         tailf:action setup-xmnr {
           tailf:info
@@ -296,7 +303,7 @@ module drned-xmnr {
               type filepath-pattern-type;
               mandatory true;
             }
-            leaf cli-device {
+            leaf driver-name {
               tailf:info
                 "The identification of the CLI device and its device
                  driver; the name of the current device is used as the
@@ -503,6 +510,12 @@ module drned-xmnr {
             }
           }
         }
+      }
+      tailf:action load-default-config {
+        tailf:info
+          "Reset device to the default state by loading a previously stored
+           configuration file in native CLI format.";
+        tailf:actionpoint drned-xmnr;
       }
     }
   }
