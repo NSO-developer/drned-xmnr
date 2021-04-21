@@ -47,7 +47,9 @@ class XmnrBase(object):
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
         self.using_builtin_drned = root.drned_xmnr.drned_directory == "builtin"
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
-        self.cleanup_timeout = root.devices.device[self.dev_name].drned_xmnr.cleanup_timeout
+        device_xmnr_node = root.devices.device[self.dev_name].drned_xmnr
+        self.cleanup_timeout = device_xmnr_node.cleanup_timeout
+        self.driver_name = device_xmnr_node.driver_name
         try:
             os.makedirs(self.states_dir)
         except OSError:
@@ -138,15 +140,7 @@ class ActionBase(XmnrBase):
         self.abort_lock = threading.Lock()
         self.maapi = maapi.Maapi()
         self.run_with_trans(self._setup_xmnr)
-        self.run_with_trans(self._init_action_model_data)
         self._init_params(params)
-
-    def _init_action_model_data(self, trans):
-        """ Load data related to XMNR actions from device's model.
-        """
-        maapi_root = maagic.get_root(trans)
-        device_xmnr_node = maapi_root.devices.device[self.dev_name].drned_xmnr
-        self.driver_name = device_xmnr_node.driver_name
 
     def _init_params(self, params):
         # Implement in subclasses

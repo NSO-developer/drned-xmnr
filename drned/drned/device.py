@@ -486,7 +486,7 @@ class Device(object):
             self
         """
         self.trace(INDENT + inspect.stack()[0][3] + "()")
-        self.cmd("devices device %s load-default-config" %
+        self.cmd("devices device %s drned-xmnr load-default-config" %
                  self.name, expect="result true")
         return self
 
@@ -888,10 +888,7 @@ class Device(object):
 
         # If the previous NETCONF attempts failed, try native device CLI.
         if not succeeded:
-            try:
-                self.reload_default_config()
-            except:
-                raise
+            self.reload_default_config()
 
         # Check if restore successful
         self.save("drned-work/after-session.cfg")

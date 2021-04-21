@@ -12,7 +12,7 @@ from time import sleep
 
 import drned
 
-from devcli import *
+from devcli import Devcli, XDevice, os_makedirs
 
 
 testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
@@ -70,13 +70,14 @@ def cli2netconf(devname, driver_name, *args):
         del args[0:2]
     else:
         timeout = 120
+    driver = driver_name if driver_name else devname
     fnames = args
     module_path = os.path.realpath(os.path.dirname(fnames[0]))
     workdir = os.path.realpath(os.environ['NC_WORKDIR'])
     os_makedirs(workdir, exist_ok=True)
     os_makedirs('drned-work', exist_ok=True)  # device needs that
     with closing(XDevice(devname)) as device, \
-            closing(Devcli(driver_name, module_path, workdir, timeout)) as devcli:
+            closing(Devcli(driver, module_path, workdir, timeout)) as devcli:
         _cli2netconf(device, devcli, fnames)
 
 

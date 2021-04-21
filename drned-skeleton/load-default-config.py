@@ -4,7 +4,7 @@ from contextlib import closing
 import os
 import sys
 
-from devcli import *
+from devcli import Devcli, XDevice
 
 
 def _load_default_config(nso_device, target_device):
@@ -12,17 +12,16 @@ def _load_default_config(nso_device, target_device):
     nso_device.sync_from()
 
 
-def load_default_config(*args):
-    args = list(args)
-    assert len(args) == 2
-    dev_name, driver_name = args
-    timeout = 120 # TODO - should be global parameter of device/actions
-    # TODO - should not be mandatory params?
+def load_default_config(dev_name, driver_name, timeout, *args):
     module_path = None
     workdir = None
-    nso_device = closing(XDevice(dev_name))
-    target_device = closing(Devcli(driver_name, module_path, workdir, timeout))
-    with nso_device, target_device:
+
+    def init_nso_dev() = closing(XDevice(dev_name))
+
+    def init_cli_dev() = closing(Devcli(driver_name, module_path, workdir,
+                                 timeout))
+
+    with init_nso_dev() as nso_device, init_cli_dev() as target_device:
         _load_default_config(nso_device, target_device)
 
 
@@ -30,6 +29,7 @@ def load_default_config(*args):
 #
 #  - device-name: device name; the device must be configured by DrNED/XMNR
 #  - driver-module: device driver file to be executed to do the config reload
+#  - timeout: operation execution time limit to perform the request
 #
 #  First, the CLI device driver in the form <name>.py is looked up:
 #

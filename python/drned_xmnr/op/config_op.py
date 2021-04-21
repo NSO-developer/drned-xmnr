@@ -343,7 +343,6 @@ class ImportConvertCliFiles(ImportOp):
 
     def _init_params(self, params):
         super(ImportConvertCliFiles, self)._init_params(params)
-        self.devcli = self.param_default(params, "driver_name", self.dev_name)
         self.device_timeout = params.device_timeout
 
     def cli_filter(self, msg):

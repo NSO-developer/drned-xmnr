@@ -13,16 +13,21 @@ class LoadDefaultConfigOp(ActionBase):
     """
     action_name = 'xmnr load-default-config'
 
+    def _init_params(self, params):
+        super(LoadDefaultConfigOp, self)._init_params(params)
+        self.device_timeout = params.device_timeout
+
     def perform(self):
         args = [
             'python', 'load-default-config.py',
-            self.dev_name, self.driver_name,
+            self.dev_name, self.driver_name, self.device_timeout
         ]
-        workdir = 'drned-ncs' # TODO - make this global across XMNR actions!
+        workdir = 'drned-ncs'
 
         try:
-            self.run_in_drned_env(args, NC_WORKDIR=workdir)
-        except:
+            self.run_in_drned_env(args, timeout=self.device_timeout,
+                                  NC_WORKDIR=workdir)
+        except BaseException:
             raise ActionError('Failed to load default configuration!')
 
-        return {"success": "Loaded initial config."}
+        return {'success': 'Loaded initial config.'}
