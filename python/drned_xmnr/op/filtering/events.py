@@ -319,7 +319,7 @@ def event_generator(consumer):
                 consumer.send(DrnedCommitNNEvent())
             elif match.lastgroup == 'commit_result':
                 consumer.send(DrnedCommitResultEvent(match.string,
-                                                match.groupdict()['result'] == 'completed'))
+                                                     match.groupdict()['result'] == 'completed'))
             elif match.lastgroup == 'commit_complete':
                 consumer.send(DrnedCommitCompleteEvent(match.string))
             elif match.lastgroup == 'failure_reason':
