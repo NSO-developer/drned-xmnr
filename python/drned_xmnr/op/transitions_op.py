@@ -247,9 +247,9 @@ class WalkTransitionsOp(TransitionsOp):
 
         """
         sets = set()
-        sfx = re.compile(r'(.*):\d+')
+        sfx = re.compile(r'(.*):\d+$')
         for state in states:
-            mm = sfx.fullmatch(state)
+            mm = sfx.match(state)
             if mm is None:
                 yield state
             else:
