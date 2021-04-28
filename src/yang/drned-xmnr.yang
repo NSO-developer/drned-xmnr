@@ -115,7 +115,9 @@ module drned-xmnr {
               enum load;
               enum commit;
               enum compare;
-              enum rollback;
+              enum rollback {
+                tailf:code-name rollback_failure;
+              }
             }
           }
           leaf message {

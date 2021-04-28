@@ -7,6 +7,8 @@ FXS = $(SRC:yang/%.yang=../load-dir/%.fxs)
 CLI = $(wildcard *.cli)
 CCL = $(CLI:%.cli=../load-dir/%.ccl)
 
+NCSC_FLAGS = --fail-on-warnings
+
 ../load-dir/%.ccl:	%.cli
 	$(NCSC) -c $< -o $@
 
@@ -15,8 +17,9 @@ py:
 
 ../load-dir/%.fxs:	yang/%.yang
 	$(NCSC)  `ls $*-ann.yang  > /dev/null 2>&1 && echo "-a $*-ann.yang"` \
-             $(YANGPATH) -c -o $@ $<
-	$(NCSC) --emit-python ../python/drned_xmnr/namespaces/$(notdir $(basename $<)).py $@
+             $(NCSC_FLAGS) $(YANGPATH) -c -o $@ $<
+	$(NCSC) --emit-python ../python/drned_xmnr/namespaces/$(notdir $(basename $<)).py \
+	     $(NCSC_FLAGS) $@
 	test -f ../python/drned_xmnr/namespaces/__init__.py || touch ../python/drned_xmnr/namespaces/__init__.py
 
 all:	$(FXS) $(CCL) py
