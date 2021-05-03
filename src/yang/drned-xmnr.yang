@@ -140,11 +140,11 @@ module drned-xmnr {
           "How long should XMNR wait for a test to do clean-up in case
            of an action abort.";
       }
-      leaf driver-name {
+      leaf driver-file {
         type string;
         tailf:info
-          "Filename of the device driver implementation to service
-           the device-dependent DrNED XMNR actions.";
+          "Absolute path to a file of the device driver implementation
+           to service the device-dependent DrNED XMNR actions.";
       }
       container setup {
         tailf:action setup-xmnr {

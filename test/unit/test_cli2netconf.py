@@ -17,7 +17,7 @@ class MockDevcli(object):
         self.methods = {'save_config', 'clean_config',
                         'clean', 'save'}
 
-    def inst_init(self, driver_name, module_path, workdir, timeout):
+    def inst_init(self, driver_file, workdir, timeout):
         self.workdir = workdir
 
     def load_config(self, filename):

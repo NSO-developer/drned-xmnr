@@ -46,9 +46,8 @@ class XDevice(drned.Device):
 
 
 class Devcli:
-    def __init__(self, module_name, module_path, workdir, timeout):
-        self.module_name = module_name
-        self.module_path = module_path
+    def __init__(self, driver_file, workdir, timeout):
+        self.driver_file = driver_file
         self.workdir = workdir
         self.initial_config = 'drned-init'
         self.trace = None
@@ -62,23 +61,19 @@ class Devcli:
             self.cli.close()
 
     def _find_driver(self):
-        for base in [self.module_path, '.']:
-            for subpath in ['.', 'device']:
-                self.path = os.path.join(base, subpath)
-                d = os.path.join(self.path, self.module_name + '.py')
-                if os.path.isfile(d):
-                    return
+        if os.path.isfile(self.driver_file):
+            return
         raise DevcliException('No device definition found')
 
     def _read_device_config(self):
         self._find_driver()
-        sys.path.append(self.path)
-        module = importlib.import_module(self.module_name)
+        # sys.path.append(self.path)
+        module = importlib.import_module(self.driver_file)
         for m in dir(module):
             if not m.startswith("__"):
                 setattr(self, m, getattr(module, m))
 
-        self.devcfg = self.Devcfg(self.path, self.module_name)
+        self.devcfg = self.Devcfg(self.path, self.driver_file)
         self.ssh = "ssh -o StrictHostKeyChecking=no" + \
                    " -o UserKnownHostsFile=/dev/null" + \
                    " -o PasswordAuthentication=yes" + \
@@ -196,3 +191,13 @@ class Devcli:
                 self.cli.sendline(cmd)
         if state == "failure":
             raise DevcliException("failed to move to state " + init_state)
+
+
+def devcli_init_dirs():
+    """ Initialize directories needed by DrNED device.
+    Returns working directory.
+    """
+    os_makedirs('drned-work', exist_ok=True)
+    workdir = os.path.realpath(os.environ['NC_WORKDIR'])
+    os_makedirs(workdir, exist_ok=True)
+    return workdir

@@ -352,7 +352,7 @@ class ImportConvertCliFiles(ImportOp):
 
     def perform(self):
         filenames, states, _ = self.verify_filenames()
-        args = ['python', 'cli2netconf.py', self.dev_name, self.driver_name,
+        args = ['python', 'cli2netconf.py', self.dev_name, self.driver_file,
                 '-t', str(self.device_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
         workdir = 'drned-ncs'

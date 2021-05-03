@@ -49,7 +49,7 @@ class XmnrBase(object):
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
         device_xmnr_node = root.devices.device[self.dev_name].drned_xmnr
         self.cleanup_timeout = device_xmnr_node.cleanup_timeout
-        self.driver_name = device_xmnr_node.driver_name
+        self.driver_file = device_xmnr_node.driver_file
         try:
             os.makedirs(self.states_dir)
         except OSError:

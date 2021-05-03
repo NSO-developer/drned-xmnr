@@ -20,14 +20,15 @@ class LoadDefaultConfigOp(ActionBase):
     def perform(self):
         args = [
             'python', 'load-default-config.py',
-            self.dev_name, self.driver_name, self.device_timeout
+            self.dev_name, self.driver_file, str(self.device_timeout)
         ]
         workdir = 'drned-ncs'
 
         try:
             self.run_in_drned_env(args, timeout=self.device_timeout,
                                   NC_WORKDIR=workdir)
-        except BaseException:
+        except BaseException as e:
+            self.log.debug("Exception: " + repr(e))
             raise ActionError('Failed to load default configuration!')
 
         return {'success': 'Loaded initial config.'}

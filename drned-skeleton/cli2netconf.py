@@ -12,7 +12,7 @@ from time import sleep
 
 import drned
 
-from devcli import Devcli, XDevice, os_makedirs
+from devcli import Devcli, XDevice, devcli_init_dirs
 
 
 testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
@@ -63,29 +63,25 @@ def _cli2netconf(device, devcli, fnames):
     device.sync_from()
 
 
-def cli2netconf(devname, driver_name, *args):
+def cli2netconf(devname, driver_file, *args):
     args = list(args)
     if args[0] == '-t':
         timeout = int(args[1])
         del args[0:2]
     else:
         timeout = 120
-    driver = driver_name if driver_name else devname
     fnames = args
-    module_path = os.path.realpath(os.path.dirname(fnames[0]))
-    workdir = os.path.realpath(os.environ['NC_WORKDIR'])
-    os_makedirs(workdir, exist_ok=True)
-    os_makedirs('drned-work', exist_ok=True)  # device needs that
+    workdir = devcli_init_dirs()
     with closing(XDevice(devname)) as device, \
-            closing(Devcli(driver, module_path, workdir, timeout)) as devcli:
+            closing(Devcli(driver_file, workdir, timeout)) as devcli:
         _cli2netconf(device, devcli, fnames)
 
 
-# Usage: cli2netconf.py netconf-device driver-name [-t timeout] [files]
+# Usage: cli2netconf.py netconf-device driver-file [-t timeout] [files]
 #
 #  netconf-device: device name; the device must be configured by Drned/XMNR
 #
-#  driver-name: behavior is given by "device drivers"
+#  driver-file: behavior is given by "device drivers"
 #
 #  files: file names
 #
