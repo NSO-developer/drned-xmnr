@@ -87,6 +87,7 @@ class Devcli:
             try:
                 self.cli = pexpect.spawn(self.ssh, timeout=self.timeout,
                                          logfile=sys.stdout, **pexpect_args)
+                self.interstate_one("enter")
             except Exception as exc:
                 e = exc
             else:
@@ -104,7 +105,7 @@ class Devcli:
         """
         self._banner(fname)
         self.data = fname
-        self.interstate(["enter", "put", "exit"])
+        self.interstate(["put", "exit"])
         return self
 
     def get_config(self, fname):
@@ -116,7 +117,7 @@ class Devcli:
             os.remove(fname)
         except OSError:
             pass
-        self.interstate(["enter", "get", "exit"])
+        self.interstate(["get", "exit"])
         if not os.path.isfile(fname):
             raise DevcliException("Failed to get config into %s" % fname)
         return self
@@ -130,7 +131,7 @@ class Devcli:
             fname = self.initial_config
         self._banner(fname)
         self.data = fname
-        self.interstate(["enter", "restore", "exit"])
+        self.interstate(["restore", "exit"])
         if self.trace:
             self.trace(self.cli.before + self.cli.after)
         return self
@@ -147,7 +148,7 @@ class Devcli:
             fname = self.initial_config
         self._banner(fname)
         self.data = fname
-        self.interstate(["enter", "save", "exit"])
+        self.interstate(["save", "exit"])
         if self.trace:
             self.trace(self.cli.before + self.cli.after)
         return self
