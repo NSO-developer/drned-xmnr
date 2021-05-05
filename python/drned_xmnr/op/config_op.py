@@ -196,7 +196,17 @@ class ImportStateFiles(ImportOp):
                 # difficult...
                 cf_filename = self.state_name_to_existing_filename(target)
                 self.remove_state_file(cf_filename)
-            self.import_file(source, target)
+            try:
+                self.import_file(source, target)
+            except etree.XMLSyntaxError:
+                msg = ('the file {} does not appear to be valid XML, '
+                       'perhaps you wanted c-style format instead?').format(source)
+                raise ActionError(msg)
+            except _ncs.error.Error as err:
+                msg = ('the file {} could not be loaded; '
+                       'try a different import format (error: {})')
+                raise ActionError(msg.format(source, str(err).replace("\n", " ")))
+
         return {"success": "Imported states: " + ", ".join(states)}
 
     def import_file(self, source_file, state):
@@ -223,7 +233,8 @@ class ImportStateFiles(ImportOp):
                 with open(source_file) as source:
                     for line in source:
                         output.write(devrx.sub(fixline, line))
-        self.create_state(tmpfile1, tmpfile2)
+        self.run_with_trans(lambda trans: self.run_create_state(trans, tmpfile1, tmpfile2),
+                            write=True)
         os.remove(tmpfile1)
         format = 'cfg' if self.state_format == 'c-style' else 'xml'
         filename = self.format_state_filename(state, format=format)
@@ -265,14 +276,6 @@ class ImportStateFiles(ImportOp):
         with open(nso_xml_file, "w+") as outfile:
             nso_xml.write(outfile.name)
 
-    def create_state(self, source_file, state_file):
-        try:
-            self.run_with_trans(lambda trans: self.run_create_state(trans, source_file, state_file),
-                                write=True)
-        except _ncs.error.Error as err:
-            raise ActionError(os.path.basename(source_file) + " " +
-                              str(err).replace("\n", ""))
-
     def run_create_state(self, trans, source_file, state_file):
         dev_config = "/ncs:devices/device{{{}}}/config".format(self.dev_name)
         if not self.merge:
@@ -287,16 +290,56 @@ class ImportStateFiles(ImportOp):
                 state_data.write(data)
 
 
-class ImportConvertCliFiles(ImportOp):
-    action_name = 'convert and import CLI states'
+class ConvertFilter(object):
     filterexpr = (
-        r'(?:'
-        r'(?P<convert>converting [^ ]* to [^ ]*/(?P<state>[^/]*)[.]xml)|'
-        r'(?P<failure>failed to convert group (?P<group>.*))|'
-        r'(?P<devcli>.*DevcliException: No device definition found)|'
-        r'(?P<format>Filename format not understood: (?P<filename>.*))'
+        r'(?:(?P<convert>converting [^ ]* to [^ ]*/(?P<cnvstate>[^/]*)[.]xml)'
+        r'|(?P<failure>failed to convert group (?P<group>.*))'
+        r'|(?P<devcli>.*DevcliException: No device definition found)'
+        r'|(?P<traceback>Traceback [(]most recent call last[)]:)'
+        r'|(?P<format>Filename format not understood: (?P<filename>.*))'
+        r'|(?P<newstate>^STATE: (?P<state>[^ ]*) : .*)'
+        r'|(?P<match>^MATCHED \'(?P<matchstate>.*)\', SEND: .*)'
         r')$')
     filterrx = re.compile(filterexpr)
+
+    def __init__(self):
+        self.failures = []
+        self.devcli_error = None
+        self.waitstate = None
+
+    def process(self, msg):
+        match = self.filterrx.match(msg)
+        if match is None:
+            return
+        gd = match.groupdict()
+        if match.lastgroup == 'convert':
+            return 'importing state ' + gd['cnvstate']
+        elif match.lastgroup == 'devcli':
+            self.devcli_error = 'could not find the device driver definition'
+            return 'device driver not found'
+        elif match.lastgroup == 'failure':
+            group = gd['group']
+            self.failures.append(group)
+            return 'failed to import group ' + group
+        elif match.lastgroup == 'traceback':
+            self.devcli_error = 'the device driver appears to be broken'
+            return 'device driver failed'
+        elif match.lastgroup == 'newstate':
+            self.waitstate = gd['state']
+            return None
+        elif match.lastgroup == 'match':
+            self.waitstate = None
+            return None
+        elif match.lastgroup == 'format':
+            filename = gd['filename']
+            msg = 'unknown filename format: {}; should be name[:index].ext'
+            self.failures.append(filename)
+            return msg.format(filename)
+        return None
+
+
+class ImportConvertCliFiles(ImportOp):
+    action_name = 'convert and import CLI states'
 
     def _init_params(self, params):
         super(ImportConvertCliFiles, self)._init_params(params)
@@ -304,25 +347,9 @@ class ImportConvertCliFiles(ImportOp):
         self.device_timeout = params.device_timeout
 
     def cli_filter(self, msg):
-        match = self.filterrx.match(msg)
-        if match is None:
-            return
-        gd = match.groupdict()
-        if match.lastgroup == 'convert':
-            report = 'importing state ' + gd['state']
-        elif match.lastgroup == 'devcli':
-            self.devcli_error = msg
-            report = 'could not find the device driver definition'
-        elif match.lastgroup == 'failure':
-            group = gd['group']
-            report = 'failed to import group ' + group
-            self.failures.append(group)
-        else:
-            filename = gd['filename']
-            msg = 'unknown filename format: {}; should be name[:index].ext'
-            report = msg.format(filename)
-            self.failures.append(filename)
-        super(ImportConvertCliFiles, self).cli_filter(report + '\n')
+        report = self.filter.process(msg)
+        if report is not None:
+            super(ImportConvertCliFiles, self).cli_filter(report + '\n')
 
     def perform(self):
         filenames, states, _ = self.verify_filenames()
@@ -330,14 +357,18 @@ class ImportConvertCliFiles(ImportOp):
                 '-t', str(self.device_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
         workdir = 'drned-ncs'
-        self.failures = []
-        self.devcli_error = None
+        self.filter = ConvertFilter()
 
         result, _ = self.run_in_drned_env(args, timeout=self.device_timeout, NC_WORKDIR=workdir)
-        if self.devcli_error is not None:
-            raise ActionError('No device driver definition found')
-        if result != 0 and not self.failures:
-            raise ActionError('conversion failed; is device driver ')
+        if self.filter.devcli_error is not None:
+            raise ActionError('Problems with the device driver: ' + self.filter.devcli_error)
+        if result != 0 and not self.filter.failures:
+            if self.filter.waitstate is not None:
+                err = 'Conversion failed, ' \
+                    'the device driver hung in state "{}"'.format(self.filter.waitstate)
+            else:
+                err = 'Conversion failed; the device driver is not working correctly'
+            raise ActionError(err)
         for filename, state in zip(filenames, states):
             xml = os.path.splitext(os.path.basename(filename))[0] + '.xml'
             source = os.path.join(self.drned_run_directory, workdir, xml)
@@ -345,16 +376,16 @@ class ImportConvertCliFiles(ImportOp):
                 target = self.format_state_filename(state)
                 shutil.move(source, target)
                 self.write_metadata(target)
-            elif not self.failures:
+            elif not self.filter.failures:
                 # this should not be the case - if the source does not
                 # exist, it means that the conversion has not
                 # succeeded and the state/group should be among
                 # failures
-                self.failures.append(state)
+                self.filter.failures.append(state)
                 result = 1
-        if self.failures:
+        if self.filter.failures:
             raise ActionError('failed to convert configuration(s): ' +
-                              ', '.join(self.failures))
+                              ', '.join(self.filter.failures))
         return {"success": "Imported states: " + ", ".join(sorted(states))}
 
 
