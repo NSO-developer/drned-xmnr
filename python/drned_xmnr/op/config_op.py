@@ -293,6 +293,7 @@ class ImportStateFiles(ImportOp):
 class ConvertFilter(object):
     filterexpr = (
         r'(?:(?P<convert>converting [^ ]* to [^ ]*/(?P<cnvstate>[^/]*)[.]xml)'
+        r'|(?P<converted>converted [^ ]* to (?P<target>[^ ]*/(?P<donestate>[^/]*)[.]xml))'
         r'|(?P<failure>failed to convert group (?P<group>.*))'
         r'|(?P<devcli>.*DevcliException: No device definition found)'
         r'|(?P<traceback>Traceback [(]most recent call last[)]:)'
@@ -302,10 +303,11 @@ class ConvertFilter(object):
         r')$')
     filterrx = re.compile(filterexpr)
 
-    def __init__(self):
+    def __init__(self, converter):
         self.failures = []
         self.devcli_error = None
         self.waitstate = None
+        self.converter = converter
 
     def process(self, msg):
         match = self.filterrx.match(msg)
@@ -314,6 +316,9 @@ class ConvertFilter(object):
         gd = match.groupdict()
         if match.lastgroup == 'convert':
             return 'importing state ' + gd['cnvstate']
+        elif match.lastgroup == 'converted':
+            self.converter.complete_import(gd['target'], gd['donestate'])
+            return None
         elif match.lastgroup == 'devcli':
             self.devcli_error = 'could not find the device driver definition'
             return 'device driver not found'
@@ -341,6 +346,8 @@ class ConvertFilter(object):
 class ImportConvertCliFiles(ImportOp):
     action_name = 'convert and import CLI states'
 
+    NC_WORKDIR = 'drned-ncs'
+
     def _init_params(self, params):
         super(ImportConvertCliFiles, self)._init_params(params)
         self.devcli = self.param_default(params, "cli_device", self.dev_name)
@@ -356,10 +363,11 @@ class ImportConvertCliFiles(ImportOp):
         args = ['python', 'cli2netconf.py', self.dev_name, self.devcli,
                 '-t', str(self.device_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
-        workdir = 'drned-ncs'
-        self.filter = ConvertFilter()
+        self.filter = ConvertFilter(self)
 
-        result, _ = self.run_in_drned_env(args, timeout=self.device_timeout, NC_WORKDIR=workdir)
+        result, _ = self.run_in_drned_env(args,
+                                          timeout=self.device_timeout,
+                                          NC_WORKDIR=self.NC_WORKDIR)
         if self.filter.devcli_error is not None:
             raise ActionError('Problems with the device driver: ' + self.filter.devcli_error)
         if result != 0 and not self.filter.failures:
@@ -369,24 +377,24 @@ class ImportConvertCliFiles(ImportOp):
             else:
                 err = 'Conversion failed; the device driver is not working correctly'
             raise ActionError(err)
-        for filename, state in zip(filenames, states):
-            xml = os.path.splitext(os.path.basename(filename))[0] + '.xml'
-            source = os.path.join(self.drned_run_directory, workdir, xml)
-            if os.path.exists(source):
-                target = self.format_state_filename(state)
-                shutil.move(source, target)
-                self.write_metadata(target)
-            elif not self.filter.failures:
-                # this should not be the case - if the source does not
-                # exist, it means that the conversion has not
-                # succeeded and the state/group should be among
-                # failures
-                self.filter.failures.append(state)
-                result = 1
         if self.filter.failures:
             raise ActionError('failed to convert configuration(s): ' +
                               ', '.join(self.filter.failures))
         return {"success": "Imported states: " + ", ".join(sorted(states))}
+
+    def complete_import(self, filename, state):
+        xml = os.path.splitext(os.path.basename(filename))[0] + '.xml'
+        source = os.path.join(self.drned_run_directory, self.NC_WORKDIR, xml)
+        if os.path.exists(source):
+            target = self.format_state_filename(state)
+            shutil.move(source, target)
+            self.write_metadata(target)
+        elif not self.filter.failures:
+            # this should not be the case - if the source does not
+            # exist, it means that the conversion has not
+            # succeeded and the state/group should be among
+            # failures
+            self.filter.failures.append(state)
 
 
 class CheckStates(ConfigOp):

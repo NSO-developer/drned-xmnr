@@ -67,7 +67,7 @@ class ConvertPatch(object):
     creates a function wrapper, that creates a Devcli and XDevice mock
     (there is only one common for both classes).
     '''
-    
+
     def __init__(self, failures={'load': [], 'sync': []}):
         self.failures = failures
         self.attribute_name = None
@@ -142,6 +142,7 @@ class TestCli2Netconf(object):
                     assert 'sync' == calls.pop()
                     break
                 assert ('save', (target,), {'fmt': 'xml'}) == calls.pop()
+                assert 'converted {} to {}'.format(filename, target) == prints.pop()
             assert 'clean_config' == calls.pop()
         assert ['sync'] == calls
 
