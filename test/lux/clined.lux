@@ -124,5 +124,23 @@
     ???success Imported states: short-rad2:1, short-rad2:2
     [timeout]
 
+    !drned-xmnr state delete-state state-name-pattern *
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/*rad*.cfg
+    [timeout 10]
+    ?importing state short-rad1:1
+    [timeout]
+    ~$_CTRL_C_
+    ?Aborted: by user
+    !do show devices device cisco-nc0 drned-xmnr state states | sort-by state
+    """?
+    STATE *
+    -----* *
+    rad1 *
+    rad2 *
+
+    admin@ncs.*
+    """
+
+
 [cleanup]
     [invoke cleanup]

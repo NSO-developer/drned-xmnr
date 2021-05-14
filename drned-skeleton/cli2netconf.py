@@ -228,6 +228,7 @@ def group_cli2netconf(device, devcli, group):
             device.sync_from()
             raise
         device.save(target, fmt="xml")
+        print("converted", desc.fname, 'to', target)
 
 
 def _cli2netconf(device, devcli, fnames):
@@ -240,6 +241,9 @@ def _cli2netconf(device, devcli, fnames):
         groupname = sgroup[0].fset
         try:
             group_cli2netconf(device, devcli, sgroup)
+        except KeyboardInterrupt:
+            print('Keyboard interrupt, abort')
+            raise
         except BaseException as e:
             print('failed to convert group', groupname)
             print('exception:', e)
