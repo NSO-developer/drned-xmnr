@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from contextlib import closing
-import os
 import sys
 
 from devcli import Devcli, XDevice, devcli_init_dirs
@@ -15,10 +14,11 @@ def _load_default_config(nso_device, target_device):
 def load_default_config(dev_name, driver_file, timeout, *args):
     workdir = devcli_init_dirs()
 
-    def init_nso_dev(): return closing(XDevice(dev_name))
+    def init_nso_dev():
+        return closing(XDevice(dev_name))
 
-    def init_cli_dev(): return closing(Devcli(driver_file, workdir,
-                                       int(timeout)))
+    def init_cli_dev():
+        return closing(Devcli(driver_file, workdir, int(timeout)))
 
     with init_nso_dev() as nso_device, init_cli_dev() as target_device:
         _load_default_config(nso_device, target_device)

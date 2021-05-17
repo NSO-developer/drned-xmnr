@@ -67,8 +67,12 @@ class Devcli:
 
     def _read_device_config(self):
         self._find_driver()
-        # sys.path.append(self.path)
-        module = importlib.import_module(self.driver_file)
+        dfile = self.driver_file
+        dirname = os.path.dirname(dfile)
+        basename = os.path.basename(dfile)
+        module_name = os.path.splitext(basename)
+        sys.path.append(dirname)
+        module = importlib.import_module(module_name)
         for m in dir(module):
             if not m.startswith("__"):
                 setattr(self, m, getattr(module, m))
@@ -160,7 +164,7 @@ class Devcli:
                 for init_state in init_states:
                     self.interstate_one(init_state)
             else:
-                self.interstate_one(init_state)
+                self.interstate_one(init_states)
 
     def interstate_one(self, init_state):
         """Run the state machine.
