@@ -5,6 +5,9 @@
 [macro run-queues queues]
     [my shell=$LUX_SHELLNAME]
 [shell ncs-cli]
+    !no config
+    !commit
+    ?Commit complete|No modifications
     [invoke prepare-device-xmnr $queues]
 [shell os]
     !rm -f $ned0_log
