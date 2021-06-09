@@ -33,6 +33,8 @@ class ActionHandler(dp.Action):
     handlers = {
         ns.ns.drned_xmnr_setup_xmnr_: setup_op.SetupOp,
         ns.ns.drned_xmnr_delete_state_: config_op.DeleteStateOp,
+        ns.ns.drned_xmnr_disable_state_: config_op.DisableStateOp,
+        ns.ns.drned_xmnr_enable_state_: config_op.EnableStateOp,
         ns.ns.drned_xmnr_list_states_: config_op.ListStatesOp,
         ns.ns.drned_xmnr_view_state_: config_op.ViewStateOp,
         ns.ns.drned_xmnr_record_state_: config_op.RecordStateOp,

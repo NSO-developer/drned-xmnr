@@ -195,12 +195,28 @@ module drned-xmnr {
         }
       }
       container state {
+        grouping state-or-pattern {
+          choice state-or-pattern {
+            mandatory true;
+            leaf state-name {
+              type leafref {
+                path ../../states/state;
+              }
+            }
+            leaf state-name-pattern {
+              type string;
+            }
+          }
+        }
         list states {
           config false;
           tailf:callpoint xmnr-states;
           key state;
           leaf state {
             type string;
+          }
+          leaf disabled {
+            type empty;
           }
         }
         tailf:action record-state {
@@ -240,17 +256,28 @@ module drned-xmnr {
           tailf:info "Delete a saved state file. ";
           tailf:actionpoint drned-xmnr;
           input {
-            choice delete-state {
-              mandatory true;
-              leaf state-name {
-                type leafref {
-                  path ../../states/state;
-                }
-              }
-              leaf state-name-pattern {
-                type string;
-              }
-            }
+            uses state-or-pattern;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        tailf:action disable-state {
+          tailf:info "Disable a state so that `walk-states' or `explore-states'
+                      ignores it.";
+          tailf:actionpoint drned-xmnr;
+          input {
+            uses state-or-pattern;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        tailf:action enable-state {
+          tailf:info "Enable a disabled state.";
+          tailf:actionpoint drned-xmnr;
+          input {
+            uses state-or-pattern;
           }
           output {
             uses action-output-common;

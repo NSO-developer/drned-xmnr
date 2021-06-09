@@ -156,7 +156,8 @@ class StatesTransitionsOp(TransitionsOp):
         states = list(params.states)
         if states == []:
             states = [state for state in self.get_states()
-                      if state not in params.ignore_states]
+                      if state not in params.ignore_states
+                      and not self.is_state_disabled(state)]
             states = self.filter_states(states)
             random.shuffle(states)
         else:

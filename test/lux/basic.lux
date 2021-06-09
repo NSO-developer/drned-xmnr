@@ -126,6 +126,31 @@
     """
     [timeout]
 
+    [progress disable/enable states]
+    !drned-xmnr state disable-state state-name-pattern lt:*
+    ?success
+    !drned-xmnr transitions walk-states | include "Test transition" | linnum
+    [timeout 10]
+    -2: Test transition
+    """?
+    1: Test transition to empty
+    admin@ncs\(.*\)\#
+    """
+    [timeout]
+    !drned-xmnr state enable-state state-name-pattern lt:[1-3]
+    ?success
+    [timeout 30]
+    !drned-xmnr transitions explore-transitions | include "Found|Starting with" | linnum
+    """?
+    1: Found 2 states .*
+    2: Starting with state (empty|lt:3)
+    3: Starting with state (empty|lt:3)
+    admin@ncs\(.*\)\#
+    """
+    [timeout]
+    !drned-xmnr state enable-state state-name-pattern *
+    ?success
+
     [progress aborting transitions]
 [shell os]
     !tail -f $ned0_log
