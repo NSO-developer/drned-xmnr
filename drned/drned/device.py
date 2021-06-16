@@ -477,6 +477,19 @@ class Device(object):
                  self.name, expect="result true")
         return self
 
+    def reload_default_config(self):
+        """Reload device's config using its native CLI.
+
+        Args:
+            none
+        Returns:
+            self
+        """
+        self.trace(INDENT + inspect.stack()[0][3] + "()")
+        self.cmd("devices device %s drned-xmnr load-default-config" %
+                 self.name, expect="result true")
+        return self
+
     def commit_id_next(self, index):
         """Find next valid commit ID.
 
@@ -862,15 +875,23 @@ class Device(object):
         self.cmd("show config")
         self.commit(no_networking=True)
         # Try to restore device twice, required for some NCS releases
+        succeeded = True
         laps = 2
         for i in range(laps):
-            self.sync_to()
             try:
+                self.sync_to()
                 self.compare_config()
                 break
             except pytest.fail.Exception:
                 if i >= (laps - 1):
-                    raise
+                    succeeded = False
+
+        # If the previous NETCONF attempts failed, try native device CLI.
+        if not succeeded:
+            try:
+                self.reload_default_config()
+            except BaseException as ex:
+                pytest.fail("Failed to restore default config.")
 
         # Check if restore successful
         self.save("drned-work/after-session.cfg")
