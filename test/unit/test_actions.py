@@ -607,7 +607,7 @@ class TestConvertMessage(TestBase):
                                     overwrite=True,
                                     device_timeout=120,
                                     import_timeout=120,
-                                    cli_device='cli-device')
+                                    driver='cli-device')
         return output
 
     def expected_writes(self, states=None):

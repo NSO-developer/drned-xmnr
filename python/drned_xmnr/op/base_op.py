@@ -47,7 +47,9 @@ class XmnrBase(object):
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
         self.using_builtin_drned = root.drned_xmnr.drned_directory == "builtin"
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
-        self.cleanup_timeout = root.devices.device[self.dev_name].drned_xmnr.cleanup_timeout
+        device_xmnr_node = root.devices.device[self.dev_name].drned_xmnr
+        self.cleanup_timeout = device_xmnr_node.cleanup_timeout
+        self.driver = device_xmnr_node.driver
         try:
             os.makedirs(self.states_dir)
         except OSError:
