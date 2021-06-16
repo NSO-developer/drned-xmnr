@@ -232,6 +232,7 @@ class ActionBase(XmnrBase):
         self.cli_filter(msg)
         if self.log_file is not None:
             self.log_file.write(msg + '\n')
+            self.log_file.flush()
 
     def setup_drned_env(self, trans):
         """Build a dictionary that is supposed to be passed to `Popen` as the
