@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-from ncs import maagic
-
 from .base_op import ActionBase
 from .ex import ActionError
 
@@ -12,10 +10,6 @@ class LoadDefaultConfigOp(ActionBase):
         of a device.
     """
     action_name = 'xmnr load-default-config'
-
-    def _init_params(self, params):
-        super(LoadDefaultConfigOp, self)._init_params(params)
-        self.device_timeout = params.device_timeout
 
     def perform(self):
         args = [

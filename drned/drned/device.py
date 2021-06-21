@@ -814,6 +814,7 @@ class Device(object):
         else:
             # Always use fixed set of error msgs if none given
             self.saw_not("((ERROR|[Ee]rror|[Ff]ailed|[Aa]borted):)|([Ee]rror when|[Ee]xternal error|[Ii]nternal error)")
+            self.saw_not("info {}: transport timeout; closing session".format(self.name))
         if expect is not None:
             self.saw(expect)
         return self

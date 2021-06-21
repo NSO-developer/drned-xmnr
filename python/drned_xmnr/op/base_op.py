@@ -28,6 +28,11 @@ else:
     def text_data(data):
         return data
 
+TIMEOUT_MARGIN = 5
+"""Number of seconds between the device timeout and action timeout.
+When XMNR gets any output from a DrNED test, it extends the action
+timeout by device-timeout increased by this value."""
+
 
 class XmnrBase(object):
     xml_statefile_extension = '.state.xml'
@@ -47,7 +52,11 @@ class XmnrBase(object):
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
         self.using_builtin_drned = root.drned_xmnr.drned_directory == "builtin"
         self.states_dir = os.path.join(self.dev_test_dir, 'states')
-        device_xmnr_node = root.devices.device[self.dev_name].drned_xmnr
+        device_node = root.devices.device[self.dev_name]
+        self.device_timeout = device_node.read_timeout
+        if self.device_timeout is None:
+            self.device_timeout = 120
+        device_xmnr_node = device_node.drned_xmnr
         self.cleanup_timeout = device_xmnr_node.cleanup_timeout
         self.driver = device_xmnr_node.driver
         try:
@@ -184,24 +193,26 @@ class ActionBase(XmnrBase):
             mp = maapi.Maapi()
             return callback(mp.attach(self.uinfo.actx_thandle))
 
-    def extend_timeout(self, timeout_extension):
-        dp.action_set_timeout(self.uinfo, timeout_extension)
+    def extend_timeout(self):
+        extension = self.device_timeout + 2*TIMEOUT_MARGIN
+        dp.action_set_timeout(self.uinfo, extension)
 
-    def proc_run(self, outputfun, timeout):
+    def proc_run(self, outputfun):
         fd = self.drned_process.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
         stdoutdata = ""
+        timeout = self.device_timeout
         while self.drned_process.poll() is None:
-            rlist, wlist, xlist = select.select([fd], [], [fd], timeout)
+            rlist, wlist, xlist = select.select([fd], [], [fd], timeout + TIMEOUT_MARGIN)
             if rlist:
                 buf = self.drned_process.stdout.read()
                 if buf is not None and len(buf) != 0:
                     data = text_data(buf)
                     self.log.debug("run_outputfun, output len=" + str(len(data)))
                     outputfun(data)
-                    self.extend_timeout(timeout)
+                    self.extend_timeout()
                     stdoutdata += data
             else:
                 self.progress_msg("Silence timeout, terminating process")
@@ -287,7 +298,7 @@ class ActionBase(XmnrBase):
                 return executable
         raise ActionError('PyTest not installed - pytest executable not found')
 
-    def run_in_drned_env(self, args, timeout=120, **envdict):
+    def run_in_drned_env(self, args, **envdict):
         env = self.run_with_trans(self.setup_drned_env)
         env.update(envdict)
         self.log.debug("using env {0}\n".format(env))
@@ -302,7 +313,7 @@ class ActionBase(XmnrBase):
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT)
             self.log.debug("run_in_drned_env, going in")
-            return self.proc_run(Progressor(self).progress, timeout)
+            return self.proc_run(Progressor(self).progress)
         except OSError:
             msg = 'PyTest not installed or DrNED running directory ({0}) not set up'
             raise ActionError(msg.format(self.drned_run_directory))

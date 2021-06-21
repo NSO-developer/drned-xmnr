@@ -16,16 +16,17 @@ two effects:
 
 import collections
 
-from .events import DrnedPrepareEvent, DrnedLoadEvent, DrnedActionEvent, InitStatesEvent, StartStateEvent, \
-    InitFailedEvent, TransitionEvent, InitialPrepareEvent, TransFailedEvent, PyTestEvent, DrnedFailedStatesEvent, \
-    DrnedTeardownEvent, DrnedRestoreEvent, DrnedEmptyCommitEvent, DrnedCommitNoqueueEvent, DrnedCommitNNEvent, \
+from .events import DrnedPrepareEvent, DrnedLoadEvent, DrnedActionEvent, InitStatesEvent, \
+    StartStateEvent, InitFailedEvent, TransitionEvent, InitialPrepareEvent, TransFailedEvent, \
+    PyTestEvent, DrnedFailedStatesEvent, DrnedTeardownEvent, DrnedRestoreEvent, \
+    DrnedEmptyCommitEvent, DrnedCommitNoqueueEvent, DrnedCommitNNEvent, \
     DrnedCommitResultEvent, DrnedCommitQueueEvent, DrnedCommitEvent, DrnedFailureReasonEvent, \
     DrnedCommitCompleteEvent, DrnedCompareEvent
 from .cort import coroutine
 
 
 TransitionDesc = collections.namedtuple('TransitionDesc',
-                                        ['start', 'to', 'failure', 'failure_message'])
+                                        ['start', 'to', 'failure', 'comment', 'failure_message'])
 
 
 class TransitionEventContext(object):
@@ -62,10 +63,17 @@ class TransitionEventContext(object):
         if event_type == 'rollback':
             self.rollback = True
 
-    def fail_transition(self, msg=None):
+    def fail_transition(self, failure_event=None):
         event = 'rollback' if self.rollback else self.event
-        self.complete_transition(event, msg)
-        return self.failure_comment(event)
+        if failure_event is None:
+            comment = msg = self.failure_comment(event)
+        else:
+            comment = failure_event.reason
+            if comment is None:
+                comment = self.failure_comment(event)
+            msg = failure_event.msg
+        self.complete_transition(event, comment, msg)
+        return msg if comment is None else comment
 
     failure_comments = {
         'compare_config': 'configuration comparison failed, configuration artifacts on the device',
@@ -77,10 +85,10 @@ class TransitionEventContext(object):
     def failure_comment(event_type):
         return TransitionEventContext.failure_comments.get(event_type, '')
 
-    def complete_transition(self, failure=None, msg=None):
+    def complete_transition(self, failure=None, comment=None, msg=None):
         if self.to is None:
             return
-        self.test_events.append(TransitionDesc(self.state, self.to, failure, msg))
+        self.test_events.append(TransitionDesc(self.state, self.to, failure, comment, msg))
         self.state = self.exploring_from if self.exploring_from is not None else self.to
         self.cleanup()
 
@@ -234,7 +242,8 @@ class ExploreTransitionsState(LogState):
     def handle(self, event):
         if isinstance(event, StartStateEvent):
             return (True,
-                    [GenState(DrnedPrepareEvent), TransitionState(), ExtendedTransitionsState(), self],
+                    [GenState(DrnedPrepareEvent), TransitionState(),
+                     ExtendedTransitionsState(), self],
                     event)
         return (True, [self])
 
@@ -430,6 +439,7 @@ class CommitQueueState(LogState):
 class CommitFailure(LogState):
     '''Report commit failure reason (if any).
     '''
+    name = 'commit-failed'
 
     def handle(self, event):
         if isinstance(event, DrnedFailureReasonEvent):
@@ -437,7 +447,7 @@ class CommitFailure(LogState):
         return (False, [], DrnedCommitResultEvent('', False))
 
     def update_context(self, context, event):
-        return context.fail_transition(event.reason)
+        return context.fail_transition(event)
 
 
 class CommitCompleteState(LogState):

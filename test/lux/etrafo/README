@@ -1,0 +1,3 @@
+Slightly modified embeded_applications/transform confd example.  It is run as a
+standalone application so as it is possible to suspend/resume it and force
+NETCONF request timeouts.

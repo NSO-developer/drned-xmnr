@@ -5,7 +5,7 @@
 
 [shell os]
     [invoke ned-test-setup]
-    !ncs-make-package --netconf-ned ../../hooks/ hooks
+    !ncs-make-package --no-java --netconf-ned ../../hooks/ hooks
     [invoke shell-check]
     !echo include Makefile.inc >> hooks/netsim/Makefile
     [invoke shell-check]
@@ -67,7 +67,7 @@
            succeeded
        compare config
            succeeded
-    Failed States  ['host', 'bad-host']
+    Failed states  ['host', 'bad-host']
     """
     [timeout]
 
@@ -79,7 +79,7 @@
     -----------------------------------* *
     \(init\) * empty * - * - * - *
     empty * host * compare * - * configuration comparison.*
-    host * bad-host * commit * - * failed to commit.*
+    host * bad-host * commit * RPC error towards hooks0: .* failed to commit.*
 
     admin@ncs.*
     """
@@ -153,9 +153,9 @@
     """?
     FROM * TO * TYPE * MESSAGE * COMMENT *
     -----------------------------------* *
-    \(init\) * bad-host * commit * - * failed to commit.*
+    \(init\) * bad-host * commit * RPC error towards hooks0: .* failed to commit.*
     bad-host * empty * - * - * - *
-    empty * bad-host * commit * - * failed to commit.*
+    empty * bad-host * commit * RPC error towards hooks0: .* failed to commit.*
     empty * host * compare * - * configuration comparison.*
     empty * host * compare * - * configuration comparison.*
 

@@ -102,7 +102,7 @@ class SetupOp(base_op.ActionBase):
                                               cwd=self.drned_run_directory,
                                               stdout=subprocess.PIPE,
                                               stderr=subprocess.STDOUT)
-        result, _ = self.proc_run(lambda *ignore: None, 120)
+        result, _ = self.proc_run(lambda *ignore: None)
         if result != 0:
             raise ActionError("Failed to set up env.sh for DrNED")
         self.cfg_file = os.path.join(self.drned_run_directory, self.dev_name + '.cfg')

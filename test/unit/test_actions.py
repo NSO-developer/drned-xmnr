@@ -275,11 +275,16 @@ class TestBase(object):
             self.log_file = self.real_open('/tmp/unit.log', 'a')
         return self.log_file
 
+    def log(self, prefix, *args):
+        lf = self.unit_log_file()
+        print(prefix, *args, file=lf)
+        lf.flush()
+
     def setup_log(self, handler):
         handler.log = mock.Mock()
         for level in self.log_levels:
             prefix = '<{}>'.format(level.upper())
-            setattr(handler.log, level, functools.partial(print, prefix, file=self.unit_log_file()))
+            setattr(handler.log, level, functools.partial(self.log, prefix))
 
     def action_uinfo(self):
         return mock.Mock()
@@ -605,8 +610,6 @@ class TestConvertMessage(TestBase):
         output = self.invoke_action('import-convert-cli-files',
                                     file_path_pattern=self.config_pattern,
                                     overwrite=True,
-                                    device_timeout=120,
-                                    import_timeout=120,
                                     driver='cli-device')
         return output
 
@@ -829,7 +832,6 @@ class TestTransitions(TransitionsTestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
                                     rollback=False,
-                                    device_timeout=10,
                                     states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
@@ -841,7 +843,6 @@ class TestTransitions(TransitionsTestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('walk-states',
                                     rollback=True,
-                                    device_timeout=10,
                                     states=self.states)
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
@@ -1017,7 +1018,7 @@ class TransitionsLogFiltersTestBase(TransitionsTestBase):
 
     def walk_filter_test_run(self, xpatch, filter_type):
         self.filter_test_run(xpatch, filter_type, DrnedWalkOutput, self.states,
-                             'walk-states', device_timeout=10, states=self.states, rollback=False)
+                             'walk-states', states=self.states, rollback=False)
 
 
 class TestTransitionsLogFilters(TransitionsLogFiltersTestBase):
@@ -1096,7 +1097,7 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_filter(xpatch, 'drned-overview', 'redirect.output')
         self.setup_states_data(xpatch.system)
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
-        output = self.invoke_action('walk-states', states=self.states, device_timeout=10,
+        output = self.invoke_action('walk-states', states=self.states,
                                     rollback=False)
         assert output.error is None
         assert output.failure == 'Operation failed'
@@ -1113,8 +1114,7 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_filter(xpatch, 'all')
         self.setup_states_data(xpatch.system)
         DrnedWalkOutput(self.states, 'none', xpatch.system)
-        output = self.invoke_action('walk-states', states=self.states, rollback=False,
-                                    device_timeout=10)
+        output = self.invoke_action('walk-states', states=self.states, rollback=False)
         assert output.error is None
         assert output.failure == 'Operation failed'
         calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list

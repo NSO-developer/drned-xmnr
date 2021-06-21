@@ -306,13 +306,6 @@ module drned-xmnr {
               type boolean;
               default false;
             }
-            leaf device-timeout {
-              tailf:info
-                "How long should XMNR wait for a device to respond (or
-                 how long to wait for an expected response).";
-              type uint16;
-              default 120;
-            }
           }
           output {
             uses action-output-common;
@@ -410,13 +403,6 @@ module drned-xmnr {
               type boolean;
               default false;
             }
-           leaf device-timeout {
-              tailf:info
-                "How long should XMNR wait for a device to respond (or
-                 how long to wait for an expected response).";
-              type uint16;
-              default 120;
-            }
           }
           output {
             uses action-output-common;
@@ -508,15 +494,6 @@ module drned-xmnr {
           "Reset device to the default state by loading a previously stored
            configuration file in native CLI format.";
         tailf:actionpoint drned-xmnr;
-        input {
-          leaf device-timeout {
-            tailf:info
-              "How long should XMNR wait for a device to respond (or
-                how long to wait for an expected response).";
-            type uint16;
-            default 120;
-          }
-        }
         output {
           uses action-output-common;
         }

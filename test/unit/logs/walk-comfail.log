@@ -1,0 +1,546 @@
+========================================= test session starts =========================================
+platform linux -- Python 3.8.5, pytest-6.2.2, py-1.9.0, pluggy-0.13.1
+rootdir: /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned-skeleton, configfile: setup.cfg
+plugins: nbval-0.9.6, cov-2.10.1, pyfakefs-4.3.3
+collected 27 items / 26 deselected / 1 selected
+
+src/test_builtin.py complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Mon Jun  21 15:49:59.578 UTC+02:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-06-21 15:49:58 terminal mode
+session paginate false
+Mon Jun  21 15:49:59.651 UTC+02:00
+do show ncs-state | include "ncs-state version"
+Mon Jun  21 15:49:59.713 UTC+02:00
+ncs-state version 5.4.1
+NOTE: Commit queues are enabled!
+============================== load(./etrafo0.cfg)
+load merge ./etrafo0.cfg | best-effort
+Mon Jun  21 15:49:59.974 UTC+02:00
+Loading.
+Warning: best-effort is not supported for XML files
+451 bytes parsed in 0.00 sec (171.04 KiB/sec)
+commit
+Mon Jun  21 15:50:00.300 UTC+02:00
+% No modifications to commit.
+no devices device etrafo0 ned-settings use-transaction-id
+Mon Jun  21 15:50:00.940 UTC+02:00
+commit
+Mon Jun  21 15:50:00.151 UTC+02:00
+% No modifications to commit.
+devices global-settings session-pool idle-time 600
+Mon Jun  21 15:50:00.216 UTC+02:00
+devices global-settings commit-queue retry-attempts 2
+Mon Jun  21 15:50:00.284 UTC+02:00
+devices device etrafo0 trace raw
+Mon Jun  21 15:50:00.348 UTC+02:00
+java-vm java-logging logger com.tailf.packages.ned level level-all
+Mon Jun  21 15:50:00.412 UTC+02:00
+show full-configuration devices device etrafo0
+devices device etrafo0
+ address      127.0.0.1
+ port         12022
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+ authgroup    default
+ device-type netconf ned-id etrafo-nc-1.0
+ read-timeout 4
+ trace        raw
+ state admin-state unlocked
+ config
+  users user admin
+   password $1$1g4QRGtM$bs7XH0JkIPEx16n27yMHM.
+   role     admin
+  !
+ !
+!
+
+show full-configuration devices device etrafo0 device-type
+Mon Jun  21 15:50:00.557 UTC+02:00
+devices device etrafo0
+ device-type netconf ned-id etrafo-nc-1.0
+!
+show full-configuration devices device etrafo0 ssh
+Mon Jun  21 15:50:00.628 UTC+02:00
+devices device etrafo0
+ ssh host-key ssh-rsa
+  key-data "AAAAB3NzaC1yc2EAAAADAQABAAABgQC42TFs7bT2EOPWumBn9OzOfsQemzHKPG8+dGZCzwtY\nhaTAU3uwjauSeDnbTL2YlwikG990VZeTrn+7lfQRQs0DSHX/Y8u49Id/oSm443i5+cPc9tjd\n5q5y1rIJoUZNflu1+u2H/HSfXlIDqJWWAtuj+TTkKxgSRM+S0AEafy7vROhmi4Q9q+eRg2jt\ngjbL5fdRY3gVidhX1Ts5Ybwc+HeP1PPmNNXBW3OcyWG5BTHKgz0K8sgK3Ki8UWpVAMV/PuNX\nuxUMYtuYqWI2OrEBLWHML+6RS7uUzklZPGOVy4L5BZtPjvz3Egbd+JjlHC6cUV9iV0P2Z4Hi\nfmvvVToFUDm2ArbLP47noD2MkHpFnuHUACxpleQztw52ySsWV26zCcvJSHobU9A6TgPCDI/0\nrVdIriPZFi9aefSzb91LZxwHyP3dAmekP4zeKVeaFd1E8A3+6r7wieFIek9xOaGBxbtGf5/3\nmPN2YMl93MA5q35S4OrE5Ede9Xl+YPiy+/fwEtc="
+ !
+!
+commit
+Mon Jun  21 15:50:00.705 UTC+02:00
+% No modifications to commit.
+show full-configuration devices device etrafo0 read-timeout
+Mon Jun  21 15:50:00.768 UTC+02:00
+devices device etrafo0
+ read-timeout 4
+!
+devices device etrafo0 connect
+Mon Jun  21 15:50:00.844 UTC+02:00
+result true
+info (admin) Connected to etrafo0 - 127.0.0.1:12022
+============================== sync_from()
+devices device etrafo0 sync-from
+Mon Jun  21 15:50:00.932 UTC+02:00
+result true
+top
+Mon Jun  21 15:50:01.103 UTC+02:00
+
+test_template_set
+
+============================== save(drned-work/before-session.xml)
+save drned-work/before-session.xml xml devices device etrafo0 config
+Mon Jun  21 15:50:01.172 UTC+02:00
+Saving parts of the configuration.
+============================== save(drned-work/before-session.cfg)
+save drned-work/before-session.cfg  devices device etrafo0 config
+Mon Jun  21 15:50:01.253 UTC+02:00
+Saving devices device etrafo0 config
+============================== save(drned-work/before-test.cfg)
+save drned-work/before-test.cfg  devices device etrafo0 config
+Mon Jun  21 15:50:01.355 UTC+02:00
+Saving devices device etrafo0 config
+
+py.test -k test_template_set --fname=/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr01.state.xml --op=load --op=commit --op=compare-config --end-op= --device=etrafo0
+
+============================== load(/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr01.state.xml)
+NOTE: Get load parameters from /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr01.state.xml.load
+no devices device etrafo0 config
+Mon Jun  21 15:50:01.461 UTC+02:00
+load merge /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr01.state.xml
+Mon Jun  21 15:50:01.520 UTC+02:00
+Loading.
+607 bytes parsed in 0.00 sec (102.00 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device etrafo0" | save overwrite drned-work/drned-dry-run.txt
+Mon Jun  21 15:50:01.646 UTC+02:00
+native {
+    device {
+        name etrafo0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="11">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <users xmlns="http://tail-f.com/ns/example/users">
+                     <user>
+                       <name>admin</name>
+                       <password>$1$s.wxv9V0$ZUgSrQ9ZPKsRQo8HeDlbv/</password>
+                     </user>
+                     <user>
+                       <name>usr01</name>
+                       <password>$1$SEIjIvUb$p80HRbFb5aoz/c5yCRAQy0</password>
+                       <role>oper</role>
+                     </user>
+                   </users>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Mon Jun  21 15:50:01.747 UTC+02:00
+commit-queue {
+    id 1624283401806
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10023
+============================== compare_config()
+devices device etrafo0 compare-config
+Mon Jun  21 15:50:02.120 UTC+02:00
+
+py.test -k test_template_set --fname=/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr02.state.xml --op=load --op=commit --op=compare-config --end-op= --device=etrafo0
+
+============================== load(/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr02.state.xml)
+NOTE: Get load parameters from /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr02.state.xml.load
+no devices device etrafo0 config
+Mon Jun  21 15:50:02.229 UTC+02:00
+load merge /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr02.state.xml
+Mon Jun  21 15:50:02.297 UTC+02:00
+Loading.
+607 bytes parsed in 0.01 sec (44.98 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device etrafo0" | save overwrite drned-work/drned-dry-run.txt
+Mon Jun  21 15:50:02.414 UTC+02:00
+native {
+    device {
+        name etrafo0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="21">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <users xmlns="http://tail-f.com/ns/example/users">
+                     <user>
+                       <name>admin</name>
+                       <password>$1$RhDhS.Fz$5LpUux6S16K3x62PWSdnu0</password>
+                     </user>
+                     <user xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                           nc:operation="delete">
+                       <name>usr01</name>
+                     </user>
+                     <user>
+                       <name>usr02</name>
+                       <password>$1$EfS43l7.$mFHFd/b3SoNwjbfXQEZK40</password>
+                       <role>oper</role>
+                     </user>
+                   </users>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Mon Jun  21 15:50:02.553 UTC+02:00
+commit-queue {
+    id 1624283402609
+    status failed
+    failed-device {
+        name etrafo0
+        reason etrafo0: transport timeout; closing session
+    }
+}
+Commit complete.
+NOTE: Commit id: 10024
+============================== compare_config()
+devices device etrafo0 compare-config
+Mon Jun  21 15:50:10.876 UTC+02:00
+info etrafo0: transport timeout; closing session
+
+### TEARDOWN, RESTORE DEVICE ###
+complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Mon Jun  21 15:50:15.377 UTC+02:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-06-21 15:49:58 terminal mode
+session paginate false
+Mon Jun  21 15:50:15.448 UTC+02:00
+no devices device etrafo0 config
+Mon Jun  21 15:50:15.514 UTC+02:00
+top
+Mon Jun  21 15:50:15.572 UTC+02:00
+============================== load(drned-work/before-session.xml)
+load merge drned-work/before-session.xml
+Mon Jun  21 15:50:15.644 UTC+02:00
+Loading.
+443 bytes parsed in 0.01 sec (38.16 KiB/sec)
+show config
+Mon Jun  21 15:50:15.717 UTC+02:00
+devices device etrafo0
+ config
+  users user admin
+   password $1$1g4QRGtM$bs7XH0JkIPEx16n27yMHM.
+  !
+  no users user usr02
+ !
+!
+============================== commit()
+commit dry-run  outformat native  | exclude "device etrafo0" | save overwrite drned-work/drned-dry-run.txt
+Mon Jun  21 15:50:15.875 UTC+02:00
+commit no-networking
+Mon Jun  21 15:50:15.981 UTC+02:00
+Commit complete.
+NOTE: Commit id: 10025
+============================== sync_to()
+devices device etrafo0 sync-to
+Mon Jun  21 15:50:16.122 UTC+02:00
+result true
+============================== compare_config()
+devices device etrafo0 compare-config
+Mon Jun  21 15:50:16.426 UTC+02:00
+============================== save(drned-work/after-session.cfg)
+save drned-work/after-session.cfg  devices device etrafo0 config
+Mon Jun  21 15:50:16.549 UTC+02:00
+Saving devices device etrafo0 config
+
+py.test -k test_template_set --fname=/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr04.state.xml --op=load --op=commit --op=compare-config --end-op= --device=etrafo0
+
+============================== load(/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr04.state.xml)
+NOTE: Get load parameters from /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr04.state.xml.load
+no devices device etrafo0 config
+Mon Jun  21 15:50:16.656 UTC+02:00
+load merge /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr04.state.xml
+Mon Jun  21 15:50:16.724 UTC+02:00
+Loading.
+607 bytes parsed in 0.01 sec (51.38 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device etrafo0" | save overwrite drned-work/drned-dry-run.txt
+Mon Jun  21 15:50:16.838 UTC+02:00
+native {
+    device {
+        name etrafo0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="13">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <users xmlns="http://tail-f.com/ns/example/users">
+                     <user>
+                       <name>admin</name>
+                       <password>$1$D8yPi/Wx$k8psm1tC.glybTKYp2z/M/</password>
+                     </user>
+                     <user>
+                       <name>usr04</name>
+                       <password>$1$Z1cG57QR$TrSdIGrZXeNQkD1J/u874.</password>
+                       <role>oper</role>
+                     </user>
+                   </users>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Mon Jun  21 15:50:16.932 UTC+02:00
+commit-queue {
+    id 1624283416967
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10026
+============================== compare_config()
+devices device etrafo0 compare-config
+Mon Jun  21 15:50:17.286 UTC+02:00
+
+py.test -k test_template_set --fname=/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr05.state.xml --op=load --op=commit --op=compare-config --end-op= --device=etrafo0
+
+============================== load(/home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr05.state.xml)
+NOTE: Get load parameters from /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr05.state.xml.load
+no devices device etrafo0 config
+Mon Jun  21 15:50:17.412 UTC+02:00
+load merge /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/states/usr05.state.xml
+Mon Jun  21 15:50:17.470 UTC+02:00
+Loading.
+607 bytes parsed in 0.00 sec (123.23 KiB/sec)
+============================== commit()
+commit dry-run  outformat native  | exclude "device etrafo0" | save overwrite drned-work/drned-dry-run.txt
+Mon Jun  21 15:50:17.625 UTC+02:00
+native {
+    device {
+        name etrafo0
+        data <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+                  message-id="23">
+               <edit-config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                 <target>
+                   <candidate/>
+                 </target>
+                 <test-option>test-then-set</test-option>
+                 <error-option>rollback-on-error</error-option>
+                 <config>
+                   <users xmlns="http://tail-f.com/ns/example/users">
+                     <user>
+                       <name>admin</name>
+                       <password>$1$00Dc8WZl$CbavQQX2RFZLdiTAa2v2m.</password>
+                     </user>
+                     <user xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0"
+                           nc:operation="delete">
+                       <name>usr04</name>
+                     </user>
+                     <user>
+                       <name>usr05</name>
+                       <password>$1$IL5Q8Fbq$AKHlJu19CU.Lvb7EBCgRf1</password>
+                       <role>oper</role>
+                     </user>
+                   </users>
+                 </config>
+               </edit-config>
+             </rpc>
+    }
+}
+
+commit commit-queue sync
+Mon Jun  21 15:50:17.721 UTC+02:00
+commit-queue {
+    id 1624283417759
+    status completed
+}
+Commit complete.
+NOTE: Commit id: 10027
+============================== compare_config()
+devices device etrafo0 compare-config
+Mon Jun  21 15:50:18.149 UTC+02:00
+============================== save(drned-work/after-test.cfg)
+save drned-work/after-test.cfg  devices device etrafo0 config
+Mon Jun  21 15:50:18.253 UTC+02:00
+Saving devices device etrafo0 config
+.
+### TEARDOWN, RESTORE DEVICE ###
+complete-on-space false
+idle-timeout 0
+ignore-leading-space true
+timestamp enable
+config
+Mon Jun  21 15:50:18.716 UTC+02:00
+Entering configuration mode terminal
+Current configuration users:
+admin console (cli from 127.0.0.1) on since 2021-06-21 15:49:58 terminal mode
+session paginate false
+Mon Jun  21 15:50:18.792 UTC+02:00
+no devices device etrafo0 config
+Mon Jun  21 15:50:18.860 UTC+02:00
+top
+Mon Jun  21 15:50:18.920 UTC+02:00
+============================== load(drned-work/before-session.xml)
+load merge drned-work/before-session.xml
+Mon Jun  21 15:50:18.996 UTC+02:00
+Loading.
+443 bytes parsed in 0.01 sec (36.96 KiB/sec)
+show config
+Mon Jun  21 15:50:19.710 UTC+02:00
+devices device etrafo0
+ config
+  users user admin
+   password $1$1g4QRGtM$bs7XH0JkIPEx16n27yMHM.
+  !
+  no users user usr05
+ !
+!
+============================== commit()
+commit dry-run  outformat native  | exclude "device etrafo0" | save overwrite drned-work/drned-dry-run.txt
+Mon Jun  21 15:50:19.202 UTC+02:00
+commit no-networking
+Mon Jun  21 15:50:19.292 UTC+02:00
+Commit complete.
+NOTE: Commit id: 10028
+============================== sync_to()
+devices device etrafo0 sync-to
+Mon Jun  21 15:50:19.485 UTC+02:00
+result true
+============================== compare_config()
+devices device etrafo0 compare-config
+Mon Jun  21 15:50:19.743 UTC+02:00
+============================== save(drned-work/after-session.cfg)
+save drned-work/after-session.cfg  devices device etrafo0 config
+Mon Jun  21 15:50:19.881 UTC+02:00
+Saving devices device etrafo0 config
+Failed states: ['usr02']
+
+
+========================================== warnings summary ===========================================
+../drned/common/test_common.py:8
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/common/test_common.py:8: DeprecationWarning: invalid escape sequence \*
+    return os.system("diff -I '^ *!' -I '^ */\*' %s %s" % (a, b)) == 0
+
+../drned/drned/fixtures.py:108
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:108: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:131
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:131: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:143
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:143: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:148
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:148: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:154
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:154: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:181
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:181: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:198
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:198: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:203
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:203: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:208
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:208: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:213
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:213: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:218
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:218: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:223
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:223: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:228
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:228: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:239
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:239: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:244
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:244: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:249
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:249: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:254
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:254: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:259
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:259: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+../drned/drned/fixtures.py:264
+  /home/martin/devel/xmnr/code/test/lux/ncs-run/xmnr-run-dir/etrafo0/test/drned/drned/fixtures.py:264: PytestDeprecationWarning: @pytest.yield_fixture is deprecated.
+  Use @pytest.fixture instead; they are the same.
+    @pytest.yield_fixture(scope=SCOPE)
+
+-- Docs: https://docs.pytest.org/en/stable/warnings.html
+=========================== 1 passed, 26 deselected, 20 warnings in 20.87s ============================

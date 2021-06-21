@@ -1,0 +1,110 @@
+[doc Testing event filtering and processing for DrNED transitions]
+
+[include common.luxinc]
+
+[macro econfd-check]
+    [local dir=$$NCS_DIR/erlang/econfd]
+    [local beamfile=$dir/ebin/econfd.beam]
+    [local msg=econfd binaries are needed - run "make -C $dir all"]
+    !echo m''sg: '$msg' | sed 's/[$]/[$]/g'
+    ?msg: (.*)
+    [local pattern=$1]
+    -failed: $pattern
+    !test -f $beamfile && file $beamfile || echo failed: '$msg'
+    ?Erlang BEAM file
+[endmacro]
+
+[shell os]
+    [invoke econfd-check]
+    !readlink -f etrafo/usr/device/*.py
+    ?(.*etrafo0.py)
+    [global driver=$1]
+    [invoke ned-test-setup]
+    !ncs-make-package --no-java --netconf-ned ../../etrafo etrafo
+    [invoke shell-check]
+    !echo include Makefile.inc >> etrafo/netsim/Makefile
+    [invoke shell-check]
+    !cp -r ../../etrafo/Makefile.inc ../../etrafo/erlang-lib etrafo/netsim
+    [invoke shell-check]
+    [timeout 10]
+    !make -C etrafo/src all
+    [invoke shell-check]
+    !cd ..
+    [invoke start-ncs-netsim etrafo]
+    [timeout]
+
+[shell ncs-cli]
+
+    [invoke prepare-test etrafo0]
+    # remove redundant users
+    !no config users user public
+    !no config users user private
+    !no config users user oper
+    # configure short timeout
+    !read-timeout 4
+    !drned-xmnr driver $driver
+    !commit
+    ?Commit complete
+
+[shell netsim]
+    !cd ncs-run/netsim/etrafo/etrafo0
+    ~CONFD_IPC_PORT=5010 erl -pa $NCS_DIR/erlang/econfd/ebin -pa erlang-lib/ec_transform/ebin/
+    ! -s econfd -s ec_transform -noinput
+    ?ec_transform_server: Server started
+
+[macro suspend-for stop_pattern resume_pattern]
+    ?$stop_pattern
+[shell netsim]
+    ~$_CTRL_Z_
+
+[shell ncs-cli]
+    ?$resume_pattern
+
+[shell netsim]
+    !fg
+
+[shell ncs-cli]
+[endmacro]
+
+[shell ncs-cli]
+    [progress convert with timeout]
+    [timeout 20]
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
+    [invoke suspend-for "importing state usr03" "failed to import group .*"]
+    ?importing state usr06
+    ?failure failed to convert configuration.s.: [^ ]*usr03
+    [timeout]
+    !do show devices device etrafo0 drned-xmnr state states | sort-by state
+    """?
+    STATE *
+    -----* *
+    empty *
+    usr01 *
+    usr02 *
+    usr04 *
+    usr05 *
+    usr06 *
+
+    admin@ncs.*
+    """
+
+    [progress walk with timeout]
+    [timeout 20]
+    !drned-xmnr transitions walk-states states [ usr01 usr02 usr04 usr05 ]
+    [invoke suspend-for "Test transition to usr02" "Device cleanup"]
+    ?Failed states +\['usr02'\]
+    ?failure failed to transition to states: usr02
+    !do show drned-xmnr last-test-results | tab
+    """?
+    FROM * TO * TYPE * MESSAGE * COMMENT *
+    -----------------------------------* *
+    \(init\) * usr01 * - * - * - *
+    usr01 * usr02 * commit * etrafo0: transport timeout; closing session * device request timeout *
+    usr02 * usr04 * - * - * - *
+    usr04 * usr05 * - * - * - *
+
+    admin@ncs.*
+    """
+
+[cleanup]
+    [invoke cleanup]

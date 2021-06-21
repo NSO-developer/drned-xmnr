@@ -1,3 +1,7 @@
-[TransitionDesc('(init)', 'empty', None, None),
- TransitionDesc('empty', 'ip1', 'commit', "RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external"),
- TransitionDesc('empty', 'ip1', 'commit', "RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external")]
+[TransitionDesc('(init)', 'empty', None, None, None),
+ TransitionDesc('empty', 'ip1', 'commit',
+                'failed to commit, configuration refused by the device',
+                "RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external"),
+ TransitionDesc('empty', 'ip1', 'commit',
+                'failed to commit, configuration refused by the device',
+                "RPC error towards hook0: operation_failed: for /nc:rpc/nc:edit-config/nc:config/hooks:hosts[hooks:name='aa']/hooks:netmask: no registration found for callpoint ip-mask/set_elem of type=external")]

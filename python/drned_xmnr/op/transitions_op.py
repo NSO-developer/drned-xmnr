@@ -72,21 +72,19 @@ class TransitionsOp(base_op.ActionBase):
             return filtering.fork(events, filtering.filter_sink(writer))
         return events
 
-    def drned_run(self, drned_args, timeout=120):
+    def drned_run(self, drned_args):
         args = ["-s", "--tb=short", "--device="+self.dev_name] + drned_args
         if not self.using_builtin_drned:
             args.append("--unreserved")
         args.insert(0, self.pytest_executable())
         self.log.debug("drned: {0}".format(args))
-        return self.run_in_drned_env(args, timeout)
+        return self.run_in_drned_env(args)
 
     def transition_to_state(self, state_name, rollback=False):
         filename = self.state_name_to_filename(state_name)
         self.log.debug("Transition_to_state: {0}\n".format(state_name))
         filepath = os.path.relpath(filename, self.drned_run_directory)
         self.log.debug("Using file {0}\n".format(filepath))
-        # Max 120 seconds for executing DrNED
-        self.extend_timeout(120)
         test = "test_template_single" if rollback else "test_template_raw"
         args = ["-k {0}[{1}]".format(test, os.path.basename(filepath))]
         result, _ = self.drned_run(args)
@@ -115,7 +113,12 @@ class TransitionsOp(base_op.ActionBase):
             if event.failure is not None:
                 failure = tsinst.failure.create()
                 failure.type = self.failure_types.get(event.failure, '')
-                failure.comment = self.event_context.failure_comment(event.failure)
+                comment = event.comment
+                msg = event.failure_message
+                failure.comment = comment
+                if msg != comment:
+                    # not useful to have it twice
+                    failure.message = msg
         trans.apply()
 
 
@@ -237,7 +240,6 @@ class WalkTransitionsOp(TransitionsOp):
         self.state_filenames = [self.state_name_to_filename(state)
                                 for state in pstates]
         self.rollback = params.rollback
-        self.device_timeout = params.device_timeout
 
     def filter_state_sets(self, states):
         """Filter out duplicate representatives of "state sets".
@@ -267,8 +269,7 @@ class WalkTransitionsOp(TransitionsOp):
         fname_args = ["--fname=" + filename for filename in self.state_filenames]
         end_op = [] if self.rollback else ["--end-op", ""]
         result, _ = self.drned_run(fname_args + end_op +
-                                   ["--ordered=false", "-k", "test_template_set"],
-                                   timeout=self.device_timeout)
+                                   ["--ordered=false", "-k", "test_template_set"])
         self.log.debug("DrNED completed: {0}".format(result))
         ops = [tr.to for tr in self.event_context.test_events if tr.failure is not None]
         if result != 0 or ops:
