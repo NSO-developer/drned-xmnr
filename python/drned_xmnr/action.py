@@ -15,7 +15,6 @@ from drned_xmnr.op import config_op
 from drned_xmnr.op import transitions_op
 from drned_xmnr.op import setup_op
 from drned_xmnr.op import coverage_op
-from drned_xmnr.op import common_op
 from drned_xmnr.op.ex import ActionError
 
 assert sys.version_info >= (2, 7)
@@ -44,7 +43,6 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_walk_states_: transitions_op.WalkTransitionsOp,
         ns.ns.drned_xmnr_reset_: coverage_op.ResetCoverageOp,
         ns.ns.drned_xmnr_collect_: coverage_op.CoverageOp,
-        ns.ns.drned_xmnr_load_default_config_: common_op.LoadDefaultConfigOp,
     }
 
     def init(self):

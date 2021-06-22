@@ -350,6 +350,7 @@ class ImportConvertCliFiles(ImportOp):
 
     def _init_params(self, params):
         super(ImportConvertCliFiles, self)._init_params(params)
+        self.devcli = self.param_default(params, "cli_device", self.dev_name)
         self.device_timeout = params.device_timeout
 
     def cli_filter(self, msg):
@@ -359,7 +360,7 @@ class ImportConvertCliFiles(ImportOp):
 
     def perform(self):
         filenames, states, _ = self.verify_filenames()
-        args = ['python', 'cli2netconf.py', self.dev_name, self.driver,
+        args = ['python', 'cli2netconf.py', self.dev_name, self.devcli,
                 '-t', str(self.device_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
         self.filter = ConvertFilter(self)
