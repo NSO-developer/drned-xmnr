@@ -398,9 +398,24 @@ class CommitState(LogState):
             return (True, [self])
         if isinstance(event, DrnedCommitNoqueueEvent) or \
            isinstance(event, DrnedCommitNNEvent):
-            return (True, [GenState(DrnedCommitResultEvent)])
+            return (True, [CommitResultState()])
         if isinstance(event, DrnedCommitQueueEvent):
             return (True, [CommitQueueState()])
+        return (False, [])
+
+
+class CommitResultState(LogState):
+    '''
+    CommitResult -> failed | succeeded
+    '''
+
+    name = 'commit result'
+
+    def handle(self, event):
+        if isinstance(event, DrnedFailureReasonEvent):
+            return (False, [CommitFailureState()])
+        if isinstance(event, DrnedCommitResultEvent):
+            return (True, [], event)
         return (False, [])
 
 
@@ -432,11 +447,11 @@ class CommitQueueState(LogState):
             return (True, [], event)
         if isinstance(event, DrnedCommitResultEvent) and \
            not event.success:
-            return (True, [CommitFailure(), CommitCompleteState()])
+            return (True, [CommitFailureState(), CommitCompleteState()])
         return (False, [GenState(DrnedCommitResultEvent), CommitCompleteState()])
 
 
-class CommitFailure(LogState):
+class CommitFailureState(LogState):
     '''Report commit failure reason (if any).
     '''
     name = 'commit-failed'

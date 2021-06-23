@@ -76,6 +76,9 @@ class TestWalk(FilteringTest):
     def test_walk_comfail(self):
         self.filter_test('walk-comfail')
 
+    def test_walk_comfailnq(self):
+        self.filter_test('walk-comfail-nq')
+
 
 class TestExplore(FilteringTest):
     @staticmethod

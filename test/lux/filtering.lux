@@ -35,12 +35,12 @@
     [progress walk-states]
     [timeout 10]
     !drned-xmnr transitions walk-states states [ empty host bad-host ]
-    """???
+    """?
     Prepare the device
     Test transition to empty
        load empty
        commit
-           (no modifications)
+           \(no modifications\)
        compare config
            succeeded
     Test transition to host
@@ -59,15 +59,15 @@
     Test transition to bad-host
        load bad-host
        commit
-           failed (RPC error towards hooks0: operation_fail...)
+           failed \(RPC error towards hooks0: operation_fail\.\.\.\)
     failed to commit, configuration refused by the device
     Device cleanup
        load before-session
        commit
-           succeeded
+           (succeeded|\(no modifications\))
        compare config
            succeeded
-    Failed states  ['host', 'bad-host']
+    Failed states  \['host', 'bad-host'\]
     """
     [timeout]
 
@@ -112,7 +112,7 @@
     Device cleanup
        load before-session
        commit
-           succeeded
+           (\(no modifications\)|succeeded)
        compare config
            succeeded
     Transition failed

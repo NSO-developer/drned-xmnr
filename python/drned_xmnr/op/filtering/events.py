@@ -168,11 +168,14 @@ class DrnedCommitCompleteEvent(DrnedCommitResultEvent):
         return 'Drned commit complete event'
 
 
-class DrnedFailureReasonEvent(DrnedCommitEvent):
-    def __init__(self, msg, reason=None):
-        super(DrnedFailureReasonEvent, self).__init__('')
+class DrnedFailureReasonEvent(DrnedCommitResultEvent):
+    def __init__(self, msg):
+        super(DrnedFailureReasonEvent, self).__init__(msg, False)
         self.msg = msg
-        self.reason = reason
+        if 'transport timeout' in msg:
+            self.reason = 'device request timeout'
+        else:
+            self.reason = None
 
     def __str__(self):
         return 'Drned commit failure: {}'.format(self.reason)
@@ -185,11 +188,6 @@ class DrnedFailureReasonEvent(DrnedCommitEvent):
             msg = self.msg
         line = '    failed ({})'.format(msg)
         return self.indent_line(line)
-
-
-class DrnedCommitTimeoutEvent(DrnedFailureReasonEvent):
-    def __init__(self, msg):
-        super(DrnedCommitTimeoutEvent, self).__init__(msg, 'device request timeout')
 
 
 class DrnedCompareEvent(LineOutputEvent):
@@ -279,8 +277,8 @@ line_regexp = re.compile('''\
 (?P<commit_nn>commit no-networking)|\
 (?P<commit_complete>Commit complete\\.)|\
 (?P<commit_result> *status (?P<result>completed|failed))|\
-(?P<commit_timeout> *reason (?P<timeout_reason>[^ ]*: transport timeout; .*))|\
-(?P<commit_failure_reason> *reason (?P<reason>RPC error .*))|\
+(?P<commit_abort>Aborted: (?P<abort_reason>.*))|\
+(?P<commit_failure> *reason (?P<failure_reason>RPC error .*|[^ ]*: transport timeout; .*))|\
 (?P<teardown>### TEARDOWN, RESTORE DEVICE ###)|\
 (?P<restore>={30} load\\(drned-work/before-session.xml\\))|\
 (?P<diff>diff *)|\
@@ -329,10 +327,10 @@ def event_generator(consumer):
                                                      match.groupdict()['result'] == 'completed'))
             elif match.lastgroup == 'commit_complete':
                 consumer.send(DrnedCommitCompleteEvent(match.string))
-            elif match.lastgroup == 'commit_timeout':
-                consumer.send(DrnedCommitTimeoutEvent(match.groupdict()['timeout_reason']))
-            elif match.lastgroup == 'commit_failure_reason':
-                consumer.send(DrnedFailureReasonEvent(match.groupdict()['reason']))
+            elif match.lastgroup == 'commit_abort':
+                consumer.send(DrnedFailureReasonEvent(match.groupdict()['abort_reason']))
+            elif match.lastgroup == 'commit_failure':
+                consumer.send(DrnedFailureReasonEvent(match.groupdict()['failure_reason']))
             elif match.lastgroup == 'teardown':
                 consumer.send(DrnedTeardownEvent())
             elif match.lastgroup == 'restore':

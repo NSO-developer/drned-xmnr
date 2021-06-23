@@ -114,7 +114,7 @@
 
 [macro prepare-test device]
     [invoke prepare-ncs $device]
-    [invoke prepare-device-xmnr true]
+    [invoke prepare-device-xmnr false]
 [endmacro]
 
 [macro prepare-ncs device]
