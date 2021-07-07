@@ -29,9 +29,30 @@ else:
         return data
 
 TIMEOUT_MARGIN = 5
-"""Number of seconds between the device timeout and action timeout.
+'''Number of seconds between the device timeout and action timeout.
 When XMNR gets any output from a DrNED test, it extends the action
-timeout by device-timeout increased by this value."""
+timeout by device-timeout increased by this value.
+
+There are several layers, each having it's own timeout. It is
+desirable and less disruptive that if the lower layer is able to
+somehow abort whatever is going on because it takes too long, the
+higher level waits for it to do so, so the higher layer's timeout
+should be at least somewhat bigger than that of the lower layer, to
+avoid nasty race conditions.
+
+There is only one parameter now, /devices/device/read-timeout, used by
+all three layers with increasing margin:
+
+ 1. the lowest layer, DrNED, needs to use the timeout value to abort
+    waiting for ncs_cli response if that does not come;
+ 2. XMNR uses timeout+margin to wait for DrNED's output; this might
+    not be needed, if we could be sure that DrNED always aborts if it
+    takes too long, but we cannot, or at least I am not sure we can
+    rely on DrNED in this respect;
+ 3. finally, NCS is repeatedly told to wait another timeout+2*margin
+    for the action to complete; we need to do that, since otherwise
+    NCS might simply abort the action.
+'''
 
 
 class XmnrBase(object):
@@ -194,6 +215,8 @@ class ActionBase(XmnrBase):
             return callback(mp.attach(self.uinfo.actx_thandle))
 
     def extend_timeout(self):
+        '''Tell NSO to wait a bit longer.  See also `TIMEOUT_MARGIN`.
+        '''
         extension = self.device_timeout + 2*TIMEOUT_MARGIN
         dp.action_set_timeout(self.uinfo, extension)
 
