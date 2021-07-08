@@ -1,0 +1,63 @@
+module users {
+  namespace "http://tail-f.com/ns/example/users";
+  prefix users;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  organization "Tail-f Systems (a Cisco company)";
+
+  contact "info@tail-f.com";
+
+  description
+    "YANG datamodel for Internal (Erlang) transform example
+     (C) 2005-2018 Tail-f Systems
+
+     Permission to use this code as a starting point hereby granted
+     This is ConfD Sample Code.
+
+     See the README file for more information";
+
+  revision 2019-02-14 {
+    description "Normalized YANG identifier names.";
+  }
+
+  revision 2018-11-30 {
+    description "YANG header information updated";
+  }
+
+  revision 2012-11-01 {
+    description "Initial revision.";
+  }
+
+  typedef role {
+    type enumeration {
+      enum admin;
+      enum oper;
+    }
+  }
+  typedef passwd-str {
+    type tailf:md5-digest-string {
+    }
+  }
+  container users {
+    tailf:callpoint simple-aaa {
+      tailf:transform true;
+    }
+    list user {
+      key name;
+      leaf name {
+        type string;
+      }
+      leaf password {
+        type passwd-str;
+        mandatory true;
+      }
+      leaf role {
+        type role;
+        mandatory true;
+      }
+    }
+  }
+}

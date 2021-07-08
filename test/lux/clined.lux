@@ -3,6 +3,9 @@
 [include common.luxinc]
 
 [shell os]
+    !readlink -f cfgs/device/*.py
+    ?(.*nc0.py)
+    [global driver=$1]
     [invoke ned-test-setup]
     !ls -d $NCS_DIR/packages/neds/*-ios-cli* | tail -1
     ?(cisco-ios.*)
@@ -36,6 +39,8 @@
     [progress convert CLI config]
     [local tweak=sed -e 's/10022/12022/' -e 's/cli>/netconf>/' -e 's/cisco-ios0/cisco-nc0/']
     [invoke prepare-ncs-tweak cisco-ios0 $tweak cisco-nc0]
+    !drned-xmnr driver $driver
+    !commit
     !drned-xmnr setup setup-xmnr overwrite true
     ???success
     [timeout 30]

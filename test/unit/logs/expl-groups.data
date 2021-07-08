@@ -1,15 +1,15 @@
-[TransitionDesc('(init)', 'empty', None, None),
- TransitionDesc('empty', 's-subnet3:1', None, None),
- TransitionDesc('empty', 's-subnet3:2', None, None),
- TransitionDesc('empty', 's-subnet3:1', None, None),
- TransitionDesc('s-subnet3:1', 'empty', None, None),
+[TransitionDesc('(init)', 'empty', None, None, None),
+ TransitionDesc('empty', 's-subnet3:1', None, None, None),
+ TransitionDesc('empty', 's-subnet3:2', None, None, None),
+ TransitionDesc('empty', 's-subnet3:1', None, None, None),
+ TransitionDesc('s-subnet3:1', 'empty', None, None, None),
 
  # it is a failure here, actually, but not the kind that filtering is
  # able to capture
- TransitionDesc('s-subnet3:1', 's-subnet3:2', None, None),
+ TransitionDesc('s-subnet3:1', 's-subnet3:2', None, None, None),
 
- TransitionDesc('s-subnet3:1', 's-subnet3:2', None, None),
- TransitionDesc('s-subnet3:2', 'empty', None, None),
+ TransitionDesc('s-subnet3:1', 's-subnet3:2', None, None, None),
+ TransitionDesc('s-subnet3:2', 'empty', None, None, None),
 
  # ditto
- TransitionDesc('s-subnet3:2', 's-subnet3:1', None, None)]
+ TransitionDesc('s-subnet3:2', 's-subnet3:1', None, None, None)]

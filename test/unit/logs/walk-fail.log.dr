@@ -59,4 +59,4 @@ Device cleanup
        (no modifications)
    compare config
        succeeded
-Failed States  ['s-subnet3:*']
+Failed states  ['s-subnet3:*']

@@ -80,7 +80,7 @@ XMNR_INSTALL = 'xmnr-install'
 
 @contextmanager
 def ncs_mock():
-    device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'))
+    device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'), read_timeout=None)
     rootmock = Mock(devices=Mock(device={DEVICE_NAME: device}),
                     packages=Mock(package={'drned-xmnr': Mock(directory=XMNR_INSTALL)}),
                     drned_xmnr=Mock(xmnr_directory=XMNR_DIRECTORY,
