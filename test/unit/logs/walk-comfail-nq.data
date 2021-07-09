@@ -1,0 +1,5 @@
+[TransitionDesc('(init)', 'usr01', None, None, None),
+ TransitionDesc('usr01', 'usr02', 'commit', 'device request timeout', 'etrafo0: transport timeout; closing session'),
+ TransitionDesc('usr02', 'usr04', None, None, None),
+ TransitionDesc('usr04', 'usr05', None, None, None)]
+

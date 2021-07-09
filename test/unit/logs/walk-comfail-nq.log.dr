@@ -1,0 +1,37 @@
+Prepare the device
+Test transition to usr01
+   load usr01
+   commit
+       succeeded
+   compare config
+       succeeded
+Test transition to usr02
+   load usr02
+   commit
+       failed (etrafo0: transport timeout; closing sess...)
+device request timeout
+Device cleanup
+   load before-session
+   commit
+       succeeded
+   compare config
+       succeeded
+Test transition to usr04
+   load usr04
+   commit
+       succeeded
+   compare config
+       succeeded
+Test transition to usr05
+   load usr05
+   commit
+       succeeded
+   compare config
+       succeeded
+Device cleanup
+   load before-session
+   commit
+       succeeded
+   compare config
+       succeeded
+Failed states  ['usr02']
