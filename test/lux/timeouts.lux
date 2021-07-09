@@ -17,7 +17,7 @@
 [shell os]
     [invoke econfd-check]
     !readlink -f etrafo/usr/device/*.py
-    ?(.*etrafo0.py)
+    ?[^/]*(/.*netsim_J.py)
     [global driver=$1]
     [invoke ned-test-setup]
     !ncs-make-package --no-java --netconf-ned ../../etrafo etrafo

@@ -1,5 +1,4 @@
 import os
-import re
 
 
 def _get_data(devcli):
@@ -12,25 +11,31 @@ class Devcfg(object):
         self.path = path
         self.name = name
 
-    def _get(self, what):
-        with open(os.path.join(self.path, self.name + ".cfg")) as f:
-            m = re.search(what, f.read(), re.MULTILINE)
-        return m.group(1)
+    def init_params(self, devname='netsim0',
+                    ip='127.0.0.1', port=12022,
+                    username='admin', password='admin',
+                    **args):
+        self.devname = devname
+        self.ip = ip
+        self.port = port - 2000
+        self.username = username
+        self.password = password
+        self.prompt = "{}[(].+[)]# ?$".format(self.devname)
 
     def get_address(self):
-        return '127.0.0.1'
+        return self.ip
 
     def get_port(self):
-        return '10022'
+        return self.port
 
     def get_username(self):
-        return 'admin'
+        return self.username
 
     def get_password(self):
-        return 'admin'
+        return self.password
 
     def get_prompt(self):
-        return "^.*[(].+[)]# ?$"
+        return self.prompt
 
     def get_state_machine(self):
         return {
