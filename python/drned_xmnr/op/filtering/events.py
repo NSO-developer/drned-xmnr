@@ -11,7 +11,7 @@ from .cort import coroutine
 
 class LineOutputEvent(object):
     indent = 3 * ' '
-    state_name_regexp = re.compile(r'.*/states/([^/.]*)(?:\.state)?\.(cfg|xml)')
+    state_name_regexp = re.compile(r'.*/states/([^/]*?)(?:\.state)?\.(cfg|xml)')
 
     @staticmethod
     def indent_line(line):
