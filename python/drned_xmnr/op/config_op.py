@@ -173,8 +173,10 @@ class ImportOp(ConfigOp):
 
     def get_state_name(self, origname):
         (base, ext) = os.path.splitext(origname)
-        while ext != "":
-            (base, ext) = os.path.splitext(base)
+        (base1, ext1) = os.path.splitext(base)
+        if ext1 == ".state":
+            # happens for "import" of states from another device or XMNR instance
+            return base1
         return base
 
 
