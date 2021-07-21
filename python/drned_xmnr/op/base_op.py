@@ -340,7 +340,9 @@ class ActionBase(XmnrBase):
         root = maagic.get_root(trans)
         device_node = root.devices.device[self.dev_name]
         ip = device_node.address
-        port = device_node.port
+        port = device_node.drned_xmnr.cli_port
+        if port is None:
+            port = device_node.port
         driver = device_node.drned_xmnr.driver
         if driver is None:
             raise ActionError('device driver not configured, cannot continue')
