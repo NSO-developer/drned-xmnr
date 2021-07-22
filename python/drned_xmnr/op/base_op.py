@@ -197,7 +197,7 @@ class ActionBase(XmnrBase):
             self.terminate_drned_process()
 
     def param_default(self, params, name, default):
-        value = getattr(params, name)
+        value = getattr(params, name, None)
         if value is None:
             return default
         return value
