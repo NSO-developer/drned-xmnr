@@ -43,7 +43,7 @@
     """?
     netconf-console --get .*
     $states$$
-    SH-PROMPT
+    SH-PROMPT:
     """
 [shell $shell]
 [endmacro]
@@ -68,7 +68,7 @@
     [local ned0_log=$ned0_dir/test/output.log]
     !cp -v ../subnet2.xml $ned0_dir/test/states/
     ??'../subnet2.xml' -> '$ned0_dir/test/states/subnet2.xml'
-    ?SH-PROMPT
+    ?SH-PROMPT:
 [shell ncs-cli]
     !drned-xmnr state record-state state-name subnet2
     ???failure state subnet2 already exists
@@ -158,7 +158,7 @@
     ?explore transitions
     ?KeyboardInterrupt
     ~$_CTRL_C_
-    ?SH-PROMPT
+    ?SH-PROMPT:
 
 [cleanup]
     [invoke cleanup]

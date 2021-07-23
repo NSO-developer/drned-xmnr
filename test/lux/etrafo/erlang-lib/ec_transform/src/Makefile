@@ -1,7 +1,5 @@
 include ../vsn.mk
 
-CONFD_DIR ?= ../../../../../../..
-
 APP_DIR    = $(shell dirname $(PWD))
 APP_NAME   = $(shell basename $(APP_DIR))
 ERL_FILES  = $(wildcard *.erl)

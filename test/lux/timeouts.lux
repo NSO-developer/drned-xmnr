@@ -2,10 +2,11 @@
 
 [include common.luxinc]
 
+[global ECONFD_DIR=$$NCS_DIR/netsim/confd/erlang/econfd]
+
 [macro econfd-check]
-    [local dir=$$NCS_DIR/erlang/econfd]
-    [local beamfile=$dir/ebin/econfd.beam]
-    [local msg=econfd binaries are needed - run "make -C $dir all"]
+    [local beamfile=$ECONFD_DIR/ebin/econfd.beam]
+    [local msg=econfd binaries are needed - run "make -C $ECONFD_DIR all"]
     !echo m''sg: '$msg' | sed 's/[$]/[$]/g'
     ?msg: (.*)
     [local pattern=$1]
@@ -48,7 +49,7 @@
 
 [shell netsim]
     !cd ncs-run/netsim/etrafo/etrafo0
-    ~CONFD_IPC_PORT=5010 erl -pa $NCS_DIR/erlang/econfd/ebin -pa erlang-lib/ec_transform/ebin/
+    ~CONFD_IPC_PORT=5010 erl -pa $ECONFD_DIR/ebin -pa erlang-lib/ec_transform/ebin/
     ! -s econfd -s ec_transform -noinput
     ?ec_transform_server: Server started
 

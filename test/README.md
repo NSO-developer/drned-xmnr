@@ -52,11 +52,13 @@ $
 The directory `lux` contains one test case that tries to verify that basic
 integration with NSO and DrNED works.  The prerequisites are:
 
- * DrNED must be installed and the environment variable `DRNED` points to the
-   installation directory
+ * `xmllint` must be installed (Ubuntu: `sudo apt install libxml2-utils`)
  * `PYTHONPATH` must point to NSO Python API
  * several additional Python packages need to be installed, see
    `requirements.txt`
+ * environment variable `relative_paths` should be set to `true` (occasionally
+   you may want to set it to `false`; it affects where XMNR stores its files)
+ * JDK and `ant`
 
 When this is set correctly, run
 

@@ -262,7 +262,7 @@ class TestBase(object):
     real_open = open
     log_levels = ('error', 'warning', 'info', 'debug')
     test_run_dir = os.path.join(mocklib.XMNR_DIRECTORY, mocklib.DEVICE_NAME, 'test')
-    states = ('state1', 'state2', 'otherstate1')
+    states = ('state1', 'state2', 'other.state1')
 
     def check_output(self, output, success=None):
         assert output.error is None
@@ -522,10 +522,10 @@ class TestStates(TestBase):
         self.setup_states_data(xpatch.system)
         output = self.invoke_action('delete-state',
                                     state_name_pattern=None,
-                                    state_name='otherstate1')
+                                    state_name='other.state1')
         self.check_output(output)
         states = list(self.states[:])
-        states.remove('otherstate1')
+        states.remove('other.state1')
         self.check_states(states)
 
     @xtest_patch
@@ -811,7 +811,7 @@ class TestTransitions(TransitionsTestBase):
 
     def popen_fail_state(self, args, *rest, **kwargs):
         for arg in args:
-            if 'otherstate1' in arg:
+            if 'other.state1' in arg:
                 return mock.Mock(wait=mock.Mock(return_value=-1))
         return mock.DEFAULT
 
@@ -824,8 +824,8 @@ class TestTransitions(TransitionsTestBase):
                                     states=self.states,
                                     stop_after=self.stop_params())
         assert output.success is None
-        assert 'Failed to initialize state otherstate1' in output.error
-        assert '==> otherstate1' in output.failure
+        assert 'Failed to initialize state other.state1' in output.error
+        assert '==> other.state1' in output.failure
 
     @xtest_patch
     def test_walk_states(self, xpatch):
@@ -927,7 +927,7 @@ class DrnedExploreOutput(DrnedOutput):
             yield 'Starting with state {}\n'.format(from_state)
             if self.filter_type != 'overview':
                 yield start_output.format(state_from=from_state)
-            if from_state == 'otherstate1':
+            if from_state == 'other.state1':
                 yield drned_init_failed.format(state_from=from_state)
                 continue
             for to_state in self.state_data:
@@ -938,20 +938,20 @@ class DrnedExploreOutput(DrnedOutput):
                     index, num_transitions, from_state, to_state)
                 yield transition_output.format(state_to=to_state,
                                                compare_result=compare_success)
-                if to_state == 'otherstate1':
+                if to_state == 'other.state1':
                     yield drned_transition_failed
 
     def output(self):
         for from_state in self.state_data:
-            if from_state == 'otherstate1':
+            if from_state == 'other.state1':
                 self.failure = True
             yield drned_explore_start_output.format(state_from=from_state)
-            if from_state == 'otherstate1':
+            if from_state == 'other.state1':
                 continue
             for to_state in self.state_data:
                 if to_state == from_state:
                     continue
-                if to_state == 'otherstate1':
+                if to_state == 'other.state1':
                     self.failure = True
                 yield drned_transition_output.format(state_to=to_state, compare_result='')
 
@@ -972,7 +972,7 @@ class DrnedWalkOutput(DrnedOutput):
             outro_output = drned_walk_output_outro_filtered
         yield start_output
         for state in self.state_data:
-            end_op = '--end-op= ' if state == 'otherstate1' else ''
+            end_op = '--end-op= ' if state == 'other.state1' else ''
             yield intro_output.format(state_to=state, end_op=end_op)
             if self.filter_type != 'overview':
                 yield trans_output.format(state_to=state)
@@ -983,7 +983,7 @@ class DrnedWalkOutput(DrnedOutput):
 
     def full_output(self):
         for state in self.state_data:
-            end_op = '--end-op= ' if state == 'otherstate1' else ''
+            end_op = '--end-op= ' if state == 'other.state1' else ''
             yield drned_walk_output_intro.format(state_to=state, end_op=end_op)
             yield drned_walk_output.format(state_to=state)
         yield drned_walk_output_outro
