@@ -155,7 +155,8 @@ class RecordStateOp(ConfigOp):
 class ImportOp(ConfigOp):
     def _init_params(self, params):
         self.pattern = params.file_path_pattern
-        self.overwrite = params.overwrite
+        self.overwrite = self.param_default(params, "overwrite", None)
+        self.skip_existing = self.param_default(params, "skip_existing", None)
 
     def verify_filenames(self):
         filenames = glob.glob(self.pattern)
@@ -166,9 +167,9 @@ class ImportOp(ConfigOp):
         checks = [self.state_name_to_existing_filename(state) for state in states]
         conflicts = {self.state_filename_to_name(filename) for filename in checks
                      if filename is not None}
-        if not self.overwrite:
-            if conflicts:
-                raise ActionError("States already exists: " + ", ".join(conflicts))
+        if conflicts:
+            if not self.overwrite and not self.skip_existing:
+                raise ActionError("States already exist: " + ", ".join(conflicts))
         return filenames, states, conflicts
 
     def get_state_name(self, origname):
@@ -192,7 +193,7 @@ class ImportStateFiles(ImportOp):
     def perform(self):
         filenames, states, conflicts = self.verify_filenames()
         for (source, target) in zip(filenames, states):
-            if target in conflicts:
+            if target in conflicts and self.overwrite:
                 # TODO: the conflicts should be removed only after
                 # everything else have been done; but that's
                 # difficult...

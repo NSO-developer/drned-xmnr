@@ -484,22 +484,29 @@ class TestStates(TestBase):
         with open(os.path.join(self.test_run_dir, state_path)) as state_data:
             assert state_data.read() == test_state_data_xml
 
+    def invoke_import_state_files(self, path, expected_success = True, **extra_action_params):
+        output = self.invoke_action('import-state-files',
+                                    file_path_pattern=os.path.join(path, '*1.state.cfg'),
+                                    format="c-style",
+                                    target_format="c-style",
+                                    merge=False,
+                                    **extra_action_params)
+        states = None
+        if expected_success:
+            self.check_output(output)
+            states = sorted(state for state in self.states if state.endswith('1'))
+            self.check_states(states)
+        return states
+
     @xtest_patch
     def test_import_states(self, xpatch):
         path = '/tmp/data'
         xpatch.system.ff_patcher.fs.create_dir(path)
         self.setup_states_data(xpatch.system, state_path=path)
         LoadSaveConfig(xpatch.system, xpatch.ncs)
-        output = self.invoke_action('import-state-files',
-                                    file_path_pattern=os.path.join(path, '*1.state.cfg'),
-                                    format="c-style",
-                                    target_format="c-style",
-                                    merge=False,
-                                    overwrite=None)
-        self.check_output(output)
         destdir = os.path.join(self.test_run_dir, 'states')
-        states = sorted(state for state in self.states if state.endswith('1'))
-        self.check_states(states)
+        states = self.invoke_import_state_files(path)
+        assert states is not None
         test_data_p = 'devices device {} config\n{{}} test data'.format(mocklib.DEVICE_NAME)
         for state in states:
             filename = os.path.join(destdir, state + '.state.cfg')
@@ -507,6 +514,25 @@ class TestStates(TestBase):
                 assert state_file.read() == test_data_p.format(state)
             with open(filename + '.load') as metadata:
                 assert metadata.read() == config_op.state_metadata
+
+    @xtest_patch
+    def test_import_states_skip(self, xpatch):
+        path = '/tmp/data'
+        xpatch.system.ff_patcher.fs.create_dir(path)
+        self.setup_states_data(xpatch.system, state_path=path)
+        LoadSaveConfig(xpatch.system, xpatch.ncs)
+        # import first time into clean environment
+        states = self.invoke_import_state_files(path)
+        assert states is not None
+        # try default import and fail
+        states = self.invoke_import_state_files(path, expected_success=False, skip_existing = True)
+        assert states is None
+        # reimport with skipping already existing states
+        states = self.invoke_import_state_files(path, skip_existing = True)
+        assert states is not None
+        # reimport with overwrite
+        states = self.invoke_import_state_files(path, overwrite = True)
+        assert states is not None
 
     @xtest_patch
     def test_delete_states_pattern(self, xpatch):

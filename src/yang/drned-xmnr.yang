@@ -275,9 +275,19 @@ module drned-xmnr {
             leaf target-format {
               type state-file-format;
             }
-            leaf overwrite {
-              type boolean;
-              default false;
+            choice conflicts {
+              default overwrite;
+              case overwrite {
+                leaf overwrite {
+                  type boolean;
+                  default false;
+                }
+              }
+              case skip-existing {
+                leaf skip-existing {
+                  type empty;
+                }
+              }
             }
             leaf merge {
               tailf:info "Merge the file(s) with the current configuration
