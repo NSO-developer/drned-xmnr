@@ -80,14 +80,21 @@ XMNR_INSTALL = 'xmnr-install'
 
 @contextmanager
 def ncs_mock():
-    device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'), read_timeout=None)
-    rootmock = Mock(devices=Mock(device={DEVICE_NAME: device}),
+    nonex = Mock(exists=lambda:False)
+    device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'),
+                  read_timeout=None, address='1.2.3.4', port='5555', authgroup='default')
+    authgrp = Mock(default_map=Mock(remote_name='admin', remote_password='admin',
+                                    same_name=nonex, same_pass=nonex),
+                   umap={})
+    rootmock = Mock(devices=Mock(device={DEVICE_NAME: device},
+                                 authgroups=Mock(group={'default': authgrp})),
                     packages=Mock(package={'drned-xmnr': Mock(directory=XMNR_INSTALL)}),
                     drned_xmnr=Mock(xmnr_directory=XMNR_DIRECTORY,
                                     drned_directory=DRNED_DIRECTORY,
                                     log_detail=Mock(cli='all', redirect=None),
                                     xmnr_log_file=None))
-    ncs_items = ['_ncs.stream_connect', '_ncs.dp.action_set_timeout', '_ncs.maapi.cli_write']
+    ncs_items = ['_ncs.stream_connect', '_ncs.dp.action_set_timeout', '_ncs.maapi.cli_write',
+                 '_ncs.decrypt']
     maapi_inst = MaapiMock()
     with patch('ncs.maapi.Maapi', return_value=maapi_inst):
         with patch('ncs.maagic.get_root', return_value=rootmock):

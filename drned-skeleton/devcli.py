@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+import argparse
 from contextlib import closing
 import importlib
 import inspect
@@ -46,14 +47,32 @@ class XDevice(drned.Device):
 
 
 class Devcli:
-    def __init__(self, driver, workdir, timeout):
-        self.driver = driver
-        self.workdir = workdir
+    @staticmethod
+    def argparser():
+        parser = argparse.ArgumentParser(description='Devcli arguments')
+        parser.add_argument('--driver', '-d')
+        parser.add_argument('--workdir', '-w')
+        parser.add_argument('--devname', '-n')
+        parser.add_argument('--username', '-u', default='admin')
+        parser.add_argument('--password', '-p', default='admin')
+        parser.add_argument('--port', '-P', type=int)
+        parser.add_argument('--ip', '-i')
+        parser.add_argument('--timeout', '-t', type=int, default=120)
+        return parser
+
+    def __init__(self, nsargs):
+        self.params = {}
+        for parname in ['devname', 'username', 'password', 'port', 'ip']:
+            self.params[parname] = getattr(nsargs, parname)
+        self.driver = nsargs.driver
+        self.workdir = nsargs.workdir
+        self.devname = nsargs.devname
+        self.timeout = nsargs.timeout
         self.initial_config = 'drned-init'
         self.trace = None
         self.verbose = VERBOSE
-        self.timeout = timeout
         self.log_lines = 0
+        devcli_init_dirs(self.workdir)
         self._read_device_config()
 
     def close(self):
@@ -78,6 +97,8 @@ class Devcli:
                 setattr(self, m, getattr(module, m))
 
         self.devcfg = self.Devcfg(dirname, dfile)
+        if hasattr(self.devcfg, 'init_params'):
+            self.devcfg.init_params(**self.params)
         self.ssh = "ssh -o StrictHostKeyChecking=no" + \
                    " -o UserKnownHostsFile=/dev/null" + \
                    " -o PasswordAuthentication=yes" + \
@@ -197,11 +218,10 @@ class Devcli:
             raise DevcliException("failed to move to state " + init_state)
 
 
-def devcli_init_dirs():
+def devcli_init_dirs(workdir):
     """ Initialize directories needed by DrNED device.
     Returns working directory.
     """
     os_makedirs('drned-work', exist_ok=True)
-    workdir = os.path.realpath(os.environ['NC_WORKDIR'])
     os_makedirs(workdir, exist_ok=True)
     return workdir
