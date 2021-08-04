@@ -312,9 +312,19 @@ module drned-xmnr {
               type filepath-pattern-type;
               mandatory true;
             }
-            leaf overwrite {
-              type boolean;
-              default false;
+            choice conflicts {
+              default overwrite;
+              case overwrite {
+                leaf overwrite {
+                  type boolean;
+                  default false;
+                }
+              }
+              case skip-existing {
+                leaf skip-existing {
+                  type empty;
+                }
+              }
             }
           }
           output {

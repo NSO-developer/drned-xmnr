@@ -167,8 +167,7 @@ class ImportOp(ConfigOp):
         checks = [self.state_name_to_existing_filename(state) for state in states]
         conflicts = {self.state_filename_to_name(filename) for filename in checks
                      if filename is not None}
-        if conflicts:
-            if not self.overwrite and not self.skip_existing:
+        if conflicts and not self.overwrite and not self.skip_existing:
                 raise ActionError("States already exist: " + ", ".join(conflicts))
         return filenames, states, conflicts
 
@@ -357,9 +356,16 @@ class ImportConvertCliFiles(ImportOp):
             super(ImportConvertCliFiles, self).cli_filter(report + '\n')
 
     def perform(self):
-        filenames, states, _ = self.verify_filenames()
+        filenames, states, conflicts = self.verify_filenames()
         if self.driver is None:
             raise ActionError('device driver not configured, cannot continue')
+
+        if conflicts and not self.overwrite and self.skip_existing:
+            filenames = [ v for i,v in enumerate(filenames) if states[i] in conflicts ]
+            if len(filenames) < 1:
+                raise ActionError('No new states to import')
+            states = [ state for state in states if state not in conflicts ]
+
         args = ['python', 'cli2netconf.py', self.dev_name, self.driver,
                 '-t', str(self.device_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
