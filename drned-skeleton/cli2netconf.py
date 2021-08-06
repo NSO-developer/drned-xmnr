@@ -8,7 +8,7 @@ import operator
 import os
 import re
 
-from devcli import Devcli, XDevice
+from devcli import Devcli, XDevice, devcli_init_dirs, DevcliAuthException
 
 
 testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
@@ -56,6 +56,8 @@ def _cli2netconf(device, devcli, fnames):
         except KeyboardInterrupt:
             print('Keyboard interrupt, abort')
             raise
+        except DevcliAuthException:
+            raise
         except BaseException as e:
             print('failed to convert group', groupname)
             print('exception:', e)
@@ -65,9 +67,12 @@ def _cli2netconf(device, devcli, fnames):
 
 def cli2netconf(nsargs):
     fnames = nsargs.files
-    with closing(Devcli(nsargs)) as devcli, \
-            closing(XDevice(devcli.devname)) as device:
-        _cli2netconf(device, devcli, fnames)
+    try:
+        with closing(Devcli(nsargs)) as devcli, \
+                closing(XDevice(devcli.devname)) as device:
+            _cli2netconf(device, devcli, fnames)
+    except DevcliAuthException:
+        print('failed to authenticate')
 
 
 # Usage: cli2netconf.py [Devcli options] [files]

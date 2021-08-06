@@ -41,6 +41,10 @@ class DevcliException(Exception):
     pass
 
 
+class DevcliAuthException(DevcliException):
+    pass
+
+
 class XDevice(drned.Device):
     def close(self):
         self.ncs.close()
@@ -61,6 +65,7 @@ class Devcli:
         return parser
 
     def __init__(self, nsargs):
+        self.cli = None
         self.params = {}
         for parname in ['devname', 'username', 'password', 'port', 'ip']:
             self.params[parname] = getattr(nsargs, parname)
@@ -76,7 +81,7 @@ class Devcli:
         self._read_device_config()
 
     def close(self):
-        if hasattr(self, 'cli'):
+        if self.cli is not None:
             self.cli.close()
 
     def _find_driver(self):
@@ -112,6 +117,9 @@ class Devcli:
                 self.cli = pexpect.spawn(self.ssh, timeout=self.timeout,
                                          logfile=sys.stdout, **pexpect_args)
                 self.interstate_one("enter")
+            except DevcliAuthException:
+                # no reason to retry
+                raise
             except Exception as exc:
                 e = exc
             else:
@@ -192,7 +200,7 @@ class Devcli:
         """
         state_machine = self.devcfg.get_state_machine()
         state = init_state
-        while state not in {"done", "failure"}:
+        while state not in {"done", "authfailed", "failure"}:
             state_def = state_machine[state]
             if self.verbose:
                 print("STATE: %s : %s" % (state, state_def))
@@ -214,6 +222,8 @@ class Devcli:
                 if self.verbose:
                     print(">>>> \"%s\" >>>>" % cmd)
                 self.cli.sendline(cmd)
+        if state == "authfailed":
+            raise DevcliAuthException("failed to authenticate")
         if state == "failure":
             raise DevcliException("failed to move to state " + init_state)
 
