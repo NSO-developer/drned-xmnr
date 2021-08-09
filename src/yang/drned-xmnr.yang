@@ -349,6 +349,28 @@ module drned-xmnr {
         }
       }
       container transitions {
+        grouping transition-states {
+          choice states-selection {
+            default states;
+            leaf-list states {
+              tailf:info
+                "List of states to pass through (in given order); if
+                 empty, all states in random order are used.";
+              ordered-by user;
+              type leafref {
+                path ../../../state/states/state;
+              }
+            }
+            leaf-list ignore-states {
+              tailf:info
+                "List of states to be ignored for transitions; if used, all
+                 states except these ones are used in a random order";
+              type leafref {
+                path ../../../state/states/state;
+              }
+            }
+          }
+        }
         tailf:action transition-to-state {
           tailf:info
             "Change the device state/configuration, possibly with
@@ -376,15 +398,7 @@ module drned-xmnr {
              set.";
           tailf:actionpoint drned-xmnr;
           input {
-            leaf-list states {
-              tailf:info
-                "List of states to pass through (in given order); if
-                 empty, all states in random order are used.";
-              ordered-by user;
-              type leafref {
-                path ../../../state/states/state;
-              }
-            }
+            uses transition-states;
             container stop-after {
               tailf:info "Do not start more transitions after given time/coverage has been reached.";
               choice unit-selection {
@@ -405,15 +419,7 @@ module drned-xmnr {
           tailf:info "Go through all states one after another.";
           tailf:actionpoint drned-xmnr;
           input {
-            leaf-list states {
-              tailf:info
-                "List of states to pass through (in given order); if
-                 empty, all states in random order are used.";
-              ordered-by user;
-              type leafref {
-                path ../../../state/states/state;
-              }
-            }
+            uses transition-states;
             leaf rollback {
               tailf:info
                 "If set to true, after each transition a rollback is
