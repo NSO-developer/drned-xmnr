@@ -1,4 +1,5 @@
 import operator
+import collections
 import os
 import random
 from six import functools
@@ -17,8 +18,9 @@ class MockDevcli(object):
         self.methods = {'save_config', 'clean_config',
                         'clean', 'save'}
 
-    def inst_init(self, driver, workdir, timeout):
-        self.workdir = workdir
+    def inst_init(self, argsns):
+        self.workdir = argsns.workdir
+        self.devname = argsns.devname
 
     def load_config(self, filename):
         self.gen_method('load', filename)
@@ -108,6 +110,10 @@ class ConvertPatch(object):
         self.print_caps.append(' '.join(map(str, args)))
 
 
+ArgsNS = collections.namedtuple('ArgsNS',
+                                ['devname', 'driver', 'workdir', 'ip', 'port', 'timeout', 'files'])
+
+
 class TestCli2Netconf(object):
     groups = [['f1.cfg'], ['f2:1.cfg', 'f2:2.cfg'], ['f3.cfg']]
 
@@ -118,7 +124,8 @@ class TestCli2Netconf(object):
 
     def run_convert_test(self, patcher):
         files = self.config_files()
-        cli2netconf.cli2netconf('mock-dev', 'mock-cli-dev', *files)
+        cli2netconf.cli2netconf(ArgsNS('mockdevice', '/tmp/driver', '/',
+                                       '1.2.3.4', 5555, 120, files))
         calls = list(reversed(patcher.devclimock.device_calls))
         prints = list(reversed(patcher.print_caps))
         assert 'save_config' == calls.pop()

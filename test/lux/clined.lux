@@ -4,7 +4,7 @@
 
 [shell os]
     !readlink -f cfgs/device/*.py
-    ?(.*nc0.py)
+    ?(.*netsim_I.py)
     [global driver=$1]
     [invoke ned-test-setup]
     !ls -d $NCS_DIR/packages/neds/*-ios-cli* | tail -1
@@ -37,8 +37,14 @@
     ?success
     [timeout]
     [progress convert CLI config]
-    [local tweak=sed -e 's/10022/12022/' -e 's/cli>/netconf>/' -e 's/cisco-ios0/cisco-nc0/']
-    [invoke prepare-ncs-tweak cisco-ios0 $tweak cisco-nc0]
+[shell os]
+    !ncs-netsim add-to-network packages/cisco-ios 1 cisco-nc
+    [invoke shell-check]
+    !ncs-netsim start cisco-nc0
+    [invoke shell-check]
+[shell ncs-cli]
+    [local tweak=sed -e 's/10023/12023/' -e 's/cli>/netconf>/']
+    [invoke prepare-ncs-tweak cisco-nc0 $tweak cisco-nc0]
     !drned-xmnr driver $driver
     !commit
     !drned-xmnr setup setup-xmnr overwrite true

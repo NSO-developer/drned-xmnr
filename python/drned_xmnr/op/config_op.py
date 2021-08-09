@@ -369,9 +369,9 @@ class ImportConvertCliFiles(ImportOp):
         args = ['python', 'cli2netconf.py', self.dev_name, self.driver,
                 '-t', str(self.device_timeout)] + \
                [os.path.realpath(filename) for filename in filenames]
-        self.filter = ConvertFilter(self)
 
-        result, _ = self.run_in_drned_env(args, NC_WORKDIR=self.NC_WORKDIR)
+        self.filter = ConvertFilter(self)
+        result, _ = self.devcli_run('cli2netconf.py', files)
         if self.filter.devcli_error is not None:
             raise ActionError('Problems with the device driver: ' + self.filter.devcli_error)
         if result != 0 and not self.filter.failures:

@@ -18,6 +18,7 @@
 [macro shell-check-prompt prompt]
     !echo $prompt: ==$?==
     ?$prompt: ==0==
+    ?SH-PROMPT:
 [endmacro]
 
 [macro prepare-xmnr]
@@ -43,12 +44,11 @@
     [invoke shell-check-prompt create]
     !cd ncs-run/packages
     [invoke shell-check]
-    !ln -s ../../../../ drned-xmnr
-    !file drned-xmnr
-    ?drned-xmnr: symbolic link to .*
-    !file drned-xmnr/python
-    ?drned-xmnr/python: directory
-    !make -C drned-xmnr/src all
+    !mkdir drned-xmnr
+    ~tar cf - -C ../../../../ python src drned drned-skeleton load-dir package-meta-data.xml |
+    !tar xf - -C drned-xmnr
+    [invoke shell-check-prompt copy]
+    !make -C drned-xmnr/src clean all
     [invoke shell-check-prompt make-xmnr]
 [endmacro]
 

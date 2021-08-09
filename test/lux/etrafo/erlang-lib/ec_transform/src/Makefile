@@ -9,7 +9,7 @@ EBIN_FILES = $(MODULES:%=../ebin/%.beam) ../ebin/$(APP_NAME).app
 AAA_DIR    = ../../..
 AAA_HRL    = $(AAA_DIR)/tailf-aaa.hrl $(AAA_DIR)/ietf-netconf-acm.hrl
 
-ERLC       = erlc
+ERLC       = $(CONFD_DIR)/bin/erlc
 ERLC_FLAGS := \
 	+warnings_as_errors \
 	+debug_info \

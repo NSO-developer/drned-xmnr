@@ -163,6 +163,13 @@ module drned-xmnr {
           "Absolute filesystem path to a file of the device driver
            implementation to service the device-dependent DrNED XMNR actions.";
       }
+      leaf cli-port {
+        type uint16;
+        tailf:info
+          "Device CLI port number to be passed to the device driver;
+           if not set, the NETCONF device port number from the NSO
+           device configuration is passed instead.";
+      }
       container setup {
         tailf:action setup-xmnr {
           tailf:info

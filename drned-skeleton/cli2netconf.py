@@ -7,12 +7,8 @@ import itertools
 import operator
 import os
 import re
-import sys
-from time import sleep
 
-import drned
-
-from devcli import Devcli, XDevice, devcli_init_dirs
+from devcli import Devcli, XDevice
 
 
 testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
@@ -67,41 +63,28 @@ def _cli2netconf(device, devcli, fnames):
     device.sync_from()
 
 
-def cli2netconf(devname, driver, *args):
-    args = list(args)
-    if args[0] == '-t':
-        timeout = int(args[1])
-        del args[0:2]
-    else:
-        timeout = 120
-    fnames = args
-    workdir = devcli_init_dirs()
-    with closing(XDevice(devname)) as device, \
-            closing(Devcli(driver, workdir, timeout)) as devcli:
+def cli2netconf(nsargs):
+    fnames = nsargs.files
+    with closing(Devcli(nsargs)) as devcli, \
+            closing(XDevice(devcli.devname)) as device:
         _cli2netconf(device, devcli, fnames)
 
 
-# Usage: cli2netconf.py netconf-device driver [-t timeout] [files]
-#
-#  netconf-device: device name; the device must be configured by Drned/XMNR
-#
-#  driver: behavior is given by "device drivers"
+# Usage: cli2netconf.py [Devcli options] [files]
 #
 #  files: file names
 #
-#  First, the CLI device driver in the form <name>.py is looked up:
+#  run "cli2netconf.py --help" to get more details
 #
-#  * in the first file's directory
-#  * its device/ subdirectory
-#  * in the current directory
-#  * in its device/ subdirectory
-#
-#  If one of the above succeeds, the driver is loaded and its Devcfg class is
-#  instantiated with two arguments: the path that has been found in the process
-#  above, and the device name.  The driver may use other files, if needed.
+#  A device driver is loaded and its Devcfg class is instantiated with
+#  two arguments: the path of the driver and the device name.  The
+#  driver may use other files, if needed.
 #
 #  It then converts (or tries to) all files to a XML/NETCONF form and saves
 #  them to the same directory, under the same name with the extension .xml.
 
 if __name__ == "__main__":
-    cli2netconf(*sys.argv[1:])
+    parser = Devcli.argparser()
+    parser.add_argument('files', nargs='*')
+    nsargs = parser.parse_args()
+    cli2netconf(nsargs)

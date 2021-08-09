@@ -79,7 +79,6 @@ class XmnrBase(object):
             self.device_timeout = 120
         device_xmnr_node = device_node.drned_xmnr
         self.cleanup_timeout = device_xmnr_node.cleanup_timeout
-        self.driver = device_xmnr_node.driver
         try:
             os.makedirs(self.states_dir)
         except OSError:
@@ -320,6 +319,55 @@ class ActionBase(XmnrBase):
                 self.log.debug('found pytest executable: ' + executable)
                 return executable
         raise ActionError('PyTest not installed - pytest executable not found')
+
+    def get_authgroup_info(self, trans, root, locuser, authmap):
+        if authmap.same_user.exists():
+            username = locuser
+        else:
+            username = authmap.remote_name
+        if username is None:
+            return None, None
+        if authmap.same_pass.exists():
+            upwd = root.aaa.authentication.users.user[locuser].password
+        else:
+            upwd = authmap.remote_password
+        if upwd is None:
+            return username, None
+        trans.maapi.install_crypto_keys()
+        return username, _ncs.decrypt(upwd)
+
+    def get_devcli_params(self, trans):
+        root = maagic.get_root(trans)
+        device_node = root.devices.device[self.dev_name]
+        ip = device_node.address
+        port = device_node.drned_xmnr.cli_port
+        if port is None:
+            port = device_node.port
+        driver = device_node.drned_xmnr.driver
+        if driver is None:
+            raise ActionError('device driver not configured, cannot continue')
+        authgroup_name = device_node.authgroup
+        authgroup = root.devices.authgroups.group[authgroup_name]
+        locuser = self.uinfo.username
+        if locuser in authgroup.umap:
+            authmap = authgroup.umap[locuser]
+        else:
+            authmap = authgroup.default_map
+        user, passwd = self.get_authgroup_info(trans, root, locuser, authmap)
+        return driver, user, passwd, ip, port
+
+    def devcli_run(self, script, script_args):
+        driver, username, passwd, ip, port = self.run_with_trans(self.get_devcli_params)
+        args = ['python', script, '--devname', self.dev_name,
+                '--driver', driver,
+                '--ip', ip, '--port', str(port),
+                '--workdir', 'drned-ncs', '--timeout', str(self.device_timeout)]
+        if username is not None:
+            args.extend(['--username', username])
+            if passwd is not None:
+                args.extend(['--password', passwd])
+        args.extend(script_args)
+        return self.run_in_drned_env(args)
 
     def run_in_drned_env(self, args, **envdict):
         env = self.run_with_trans(self.setup_drned_env)

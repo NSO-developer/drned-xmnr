@@ -12,14 +12,8 @@ class LoadDefaultConfigOp(ActionBase):
     action_name = 'xmnr load-default-config'
 
     def perform(self):
-        args = [
-            'python', 'load-default-config.py',
-            self.dev_name, self.driver, str(self.device_timeout)
-        ]
-        workdir = 'drned-ncs'
-
         try:
-            self.run_in_drned_env(args, NC_WORKDIR=workdir)
+            self.devcli_run('load-default-config.py', [])
         except BaseException as e:
             self.log.debug("Exception: " + repr(e))
             raise ActionError('Failed to load default configuration!')
