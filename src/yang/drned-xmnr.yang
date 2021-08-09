@@ -23,6 +23,23 @@ module drned-xmnr {
     }
   }
 
+  grouping conflicts-resolution-choice {
+    choice conflicts {
+      default overwrite;
+      case overwrite {
+        leaf overwrite {
+          type boolean;
+          default false;
+        }
+      }
+      case skip-existing {
+        leaf skip-existing {
+          type empty;
+        }
+      }
+    }
+  }
+
   typedef filepath-pattern-type {
     type string;
   }
@@ -275,20 +292,7 @@ module drned-xmnr {
             leaf target-format {
               type state-file-format;
             }
-            choice conflicts {
-              default overwrite;
-              case overwrite {
-                leaf overwrite {
-                  type boolean;
-                  default false;
-                }
-              }
-              case skip-existing {
-                leaf skip-existing {
-                  type empty;
-                }
-              }
-            }
+            uses conflicts-resolution-choice;
             leaf merge {
               tailf:info "Merge the file(s) with the current configuration
                           before creating the XMNR state file.";
@@ -312,20 +316,7 @@ module drned-xmnr {
               type filepath-pattern-type;
               mandatory true;
             }
-            choice conflicts {
-              default overwrite;
-              case overwrite {
-                leaf overwrite {
-                  type boolean;
-                  default false;
-                }
-              }
-              case skip-existing {
-                leaf skip-existing {
-                  type empty;
-                }
-              }
-            }
+            uses conflicts-resolution-choice;
           }
           output {
             uses action-output-common;
