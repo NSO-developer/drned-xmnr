@@ -155,7 +155,8 @@ class RecordStateOp(ConfigOp):
 class ImportOp(ConfigOp):
     def _init_params(self, params):
         self.pattern = params.file_path_pattern
-        self.overwrite = params.overwrite
+        self.overwrite = self.param_default(params, "overwrite", None)
+        self.skip_existing = self.param_default(params, "skip_existing", None)
 
     def verify_filenames(self):
         filenames = glob.glob(self.pattern)
@@ -166,9 +167,8 @@ class ImportOp(ConfigOp):
         checks = [self.state_name_to_existing_filename(state) for state in states]
         conflicts = {self.state_filename_to_name(filename) for filename in checks
                      if filename is not None}
-        if not self.overwrite:
-            if conflicts:
-                raise ActionError("States already exists: " + ", ".join(conflicts))
+        if conflicts and not self.overwrite and not self.skip_existing:
+            raise ActionError("States already exist: " + ", ".join(conflicts))
         return filenames, states, conflicts
 
     def get_state_name(self, origname):
@@ -192,7 +192,7 @@ class ImportStateFiles(ImportOp):
     def perform(self):
         filenames, states, conflicts = self.verify_filenames()
         for (source, target) in zip(filenames, states):
-            if target in conflicts:
+            if target in conflicts and self.overwrite:
                 # TODO: the conflicts should be removed only after
                 # everything else have been done; but that's
                 # difficult...
@@ -356,8 +356,20 @@ class ImportConvertCliFiles(ImportOp):
             super(ImportConvertCliFiles, self).cli_filter(report + '\n')
 
     def perform(self):
-        filenames, states, _ = self.verify_filenames()
-        files = [os.path.realpath(filename) for filename in filenames]
+        filenames, states, conflicts = self.verify_filenames()
+        if self.driver is None:
+            raise ActionError('device driver not configured, cannot continue')
+
+        if conflicts and not self.overwrite and self.skip_existing:
+            filenames = [v for i, v in enumerate(filenames) if states[i] not in conflicts]
+            if not filenames:
+                raise ActionError('No new states to import')
+            states = [state for state in states if state not in conflicts]
+
+        args = ['python', 'cli2netconf.py', self.dev_name, self.driver,
+                '-t', str(self.device_timeout)] + \
+               [os.path.realpath(filename) for filename in filenames]
+
         self.filter = ConvertFilter(self)
         result, _ = self.devcli_run('cli2netconf.py', files)
         if self.filter.devcli_error is not None:

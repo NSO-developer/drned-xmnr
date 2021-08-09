@@ -128,7 +128,7 @@
 [shell ncs-cli]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad2*.cfg
     -
-    ?failure States already exists: short-rad2:[12]
+    ?failure States already exist: short-rad2:[12]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad2*.cfg overwrite true
     [timeout 20]
     -failure
