@@ -357,20 +357,14 @@ class ImportConvertCliFiles(ImportOp):
 
     def perform(self):
         filenames, states, conflicts = self.verify_filenames()
-        if self.driver is None:
-            raise ActionError('device driver not configured, cannot continue')
-
         if conflicts and not self.overwrite and self.skip_existing:
             filenames = [v for i, v in enumerate(filenames) if states[i] not in conflicts]
             if not filenames:
                 raise ActionError('No new states to import')
             states = [state for state in states if state not in conflicts]
 
-        args = ['python', 'cli2netconf.py', self.dev_name, self.driver,
-                '-t', str(self.device_timeout)] + \
-               [os.path.realpath(filename) for filename in filenames]
-
         self.filter = ConvertFilter(self)
+        files = [os.path.realpath(filename) for filename in filenames]
         result, _ = self.devcli_run('cli2netconf.py', files)
         if self.filter.devcli_error is not None:
             raise ActionError('Problems with the device driver: ' + self.filter.devcli_error)
