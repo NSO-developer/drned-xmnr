@@ -423,13 +423,15 @@ class TestStates(TestBase):
     in `TestBase.setup_states_data`.
 
     """
-    def state_files(self, states):
-        return sorted(itertools.chain(*((st + '.state.cfg', st + '.state.cfg.load')
+    def state_files(self, states, disabled):
+        return sorted(itertools.chain((st + '.state.cfg.disabled' for st in disabled),
+                                      *((st + '.state.cfg', st + '.state.cfg.load')
                                         for st in states)))
 
-    def check_states(self, states):
-        assert (sorted(os.listdir(os.path.join(self.test_run_dir, 'states'))) ==
-                self.state_files(states))
+    def check_states(self, states, disabled=[]):
+        statesfiles = os.listdir(os.path.join(self.test_run_dir, 'states'))
+        assert (sorted(statesfiles) ==
+                self.state_files(states, disabled))
 
     @xtest_patch
     def test_states_data(self, xpatch):
@@ -564,6 +566,31 @@ class TestStates(TestBase):
                                     state_name='no-such-state')
         assert output.failure is not None
         self.check_states(self.states)
+
+    @xtest_patch
+    def test_disable_states(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        output = self.invoke_action('disable-state',
+                                    state_name_pattern=None,
+                                    state_name='other.state1')
+        self.check_output(output)
+        self.check_states(self.states, ['other.state1'])
+        output = self.invoke_action('enable-state',
+                                    state_name_pattern='*',
+                                    state_name=None)
+        self.check_output(output)
+        self.check_states(self.states)
+        output = self.invoke_action('disable-state',
+                                    state_name_pattern='*state1',
+                                    state_name=None)
+        self.check_output(output)
+        self.check_states(self.states, ['state1', 'other.state1'])
+        output = self.invoke_action('delete-state',
+                                    state_name_pattern=None,
+                                    state_name='other.state1')
+        self.check_output(output)
+        self.check_states([state for state in self.states if state != 'other.state1'],
+                          ['state1'])
 
     @xtest_patch
     def test_check_states(self, xpatch):
@@ -718,7 +745,7 @@ class TestTransitions(TransitionsTestBase):
             state_dir = os.path.join(self.test_run_dir, 'states')
             full_dir = os.path.abspath(state_dir)
             test_args = ['--fname={}'.format(os.path.join(full_dir, state + '.state.cfg'))
-                         for state in self.states]
+                         for state in fnames]
             if not rollback:
                 test_args += ['--end-op', '']
             test_args += ['--ordered=false', '-k', 'test_template_set']
@@ -782,17 +809,31 @@ class TestTransitions(TransitionsTestBase):
         self.check_output(output)
         self.check_popen_invocations(xpatch)
 
-    def check_popen_invocations(self, xpatch, count=None):
+    @xtest_patch
+    def test_explore_ignore_states(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        output = self.invoke_action('explore-transitions',
+                                    states=[],
+                                    ignore_states=['state1'],
+                                    stop_after=self.stop_params())
+        self.check_output(output)
+        states = list(self.states)
+        states.remove('state1')
+        self.check_popen_invocations(xpatch, states=states)
+
+    def check_popen_invocations(self, xpatch, count=None, states=None):
         popen_mock = xpatch.system.patches['subprocess']['Popen']
-        ls = len(self.states)
+        if states is None:
+            states = self.states
+        ls = len(states)
         max = ls*ls if count is None else count
         calls = 0
         transitions = 0
         call_iter = iter(popen_mock.call_args_list)
-        for from_state in self.states:
+        for from_state in states:
             self.check_drned_call(next(call_iter), from_state)
             calls += 1
-            for to_state in self.states:
+            for to_state in states:
                 if transitions == max:
                     break
                 if from_state == to_state:
@@ -864,6 +905,38 @@ class TestTransitions(TransitionsTestBase):
         self.check_output(output)
         popen_mock = xpatch.system.patches['subprocess']['Popen']
         self.check_drned_call(popen_mock.call_args, fnames=self.states)
+        popen_mock.assert_called_once()
+
+    @xtest_patch
+    def test_walk_disabled_states(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        output = self.invoke_action('disable-state',
+                                    state_name_pattern=None,
+                                    state_name='other.state1')
+        self.check_output(output)
+        output = self.invoke_action('walk-states',
+                                    rollback=False,
+                                    ignore_states=[],
+                                    states=[])
+        self.check_output(output)
+        popen_mock = xpatch.system.patches['subprocess']['Popen']
+        states = list(self.states)
+        states.remove('other.state1')
+        self.check_drned_call(popen_mock.call_args, fnames=states)
+        popen_mock.assert_called_once()
+
+    @xtest_patch
+    def test_walk_ignore_states(self, xpatch):
+        self.setup_states_data(xpatch.system)
+        output = self.invoke_action('walk-states',
+                                    rollback=False,
+                                    states=[],
+                                    ignore_states=['other.state1'])
+        self.check_output(output)
+        states = list(self.states)
+        states.remove('other.state1')
+        popen_mock = xpatch.system.patches['subprocess']['Popen']
+        self.check_drned_call(popen_mock.call_args, fnames=states)
         popen_mock.assert_called_once()
 
     @xtest_patch

@@ -77,14 +77,14 @@
     [timeout]
     !do show devices device etrafo0 drned-xmnr state states | sort-by state
     """?
-    STATE *
+    STATE *DISABLED *
     -----* *
-    empty *
-    usr01 *
-    usr02 *
-    usr04 *
-    usr05 *
-    usr06 *
+    empty *- *
+    usr01 *- *
+    usr02 *- *
+    usr04 *- *
+    usr05 *- *
+    usr06 *- *
 
     admin@ncs.*
     """

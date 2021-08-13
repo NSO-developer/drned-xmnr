@@ -7,6 +7,7 @@ import shutil
 from lxml import etree
 
 import _ncs
+from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
 from . import base_op
 from .ex import ActionError
@@ -21,32 +22,41 @@ mode = override
 
 class ConfigOp(base_op.ActionBase):
     def write_metadata(self, state_filename):
-        with open(state_filename + ".load", 'w') as meta:
+        with open(state_filename + self.metadata_extension, 'w') as meta:
             meta.write(state_metadata)
 
     def remove_state_file(self, state_filename):
         os.remove(state_filename)
-        try:
-            os.remove(state_filename + ".load")
-        except OSError:
-            pass
+        for suffix in (self.metadata_extension, self.flag_file_extension):
+            try:
+                os.remove(state_filename + suffix)
+            except OSError:
+                pass
 
 
-class DeleteStateOp(ConfigOp):
-    action_name = 'delete state'
-
+class StateParamOp(ConfigOp):
+    """Common superclass for actions using `state-or-pattern` grouping.
+    """
     def _init_params(self, params):
         self.state_name_pattern = params.state_name_pattern
         self.state_name = params.state_name
 
-    def perform(self):
-        self.log.debug("config_delete_state() with device {0}".format(self.dev_name))
+    def get_state_filenames(self):
         if self.state_name_pattern is None:
             state_filenames = [self.state_name_to_filename(self.state_name)]
         else:
             state_filenames = self.get_state_files_by_pattern(self.state_name_pattern)
             if state_filenames == []:
                 raise ActionError("no such states: {0}".format(self.state_name_pattern))
+        return state_filenames
+
+
+class DeleteStateOp(StateParamOp):
+    action_name = 'delete state'
+
+    def perform(self):
+        self.log.debug("config_delete_state() with device {0}".format(self.dev_name))
+        state_filenames = self.get_state_filenames()
         for state_filename in state_filenames:
             try:
                 self.remove_state_file(state_filename)
@@ -54,6 +64,41 @@ class DeleteStateOp(ConfigOp):
                 return {'failure': "Could not delete " + state_filename}
         return {'success': "Deleted: " + ', '.join(self.state_filename_to_name(state_filename)
                                                    for state_filename in state_filenames)}
+
+
+class DisableStateOp(StateParamOp):
+    action_name = 'disable state'
+
+    def perform(self):
+        self.log.debug('disable state with device {}'.format(self.dev_name))
+        state_filenames = self.get_state_filenames()
+        for state_filename in state_filenames:
+            flag_filename = state_filename + self.flag_file_extension
+            try:
+                with open(flag_filename, 'w'):
+                    pass
+            except OSError:
+                return {'failure': 'Failed to mark {} as disabled'.format(state_filename)}
+        return {'success': 'Disabled: ' + ', '.join(self.state_filename_to_name(filename)
+                                                    for filename in state_filenames)}
+
+
+class EnableStateOp(StateParamOp):
+    action_name = 'ensable state'
+
+    def perform(self):
+        self.log.debug('enable state with device {}'.format(self.dev_name))
+        state_filenames = self.get_state_filenames()
+        for state_filename in state_filenames:
+            flag_filename = state_filename + self.flag_file_extension
+            try:
+                if os.path.exists(flag_filename):
+                    os.unlink(flag_filename)
+            except OSError:
+                return {'failure': 'Failed to mark {} as enabled'.format(state_filename)}
+        return {'success': 'Enabled: ' + ', '.join(self.state_filename_to_name(filename)
+                                                   for filename in state_filenames)}
+
 
 
 class ListStatesOp(ConfigOp):
@@ -65,8 +110,14 @@ class ListStatesOp(ConfigOp):
     def perform(self):
         self.log.debug("config_list_states() with device {0}".format(self.dev_name))
         state_files = self.get_state_files()
-        return {'success': "Saved device states: " +
-                str([self.state_filename_to_name(st) for st in state_files])}
+        disabled_files = self.get_disabled_state_files()
+        if disabled_files:
+            disabled_states = [self.state_filename_to_name(st) for st in disabled_files]
+            disabled_msg = ' disabled states: ' + str(disabled_states)
+        else:
+            disabled_msg = ''
+        states = [self.state_filename_to_name(st) for st in state_files]
+        return {'success': "Saved device states: {}{}".format(states, disabled_msg)}
 
 
 class ViewStateOp(ConfigOp):
@@ -435,9 +486,14 @@ class StatesProvider(object):
 
     def get_object(self, tctx, kp, args):
         states = self.get_states_data(tctx, args)
-        return {'states': [{'state': st} for st in states]}
+        disabled_tag = _ncs.Value((ns.hash, ns.drned_xmnr_disabled), _ncs.C_XMLTAG)
+        return {'states': [{'state': state, 'disabled': disabled_tag} if disabled
+                           else {'state': state}
+                           for state, disabled in states]}
 
 
 class StatesData(base_op.XmnrDeviceData):
     def states(self):
-        return self.get_states()
+        return [(self.state_filename_to_name(filename),
+                 os.path.exists(filename + self.flag_file_extension))
+                for filename in self.get_state_files()]

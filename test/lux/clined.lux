@@ -142,12 +142,22 @@
     [timeout]
     ~$_CTRL_C_
     ?Aborted: by user
-    !do show devices device cisco-nc0 drned-xmnr state states | sort-by state
+    !do show devices device cisco-nc0 drned-xmnr state states
     """?
-    STATE *
+    STATE *DISABLED *
     -----* *
-    rad1 *
-    rad2 *
+    rad1 *- *
+    rad2 *- *
+
+    admin@ncs.*
+    """
+    !drned-xmnr state disable-state state-name rad1
+    !do show devices device cisco-nc0 drned-xmnr state states 
+    """?
+    STATE *DISABLED *
+    -----* *
+    rad1 *X *
+    rad2 *- *
 
     admin@ncs.*
     """
