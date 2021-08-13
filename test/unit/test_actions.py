@@ -737,6 +737,15 @@ class TestTransitions(TransitionsTestBase):
     `pytest` is called with correct arguments.
 
     """
+    def check_drned_new_call(self, call, rollback=False):
+        state_arg = call[0][0][4]
+        state_rx = r'-k .*\[(.*)\.state\.cfg\]'
+        match = re.match(state_rx, state_arg)
+        assert match
+        state = match.groups()[0]
+        self.check_drned_call(call, state, rollback)
+        return state
+
     def check_drned_call(self, call, state=None, rollback=False, fnames=None, builtin_drned=False):
         if fnames is None:
             test = 'test_template_single' if rollback else 'test_template_raw'
@@ -830,15 +839,19 @@ class TestTransitions(TransitionsTestBase):
         calls = 0
         transitions = 0
         call_iter = iter(popen_mock.call_args_list)
-        for from_state in states:
-            self.check_drned_call(next(call_iter), from_state)
+        from_states = list(states)
+        while from_states:
+            call = next(call_iter)
+            from_state = self.check_drned_new_call(call)
+            from_states.remove(from_state)
             calls += 1
-            for to_state in states:
+            to_states = list(states)
+            to_states.remove(from_state)
+            while to_states:
                 if transitions == max:
                     break
-                if from_state == to_state:
-                    continue
-                self.check_drned_call(next(call_iter), to_state, rollback=True)
+                to_state = self.check_drned_new_call(next(call_iter), rollback=True)
+                to_states.remove(to_state)
                 calls += 1
                 transitions += 1
             if transitions == max:
