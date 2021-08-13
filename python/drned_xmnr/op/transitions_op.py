@@ -143,20 +143,37 @@ class TransitionToStateOp(TransitionsOp):
             return {'failure': result}
 
 
-class ExploreTransitionsOp(TransitionsOp):
+class StatesTransitionsOp(TransitionsOp):
+    """Simple extension for transition operation involving multiple
+    states.  Adds support for retrieving the `transition-states`
+    grouping.
+    """
+
+    def filter_states(self, states):
+        return states
+
+    def get_transition_filenames(self, params):
+        states = list(params.states)
+        if states == []:
+            states = [state for state in self.get_states()
+                      if state not in params.ignore_states
+                      and not self.is_state_disabled(state)]
+            states = self.filter_states(states)
+            random.shuffle(states)
+        else:
+            states = self.filter_states(params.states)
+        self.state_filenames = [self.state_name_to_filename(state)
+                                for state in states]
+
+
+class ExploreTransitionsOp(StatesTransitionsOp):
     action_name = 'explore transitions'
 
     def event_processor(self, level, sink):
         return filtering.explore_output_filter(level, sink, self.event_context)
 
     def _init_params(self, params):
-        pstates = list(params.states)
-        if pstates == []:
-            self.state_filenames = self.get_state_files()
-            random.shuffle(self.state_filenames)
-        else:
-            self.state_filenames = [self.state_name_to_filename(state)
-                                    for state in pstates]
+        self.get_transition_filenames(params)
         stp = params.stop_after
         self.stop_time = 24 * int(self.param_default(stp, "days", 0))
         self.stop_time = 60 * int(self.param_default(stp, "hours", self.stop_time))
@@ -229,17 +246,15 @@ class ExploreTransitionsOp(TransitionsOp):
         return result
 
 
-class WalkTransitionsOp(TransitionsOp):
+class WalkTransitionsOp(StatesTransitionsOp):
     action_name = 'walk states'
 
     def _init_params(self, params):
-        pstates = list(params.states)
-        if pstates == []:
-            pstates = list(self.filter_state_sets(self.get_states()))
-            random.shuffle(pstates)
-        self.state_filenames = [self.state_name_to_filename(state)
-                                for state in pstates]
+        self.get_transition_filenames(params)
         self.rollback = params.rollback
+
+    def filter_states(self, states):
+        return list(self.filter_state_sets(states))
 
     def filter_state_sets(self, states):
         """Filter out duplicate representatives of "state sets".

@@ -130,7 +130,7 @@
 [shell ncs-cli]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad2*.cfg
     -
-    ?failure States already exists: short-rad2:[12]
+    ?failure States already exist: short-rad2:[12]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/short-rad2*.cfg overwrite true
     [timeout 20]
     -failure
@@ -144,12 +144,22 @@
     [timeout]
     ~$_CTRL_C_
     ?Aborted: by user
-    !do show devices device cisco-nc0 drned-xmnr state states | sort-by state
+    !do show devices device cisco-nc0 drned-xmnr state states
     """?
-    STATE *
+    STATE *DISABLED *
     -----* *
-    rad1 *
-    rad2 *
+    rad1 *- *
+    rad2 *- *
+
+    admin@ncs.*
+    """
+    !drned-xmnr state disable-state state-name rad1
+    !do show devices device cisco-nc0 drned-xmnr state states 
+    """?
+    STATE *DISABLED *
+    -----* *
+    rad1 *X *
+    rad2 *- *
 
     admin@ncs.*
     """

@@ -58,6 +58,8 @@ all three layers with increasing margin:
 class XmnrBase(object):
     xml_statefile_extension = '.state.xml'
     cfg_statefile_extension = '.state.cfg'
+    metadata_extension = '.load'
+    flag_file_extension = '.disabled'
     xml_extensions = [xml_statefile_extension, '.xml']
     cfg_extensions = [cfg_statefile_extension, '.cfg']
 
@@ -129,6 +131,13 @@ class XmnrBase(object):
 
     def get_state_files(self):
         return self.get_state_files_by_pattern('*')
+
+    def get_disabled_state_files(self):
+        return [filename for filename in self.get_state_files()
+                if os.path.exists(filename + self.flag_file_extension)]
+
+    def is_state_disabled(self, state):
+        return os.path.exists(self.state_name_to_filename(state) + self.flag_file_extension)
 
     def get_state_files_by_pattern(self, pattern):
         files = {}
