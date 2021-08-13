@@ -4,8 +4,10 @@
 
 [shell os]
     !readlink -f cfgs/device/*.py
-    ?(.*netsim_I.py)
-    [global driver=$1]
+    ?(.*/)(netsim_I.py)
+    [global driverpath=$1]
+    [global driver=${1}${2}]
+    [global broken=${1}broken.py]
     [invoke ned-test-setup]
     !ls -d $NCS_DIR/packages/neds/*-ios-cli* | tail -1
     ?(cisco-ios.*)
@@ -162,6 +164,29 @@
     admin@ncs.*
     """
 
+    [progress auth failure message]
+[shell os]
+    # force the password to be "nimda" in the "broken" driver
+    !sed 's/self.password = .*/self.password = "nimda"/' $driver > $broken
+    [invoke shell-check]
+[shell ncs-cli]
+    !drned-xmnr driver $broken
+    !commit
+    [timeout 20]
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/rad1.cfg overwrite true
+    ?Failed to authenticate to the device CLI
+
 
 [cleanup]
+    !ncs_cli -u admin -C
+    ???admin@ncs#
+    !config
+    !devices device cisco-nc0 drned-xmnr driver $driver
+    !commit
+    ?Commit complete|No modifications
+    !end
+    !exit
+    ?SH-PROMPT:
+    !rm -f $broken
+    ?SH-PROMPT:
     [invoke cleanup]

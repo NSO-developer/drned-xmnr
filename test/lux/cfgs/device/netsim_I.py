@@ -41,6 +41,7 @@ class Devcfg(object):
         return {
             # After login
             "enter": [
+                ("Permission denied, please try again", None, "authfailed"),
                 ("[Pp]assword:", self.get_password(), "enter"),
                 ("^.*> $", "enable", "config")
             ],

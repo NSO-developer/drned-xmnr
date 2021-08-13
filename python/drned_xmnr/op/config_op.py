@@ -11,6 +11,7 @@ from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
 from . import base_op
 from .ex import ActionError
+from .common_op import DevcliLogMatch
 
 
 state_metadata = """\
@@ -98,7 +99,6 @@ class EnableStateOp(StateParamOp):
                 return {'failure': 'Failed to mark {} as enabled'.format(state_filename)}
         return {'success': 'Enabled: ' + ', '.join(self.state_filename_to_name(filename)
                                                    for filename in state_filenames)}
-
 
 
 class ListStatesOp(ConfigOp):
@@ -343,51 +343,38 @@ class ImportStateFiles(ImportOp):
                 state_data.write(data)
 
 
-class ConvertFilter(object):
-    filterexpr = (
+class ConvertMatch(DevcliLogMatch):
+    matchexpr = (
         r'(?:(?P<convert>converting [^ ]* to [^ ]*/(?P<cnvstate>[^/]*)[.]xml)'
         r'|(?P<converted>converted [^ ]* to (?P<target>[^ ]*/(?P<donestate>[^/]*)[.]xml))'
         r'|(?P<failure>failed to convert group (?P<group>.*))'
-        r'|(?P<devcli>.*DevcliException: No device definition found)'
-        r'|(?P<traceback>Traceback [(]most recent call last[)]:)'
         r'|(?P<format>Filename format not understood: (?P<filename>.*))'
-        r'|(?P<newstate>^STATE: (?P<state>[^ ]*) : .*)'
-        r'|(?P<match>^MATCHED \'(?P<matchstate>.*)\', SEND: .*)'
         r')$')
-    filterrx = re.compile(filterexpr)
+    matchrx = re.compile(matchexpr)
 
     def __init__(self, converter):
+        super(ConvertMatch, self).__init__()
         self.failures = []
-        self.devcli_error = None
         self.waitstate = None
         self.converter = converter
 
-    def process(self, msg):
-        match = self.filterrx.match(msg)
+    def match(self, msg):
+        report = super(ConvertMatch, self).match(msg)
+        if report is not None:
+            return report
+        match = ConvertMatch.matchrx.match(msg)
         if match is None:
-            return
+            return None
         gd = match.groupdict()
         if match.lastgroup == 'convert':
             return 'importing state ' + gd['cnvstate']
         elif match.lastgroup == 'converted':
             self.converter.complete_import(gd['target'], gd['donestate'])
             return None
-        elif match.lastgroup == 'devcli':
-            self.devcli_error = 'could not find the device driver definition'
-            return 'device driver not found'
         elif match.lastgroup == 'failure':
             group = gd['group']
             self.failures.append(group)
             return 'failed to import group ' + group
-        elif match.lastgroup == 'traceback':
-            self.devcli_error = 'the device driver appears to be broken'
-            return 'device driver failed'
-        elif match.lastgroup == 'newstate':
-            self.waitstate = gd['state']
-            return None
-        elif match.lastgroup == 'match':
-            self.waitstate = None
-            return None
         elif match.lastgroup == 'format':
             filename = gd['filename']
             msg = 'unknown filename format: {}; should be name[:index].ext'
@@ -401,8 +388,12 @@ class ImportConvertCliFiles(ImportOp):
 
     NC_WORKDIR = 'drned-ncs'
 
+    def __init__(self, *args):
+        super(ImportConvertCliFiles, self).__init__(*args)
+        self.filter = ConvertMatch(self)
+
     def cli_filter(self, msg):
-        report = self.filter.process(msg)
+        report = self.filter.match(msg)
         if report is not None:
             super(ImportConvertCliFiles, self).cli_filter(report + '\n')
 
@@ -414,7 +405,6 @@ class ImportConvertCliFiles(ImportOp):
                 raise ActionError('No new states to import')
             states = [state for state in states if state not in conflicts]
 
-        self.filter = ConvertFilter(self)
         files = [os.path.realpath(filename) for filename in filenames]
         result, _ = self.devcli_run('cli2netconf.py', files)
         if self.filter.devcli_error is not None:
