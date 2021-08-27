@@ -75,7 +75,7 @@
     ?importing state usr06
     ?failure failed to convert configuration.s.: [^ ]*usr03
     [timeout]
-    !do show devices device etrafo0 drned-xmnr state states | sort-by state
+    !do show devices device etrafo0 drned-xmnr state states
     """?
     STATE *DISABLED *
     -----* *

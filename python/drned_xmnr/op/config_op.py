@@ -475,7 +475,7 @@ class StatesProvider(object):
         return StatesData.get_data(tctx, args['device'], self.log, StatesData.states)
 
     def get_object(self, tctx, kp, args):
-        states = self.get_states_data(tctx, args)
+        states = sorted(self.get_states_data(tctx, args))
         disabled_tag = _ncs.Value((ns.hash, ns.drned_xmnr_disabled), _ncs.C_XMLTAG)
         return {'states': [{'state': state, 'disabled': disabled_tag} if disabled
                            else {'state': state}
