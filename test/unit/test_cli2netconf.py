@@ -15,7 +15,7 @@ class MockDevcli(object):
         self.device_calls = []
         self.failures = failures
         self.load_filename = None
-        self.methods = {'save_config', 'restore_config', 'clean_config'
+        self.methods = {'save_config', 'restore_config', 'clean_config',
                         'clean', 'save'}
 
     def inst_init(self, argsns):
