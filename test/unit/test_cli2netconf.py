@@ -15,7 +15,7 @@ class MockDevcli(object):
         self.device_calls = []
         self.failures = failures
         self.load_filename = None
-        self.methods = {'save_config', 'clean_config',
+        self.methods = {'save_config', 'restore_config', 'clean_config'
                         'clean', 'save'}
 
     def inst_init(self, argsns):
@@ -128,7 +128,7 @@ class TestCli2Netconf(object):
                                        '1.2.3.4', 5555, 120, files))
         calls = list(reversed(patcher.devclimock.device_calls))
         prints = list(reversed(patcher.print_caps))
-        assert 'save_config' == calls.pop()
+        assert ('save_config', ('drned-backup',), {}) == calls.pop()
         for group in self.groups:
             for filename in group:
                 base, _ = os.path.splitext(filename)
@@ -150,7 +150,7 @@ class TestCli2Netconf(object):
                     break
                 assert ('save', (target,), {'fmt': 'xml'}) == calls.pop()
                 assert 'converted {} to {}'.format(filename, target) == prints.pop()
-            assert 'clean_config' == calls.pop()
+            assert ('restore_config', ('drned-backup',), {}) == calls.pop()
         assert ['sync'] == calls
 
     @cnv_patch
