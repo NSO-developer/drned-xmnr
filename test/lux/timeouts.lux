@@ -107,5 +107,22 @@
     admin@ncs.*
     """
 
+    [progress convert with a dead device]
+    !drned-xmnr state delete-state state-name-pattern *
+    ?Deleted: ((usr0[1-6]|empty),? *){5}
+    [timeout 40]
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
+    [invoke suspend-for "importing state usr03" "Device communication timeout"]
+    [timeout]
+    !do show devices device etrafo0 drned-xmnr state states
+    """?
+    STATE *DISABLED *
+    -----* *
+    usr01 *- *
+    usr02 *- *
+
+    admin@ncs.*
+    """
+
 [cleanup]
     [invoke cleanup]

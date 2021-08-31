@@ -19,6 +19,8 @@ class DevcliLogMatch(object):
         r'|(?P<traceback>Traceback [(]most recent call last[)]:)'
         r'|(?P<newstate>^STATE: (?P<state>[^ ]*) : .*)'
         r'|(?P<match>^MATCHED \'(?P<matchstate>.*)\', SEND: .*)'
+        r'|(?P<closed>device communication failure: .*EOF.*)'
+        r'|(?P<timeout>device communication failure: .*Timeout.*)'
         r'|(?P<authfailed>failed to authenticate)'
         r')$')
     matchrx = re.compile(matchexpr)
@@ -40,6 +42,12 @@ class DevcliLogMatch(object):
         elif match.lastgroup == 'match':
             self.waitstate = None
             return None
+        elif match.lastgroup == 'closed':
+            self.devcli_error = 'connection closed'
+            return 'Could not connect to the device or device connection closed'
+        elif match.lastgroup == 'timeout':
+            self.devcli_error = 'device communication timeout'
+            return 'Device communication timeout'
         elif match.lastgroup == 'authfailed':
             self.devcli_error = 'failed to authenticate'
             return 'Failed to authenticate to the device CLI'
