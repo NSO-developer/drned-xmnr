@@ -38,8 +38,7 @@
     [my shell=$LUX_SHELLNAME]
 [shell os]
     ~netconf-console --get -x /devices/device/drned-xmnr/state/states |
-    ~sed -n 's%.*<state>\(.*\)</state>.*%\1%p' |
-    !sort | xargs echo
+    !sed -n 's%.*<state>\(.*\)</state>.*%\1%p' | xargs echo
     """?
     netconf-console --get .*
     $states$$

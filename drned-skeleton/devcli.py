@@ -38,11 +38,18 @@ else:
 
 
 class DevcliException(Exception):
-    pass
+    def __str__(self):
+        return 'devcli exception: ' + str(self.args[0])
 
 
 class DevcliAuthException(DevcliException):
-    pass
+    def __str__(self):
+        return "failed to authenticate"
+
+
+class DevcliDeviceException(DevcliException):
+    def __str__(self):
+        return 'device communication failure: ' + str(self.args[0])
 
 
 class XDevice(drned.Device):
@@ -188,12 +195,21 @@ class Devcli:
     def interstate(self, init_states):
         """Run the state machine for all initial states.
         """
-        with closing(self._ssh()):
-            if isinstance(init_states, list):
-                for init_state in init_states:
-                    self.interstate_one(init_state)
-            else:
-                self.interstate_one(init_states)
+        try:
+            with closing(self._ssh()):
+                try:
+                    if isinstance(init_states, list):
+                        for init_state in init_states:
+                            self.interstate_one(init_state)
+                    else:
+                        self.interstate_one(init_states)
+                except pexpect.exceptions.ExceptionPexpect as exc:
+                    raise DevcliException(exc)
+        except pexpect.exceptions.ExceptionPexpect as exc:
+            # this happens when the device timed out while logging in
+            # or even refused the connection - no reason to keep on
+            # trying
+            raise DevcliDeviceException(exc)
 
     def interstate_one(self, init_state):
         """Run the state machine.
@@ -223,7 +239,7 @@ class Devcli:
                     print(">>>> \"%s\" >>>>" % cmd)
                 self.cli.sendline(cmd)
         if state == "authfailed":
-            raise DevcliAuthException("failed to authenticate")
+            raise DevcliAuthException()
         if state == "failure":
             raise DevcliException("failed to move to state " + init_state)
 

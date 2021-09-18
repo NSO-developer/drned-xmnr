@@ -1,16 +1,19 @@
 from __future__ import print_function
 
 from contextlib import closing
+import sys
 
-from devcli import Devcli, XDevice, DevcliAuthException
+from devcli import Devcli, XDevice, DevcliException
 
 
 def _load_default_config(nso_device, target_device):
     try:
         target_device.restore_config()
         nso_device.sync_from()
-    except DevcliAuthException:
-        print('failed to authenticate')
+    except DevcliException as e:
+        print()
+        print(e)
+        sys.exit(-1)
 
 
 def load_default_config(nsargs):
