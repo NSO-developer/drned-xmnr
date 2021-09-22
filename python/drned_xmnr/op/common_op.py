@@ -62,9 +62,8 @@ class LoadDefaultConfigOp(ActionBase):
             super(LoadDefaultConfigOp, self).cli_filter(report + '\n')
 
     def perform(self):
-        try:
-            self.devcli_run('load-default-config.py', [])
-        except BaseException as e:
+        result, _ = self.devcli_run('load-default-config.py', [])
+        if result != 0:
             self.log.debug("Exception: " + repr(e))
             raise ActionError('Failed to load default configuration!')
 

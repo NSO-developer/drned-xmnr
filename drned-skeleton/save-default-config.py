@@ -7,7 +7,7 @@ from devcli import Devcli, XDevice
 
 def _save_default_config(nso_device, target_device):
     target_device.save_config()
-    #do we want nso_device.sync_to/from() here?
+
 
 def save_default_config(nsargs):
     def init_cli_dev():
