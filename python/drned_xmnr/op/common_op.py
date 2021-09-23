@@ -70,12 +70,27 @@ class LoadDefaultConfigOp(ActionBase):
             super(LoadDefaultConfigOp, self).cli_filter(report + '\n')
 
     def perform(self):
-        try:
-            self.devcli_run('load-default-config.py', [])
-        except BaseException as e:
+        result, _ = self.devcli_run('load-default-config.py', [])
+        if result != 0:
             self.log.debug("Exception: " + repr(e))
             raise ActionError('Failed to load default configuration!')
 
         if self.filter.devcli_error is None:
             return {'success': 'Loaded initial config.'}
         return {'failure': 'Device driver failed.'}
+
+
+class SaveDefaultConfigOp(ActionBase):
+    """ Action handler used to save/create default device configuration
+        by saving running configuration to the filesystem of the device.
+    """
+    action_name = 'xmnr save-default-config'
+
+    def perform(self):
+        try:
+            self.devcli_run('save-default-config.py', [])
+        except BaseException as e:
+            self.log.debug("Exception: " + repr(e))
+            raise ActionError('Failed to save default configuration!')
+
+        return {'success': 'Saved initial config.'}

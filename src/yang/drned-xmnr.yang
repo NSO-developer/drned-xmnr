@@ -549,6 +549,13 @@ module drned-xmnr {
           uses action-output-common;
         }
       }
+      tailf:action save-default-config {
+        tailf:info "Save the device's running configuration as a default.";
+        tailf:actionpoint drned-xmnr;
+        output {
+          uses action-output-common;
+        }
+      }
     }
   }
 }

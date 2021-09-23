@@ -47,7 +47,8 @@ def group_cli2netconf(device, devcli, group):
 
 def _cli2netconf(device, devcli, fnames):
     # Save initial CLI state
-    devcli.save_config()
+    backup_config = 'drned-backup'
+    devcli.save_config(backup_config)
     namegroups = itertools.groupby(fname_set_descriptors(fnames),
                                    key=operator.attrgetter('fset'))
     for _, group in namegroups:
@@ -63,7 +64,7 @@ def _cli2netconf(device, devcli, fnames):
         except BaseException as e:
             print('failed to convert group', groupname)
             print('exception:', e)
-        devcli.clean_config()
+        devcli.restore_config(backup_config)
     device.sync_from()
 
 
