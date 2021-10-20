@@ -26,6 +26,7 @@ class SetupOp(base_op.ActionBase):
     def _init_params(self, params):
         self.overwrite = params.overwrite
         self.queue = params.use_commit_queue
+        self.save_default_config = params.save_default_config
 
     def perform(self):
         # device and states directory should have been already created
@@ -77,6 +78,12 @@ class SetupOp(base_op.ActionBase):
                 msg = "Failed to copy the `drned' directory: " + ose.strerror
             raise ActionError(msg)
         self.setup_drned()
+        # store initial device config for later state traversals
+        if self.save_default_config:
+            result, _ = self.devcli_run('save-default-config.py', [])
+            if result != 0:
+                raise ActionError("Failed saving initial device configuration.")
+
         return {'success': "XMNR set up for device " + self.dev_name}
 
     def prepare_setup(self, trans):
