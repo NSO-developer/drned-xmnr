@@ -188,6 +188,12 @@ module drned-xmnr {
               type boolean;
               default true;
             }
+            leaf save-default-config {
+              tailf:info "Save current on-device configuration as a new default
+                          for state traversals.";
+              type boolean;
+              default false;
+            }
           }
           output {
             uses action-output-common;
