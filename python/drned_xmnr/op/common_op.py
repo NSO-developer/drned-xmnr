@@ -85,11 +85,20 @@ class SaveDefaultConfigOp(ActionBase):
     """
     action_name = 'xmnr save-default-config'
 
+    def __init__(self, *args):
+        super(SaveDefaultConfigOp, self).__init__(*args)
+        self.filter = DevcliLogMatch()
+
+    def cli_filter(self, msg):
+        report = self.filter.match(msg)
+        if report is not None:
+            super(SaveDefaultConfigOp, self).cli_filter(report + '\n')
+
     def perform(self):
-        try:
-            self.devcli_run('save-default-config.py', [])
-        except BaseException as e:
-            self.log.debug("Exception: " + repr(e))
+        result, _ = self.devcli_run('save-default-config.py', [])
+        if result != 0:
             raise ActionError('Failed to save default configuration!')
 
-        return {'success': 'Saved initial config.'}
+        if self.filter.devcli_error is None:
+            return {'success': 'Saved initial config.'}
+        return {'failure': 'Could not save config.'}

@@ -896,11 +896,14 @@ class Device(object):
         #         pytest.fail("Failed to restore default config.")
 
         # Check if restore successful
-        self.save("drned-work/after-session.cfg")
-        if not common.filecmp("drned-work/before-session.cfg",
-                              "drned-work/after-session.cfg"):
-            pytest.fail("Could not restore device to state before session. " +
-                        "Please check before-session.cfg and after-session.cfg")
+        if not succeeded:
+            pytest.fail("Failed to restore default config.")
+
+        # self.save("drned-work/after-session.cfg")
+        # if not common.filecmp("drned-work/before-session.cfg",
+        #                       "drned-work/after-session.cfg"):
+        #     pytest.fail("Could not restore device to state before session. " +
+        #                 "Please check before-session.cfg and after-session.cfg")
 
     def _set_rollback_xml(self, xml):
         rb_no = self._get_latest_rollback()
