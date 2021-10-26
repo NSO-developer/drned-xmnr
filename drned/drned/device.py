@@ -648,10 +648,12 @@ class Device(object):
         Returns:
             self
         """
+        print("NOTE: Rollback id: %s" % id)
         if banner:
             self.trace(INDENT + inspect.stack()[0][3] + "()")
         if id == -1:
             self.rollback_id = self._get_latest_rollback()
+            print("NOTE: Rollback id (latest): %s" % id)
             self.cmd("rollback configuration")
         elif id:
             self.rollback_id = id
