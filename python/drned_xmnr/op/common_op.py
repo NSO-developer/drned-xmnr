@@ -97,7 +97,6 @@ class SaveDefaultConfigOp(ActionBase):
     def perform(self):
         result, _ = self.devcli_run('save-default-config.py', [])
         if result != 0:
-            self.log.debug("Exception: " + repr(e))
             raise ActionError('Failed to save default configuration!')
 
         if self.filter.devcli_error is None:
