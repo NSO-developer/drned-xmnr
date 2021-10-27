@@ -160,7 +160,6 @@ class XmnrDataHandler(object):
 class Xmnr(application.Application):
 
     def setup(self):
-        print('setting up', ns)
         self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler)
         self.register_action('drned-xmnr-completion', CompletionHandler)
         self.register_service(ns.ns.callpoint_coverage_data, XmnrDataHandler)
@@ -168,6 +167,3 @@ class Xmnr(application.Application):
 
     def finish(self):
         pass
-
-
-print('instantiated', Xmnr)

@@ -316,10 +316,8 @@ class TestStartup(TestBase):
 
     """
     def test_registry(self):
-        print('action', action, action.Xmnr)
         xmnr = action.Xmnr()
         xmnr.setup()
-        print('calls', xmnr.setup, xmnr.register_action, xmnr.register_action.mock_calls)
         xmnr.register_action.assert_has_calls([mock.call('drned-xmnr', action.ActionHandler),
                                                mock.call('drned-xmnr-completion',
                                                          action.CompletionHandler)])
@@ -390,7 +388,7 @@ class LoadConfig(object):
     def __init__(self, ncs, fail_states=[]):
         self.fail_states = fail_states
         self.tcx_mock = mocklib.CxMgrMock(load_config=mock.Mock(side_effect=self.load_config))
-        ncs.data['maapi'].start_write_trans = lambda *args, **dargs: self.tcx_mock
+        ncs.data['trans_mgr'].trans_obj = self.tcx_mock
         states_dir = os.path.join(TestBase.test_run_dir, 'states')
         self.sub_rx = re.compile(r'/{}/(.*)\.state\.cfg'.format(states_dir))
         self.loaded_states = []
@@ -406,7 +404,7 @@ class LoadSaveConfig(object):
     def __init__(self, system, ncs):
         self.tcx_mock = mocklib.CxMgrMock(load_config=mock.Mock(side_effect=self.load_config),
                                           save_config=mock.Mock(side_effect=self.save_config))
-        ncs.data['maapi'].start_write_trans = lambda *args, **dargs: self.tcx_mock
+        ncs.data['trans_mgr'].trans_obj = self.tcx_mock
         self.data = []
         self.system = system
 
