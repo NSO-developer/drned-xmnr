@@ -127,7 +127,7 @@ class CompletionHandler(dp.Action):
                 _ncs.dp.action_reply_completion(uinfo, tv)
             return _ncs.CONFD_OK
 
-        except Exception as e:
+        except Exception:
             self.log.error(traceback.format_exc())
             raise
         finally:

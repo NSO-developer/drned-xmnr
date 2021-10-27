@@ -81,7 +81,7 @@ class TransitionsOp(base_op.ActionBase):
         return events
 
     def drned_run(self, drned_args):
-        args = ["-s", "--tb=short", "--device="+self.dev_name] + drned_args
+        args = ["-s", "--tb=short", "--device=" + self.dev_name] + drned_args
         if not self.using_builtin_drned:
             args.append("--unreserved")
         args.insert(0, self.pytest_executable())
@@ -239,7 +239,7 @@ class ExploreTransitionsOp(StatesTransitionsOp):
                     continue
                 prev_state = from_state
             self.progress_msg("Transition {0}/{1}: {2} ==> {3}"
-                              .format(index+1, num_transitions, from_name, to_name))
+                              .format(index + 1, num_transitions, from_name, to_name))
             result = self.transition_to_state(to_name, rollback=True)
             if result is not True:
                 failed_transitions.append((from_name, to_name, result))
@@ -291,8 +291,8 @@ class WalkTransitionsOp(StatesTransitionsOp):
         # if rollback is not desired, we need to set it to an empty list
         fname_args = ["--fname=" + filename for filename in self.state_filenames]
         end_op = [] if self.rollback else ["--end-op", ""]
-        result, _ = self.drned_run(fname_args + end_op +
-                                   ["--ordered=false", "-k", "test_template_set"])
+        result, _ = self.drned_run(
+            fname_args + end_op + ["--ordered=false", "-k", "test_template_set"])
         self.log.debug("DrNED completed: {0}".format(result))
         ops = [tr.to for tr in self.event_context.test_events if tr.failure is not None]
         if result != 0 or ops:
