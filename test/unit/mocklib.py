@@ -80,7 +80,7 @@ XMNR_INSTALL = 'xmnr-install'
 
 @contextmanager
 def ncs_mock():
-    nonex = Mock(exists=lambda:False)
+    nonex = Mock(exists=lambda: False)
     device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'),
                   read_timeout=None, address='1.2.3.4', port='5555', authgroup='default')
     authgrp = Mock(default_map=Mock(remote_name='admin', remote_password='admin',
@@ -250,7 +250,16 @@ def init_mocks():
     patchings remains active for the rest of the Python environment
     lifetime, the patchers' `stop` method is never called!
     """
-    patch('ncs.application.Application', new=mock.Mock).start()
-    patch('ncs.dp.Action.action', side_effect=lambda fn: fn).start()
-    patch('ncs.dp.Action.__init__', return_value=None).start()
+    sys.modules['ncs'] = Mock(application=Mock(Application=Mock))
+    sys.modules['_ncs'] = Mock(LIB_VSN=0x07060000)
+    sys.modules['_ncs.dp'] = Mock(Action=Mock)
+    sys.modules['_ncs.maapi'] = Mock()
+    sys.modules['drned_xmnr.namespaces'] = Mock()
+    sys.modules['drned_xmnr.namespaces.drned_xmnr_ns'] = Mock()
+    # sys.modules['ncs.application'] = None
+    # sys.modules['ncs.dp'] = Mock(Action=None)
+    # Mock(action=Mock(side_effect=lambda fn: fn)))
+    # patch('ncs.application.Application', new=mock.Mock).start()
+    # patch('ncs.dp.Action.action', side_effect=lambda fn: fn).start()
+    # patch('ncs.dp.Action.__init__', return_value=None).start()
     patch.dict('sys.modules', drned=mock.Mock()).start()

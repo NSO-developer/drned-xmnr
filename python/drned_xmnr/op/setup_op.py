@@ -29,6 +29,7 @@ class SetupOp(base_op.ActionBase):
         self.save_default_config = params.save_default_config
 
     def perform(self):
+        print('perform')
         # device and states directory should have been already created
         self.run_with_trans(self.prepare_setup)
         try:

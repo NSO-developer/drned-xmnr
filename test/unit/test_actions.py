@@ -316,8 +316,10 @@ class TestStartup(TestBase):
 
     """
     def test_registry(self):
+        print('action', action, action.Xmnr)
         xmnr = action.Xmnr()
         xmnr.setup()
+        print('calls', xmnr.setup, xmnr.register_action, xmnr.register_action.mock_calls)
         xmnr.register_action.assert_has_calls([mock.call('drned-xmnr', action.ActionHandler),
                                                mock.call('drned-xmnr-completion',
                                                          action.CompletionHandler)])
@@ -347,7 +349,8 @@ class TestSetup(TestBase):
         self.setup_fs_data(xpatch.system)
         self.setup_ncs_data(xpatch.ncs)
         xpatch.system.socket_data(device_data.encode())
-        output = self.invoke_action('setup-xmnr', overwrite=True, use_commit_queue=True)
+        output = self.invoke_action('setup-xmnr', overwrite=True, use_commit_queue=True,
+                                    save_default_config=False)
         self.check_output(output)
         with open(os.path.join(self.test_run_dir, 'drned-skeleton', 'skeleton')) as skel_test:
             assert skel_test.read() == 'drned skeleton'
