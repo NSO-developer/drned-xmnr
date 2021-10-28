@@ -378,6 +378,7 @@ def _drned_single_file(device, name, op, commit_id_base=None):
                       re.sub("\\s+", "", file_end.group(1)))
                 end_op = [o.strip() for o in file_end.group(1).split(",")]
     # Run all operations
+    rollback_id = None
     for o in op:
         if o == "":
             pass
@@ -390,7 +391,7 @@ def _drned_single_file(device, name, op, commit_id_base=None):
                 os.remove("drned-work/drned-rollback.txt")
             except OSError:
                 pass
-            device.commit(show_dry_run=True)
+            rollback_id = device.commit(show_dry_run=True).commit_id[-1]
             shutil.copyfile("drned-work/drned-dry-run.txt",
                             "drned-work/drned-%s.txt" % ctype)
         elif o == "compare-config":
@@ -400,7 +401,7 @@ def _drned_single_file(device, name, op, commit_id_base=None):
         elif o.startswith("rollback"):
             ctype = "rollback"
             if o == "rollback":
-                device.rollback()
+                device.rollback(rollback_id)
             else:
                 cid = int(o.replace("rollback", ""))
                 cid = cid if cid < 0 else commit_id_base + cid
