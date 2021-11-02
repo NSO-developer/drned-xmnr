@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import re
+import os
 import sys
 from contextlib import contextmanager
 import functools
@@ -281,10 +283,13 @@ def init_mocks():
     sys.modules['_ncs'] = Mock(LIB_VSN=0x07060000)
     sys.modules['_ncs.dp'] = Mock(Action=Mock)
     sys.modules['_ncs.maapi'] = Mock()
-    actions = ["setup-xmnr", "delete-state", "disable-state", "enable-state", "list-states",
-               "view-state", "record-state", "import-state-files", "import-convert-cli-files",
-               "check-states", "transition-to-state", "explore-transitions", "walk-states",
-               "reset", "collect", "load-default-config", "save-default-config"]
+    rootdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    yangfile = os.path.join(rootdir, 'src', 'yang', 'drned-xmnr.yang')
+    actionrx = re.compile(' *tailf:action (.*) [{]')
+    with open(yangfile) as yang:
+        actions = [mtch.groups()[0]
+                   for mtch in (actionrx.match(line) for line in yang)
+                   if mtch is not None]
     nsdict = {'drned_xmnr_{}_'.format(action.replace('-', '_')): action
               for action in actions}
     ns = Mock(ns=Mock(actionpoint_drned_xmnr='drned-xmnr',
