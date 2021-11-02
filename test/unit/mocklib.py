@@ -273,9 +273,8 @@ def init_mocks():
 
     Some of PyAPI classes and functions need to be patched early on,
     before the modules using them are imported; this applies mostly to
-    classes used as superclasses and decorator functions. These
-    patchings remains active for the rest of the Python environment
-    lifetime, the patchers' `stop` method is never called!
+    NSO PyAPI modules, classes used as superclasses, decorator
+    functions.
     """
     sys.modules['ncs'] = Mock(application=Mock(Application=Mock),
                               dp=Mock(Action=MockAction))
@@ -296,8 +295,4 @@ def init_mocks():
     __import__('drned_xmnr').namespaces = namespaces
     sys.modules['drned_xmnr.namespaces'] = namespaces
     sys.modules['drned_xmnr.namespaces.drned_xmnr_ns'] = ns
-    # sys.modules['ncs.application'] = None
-    # Mock(action=Mock(side_effect=lambda fn: fn)))
-    # patch('ncs.application.Application', new=mock.Mock).start()
-    # patch('ncs.dp.Action.__init__', return_value=None).start()
-    patch.dict('sys.modules', drned=mock.Mock()).start()
+    sys.modules['drned'] = Mock()
