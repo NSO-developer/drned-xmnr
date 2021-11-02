@@ -22,7 +22,7 @@ from drned_xmnr.op.filtering.states import TransitionDesc
 
 
 class FilteringTest(object):
-    log_directory = 'testdata'
+    log_directory = os.path.join(os.path.dirname(__file__), 'testdata')
     log_extension = '.log'
     log_overview_ext = '.log.ov'
     log_dred_ext = '.log.dr'
