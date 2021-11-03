@@ -347,7 +347,8 @@ class TestSetup(TestBase):
         self.setup_fs_data(xpatch.system)
         self.setup_ncs_data(xpatch.ncs)
         xpatch.system.socket_data(device_data.encode())
-        output = self.invoke_action('setup-xmnr', overwrite=True, use_commit_queue=True)
+        output = self.invoke_action('setup-xmnr', overwrite=True, use_commit_queue=True,
+                                    save_default_config=False)
         self.check_output(output)
         with open(os.path.join(self.test_run_dir, 'drned-skeleton', 'skeleton')) as skel_test:
             assert skel_test.read() == 'drned skeleton'
@@ -387,7 +388,7 @@ class LoadConfig(object):
     def __init__(self, ncs, fail_states=[]):
         self.fail_states = fail_states
         self.tcx_mock = mocklib.CxMgrMock(load_config=mock.Mock(side_effect=self.load_config))
-        ncs.data['maapi'].start_write_trans = lambda *args, **dargs: self.tcx_mock
+        ncs.data['trans_mgr'].trans_obj = self.tcx_mock
         states_dir = os.path.join(TestBase.test_run_dir, 'states')
         self.sub_rx = re.compile(r'/{}/(.*)\.state\.cfg'.format(states_dir))
         self.loaded_states = []
@@ -403,7 +404,7 @@ class LoadSaveConfig(object):
     def __init__(self, system, ncs):
         self.tcx_mock = mocklib.CxMgrMock(load_config=mock.Mock(side_effect=self.load_config),
                                           save_config=mock.Mock(side_effect=self.save_config))
-        ncs.data['maapi'].start_write_trans = lambda *args, **dargs: self.tcx_mock
+        ncs.data['trans_mgr'].trans_obj = self.tcx_mock
         self.data = []
         self.system = system
 

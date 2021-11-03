@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import re
+import os
 import sys
 from contextlib import contextmanager
 import functools
@@ -78,9 +80,24 @@ DEVICE_NAME = 'mock-device'
 XMNR_INSTALL = 'xmnr-install'
 
 
+class TransMgr(object):
+    def __init__(self):
+        self.trans_obj = mock.MagicMock()
+
+    def __enter__(self):
+        return self.trans_obj
+
+    def __exit__(*ignore):
+        pass
+
+
+class MockNcsError(Exception):
+    pass
+
+
 @contextmanager
 def ncs_mock():
-    nonex = Mock(exists=lambda:False)
+    nonex = Mock(exists=lambda: False)
     device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'),
                   read_timeout=None, address='1.2.3.4', port='5555', authgroup='default')
     authgrp = Mock(default_map=Mock(remote_name='admin', remote_password='admin',
@@ -96,16 +113,22 @@ def ncs_mock():
     ncs_items = ['_ncs.stream_connect', '_ncs.dp.action_set_timeout', '_ncs.maapi.cli_write',
                  '_ncs.decrypt']
     maapi_inst = MaapiMock()
-    with patch('ncs.maapi.Maapi', return_value=maapi_inst):
-        with patch('ncs.maagic.get_root', return_value=rootmock):
-            with nest_mgrs([patch(ncs_item) for ncs_item in ncs_items]) as ncs_patches:
-                mock_inst = XtestMock('ncs')
-                items = [it.split('.')[-1] for it in ncs_items]
-                mock_inst.data = dict(maapi=maapi_inst,
-                                      root=rootmock,
-                                      device=device,
-                                      ncs=dict(zip(items, reversed(ncs_patches))))
-                yield mock_inst
+    tmgr = TransMgr()
+    with patch('ncs.maapi.Maapi', return_value=maapi_inst), \
+            patch('ncs.maapi.single_write_trans', return_value=tmgr), \
+            patch('_ncs.error.Error', new=MockNcsError), \
+            patch('_ncs.maapi.list_rollbacks', return_value=[]), \
+            patch('_ncs.maapi.CONFIG_MERGE', return_value=0), \
+            patch('ncs.maagic.get_root', return_value=rootmock), \
+            nest_mgrs([patch(ncs_item) for ncs_item in ncs_items]) as ncs_patches:
+        mock_inst = XtestMock('ncs')
+        items = [it.split('.')[-1] for it in ncs_items]
+        mock_inst.data = dict(maapi=maapi_inst,
+                              trans_mgr=tmgr,
+                              root=rootmock,
+                              device=device,
+                              ncs=dict(zip(items, reversed(ncs_patches))))
+        yield mock_inst
 
 
 class StreamData(object):
@@ -241,16 +264,40 @@ def system_mock():
                 yield SystemMock(ff_patcher, patches)
 
 
+class MockAction(Mock):
+    @staticmethod
+    def action(fn):
+        return fn
+
+
 def init_mocks():
     """Patch all necessary classes and functions.
 
     Some of PyAPI classes and functions need to be patched early on,
     before the modules using them are imported; this applies mostly to
-    classes used as superclasses and decorator functions. These
-    patchings remains active for the rest of the Python environment
-    lifetime, the patchers' `stop` method is never called!
+    NSO PyAPI modules, classes used as superclasses, decorator
+    functions.
     """
-    patch('ncs.application.Application', new=mock.Mock).start()
-    patch('ncs.dp.Action.action', side_effect=lambda fn: fn).start()
-    patch('ncs.dp.Action.__init__', return_value=None).start()
-    patch.dict('sys.modules', drned=mock.Mock()).start()
+    sys.modules['ncs'] = Mock(application=Mock(Application=Mock),
+                              dp=Mock(Action=MockAction))
+    sys.modules['_ncs'] = Mock(LIB_VSN=0x07060000)
+    sys.modules['_ncs.dp'] = Mock(Action=Mock)
+    sys.modules['_ncs.maapi'] = Mock()
+    rootdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    yangfile = os.path.join(rootdir, 'src', 'yang', 'drned-xmnr.yang')
+    actionrx = re.compile(' *tailf:action (.*) [{]')
+    with open(yangfile) as yang:
+        actions = [mtch.groups()[0]
+                   for mtch in (actionrx.match(line) for line in yang)
+                   if mtch is not None]
+    nsdict = {'drned_xmnr_{}_'.format(action.replace('-', '_')): action
+              for action in actions}
+    ns = Mock(ns=Mock(actionpoint_drned_xmnr='drned-xmnr',
+                      callpoint_coverage_data='coverage-data',
+                      callpoint_xmnr_states='xmnr-states',
+                      **nsdict))
+    namespaces = Mock(drned_xmnr_ns=ns)
+    __import__('drned_xmnr').namespaces = namespaces
+    sys.modules['drned_xmnr.namespaces'] = namespaces
+    sys.modules['drned_xmnr.namespaces.drned_xmnr_ns'] = ns
+    sys.modules['drned'] = Mock()
