@@ -183,6 +183,24 @@
     ?KeyboardInterrupt
     ~$_CTRL_C_
     ?SH-PROMPT:
+[shell ncs-cli]
+    [timeout 60]
+    !drned-xmnr transitions transition-to-state state-name lt:4
+    ?success
+    !drned-xmnr state record-state state-name lt:4dupl
+    ?success
+    !drned-xmnr transitions explore-transitions states [ lt:4 lt:4dupl ]
+    -Transition failed
+    ?lt:4 ==> lt:4dupl
+    ?commit
+    ?no modification
+    ?cleanup
+    ?lt:4dupl ==> lt:4
+    ?commit
+    ?no modification
+    ?cleanup
+    -
+    ?admin@ncs
 
 [cleanup]
     [invoke cleanup]
