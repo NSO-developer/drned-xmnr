@@ -184,7 +184,7 @@
     ~$_CTRL_C_
     ?SH-PROMPT:
 [shell ncs-cli]
-    [timeout 60]
+    [timeout 10]
     !drned-xmnr transitions transition-to-state state-name lt:4
     ?success
     !drned-xmnr state record-state state-name lt:4dupl
@@ -201,6 +201,7 @@
     ?cleanup
     -
     ?admin@ncs
+    [timeout]
 
 [cleanup]
     [invoke cleanup]
