@@ -188,7 +188,7 @@ class ActionBase(XmnrBase):
     def open_log_file(self, path):
         with open(os.path.join(self.dev_test_dir, path), 'a') as lf:
             msg = '{} - {}'.format(dt.now(), self.action_name)
-            lf.write('\n{}\n{}\n{}\n'.format('-'*len(msg), msg, '-'*len(msg)))
+            lf.write('\n{}\n{}\n{}\n'.format('-' * len(msg), msg, '-' * len(msg)))
             yield lf
 
     def perform_action(self):
@@ -225,7 +225,7 @@ class ActionBase(XmnrBase):
     def extend_timeout(self):
         '''Tell NSO to wait a bit longer.  See also `TIMEOUT_MARGIN`.
         '''
-        extension = self.device_timeout + 2*TIMEOUT_MARGIN
+        extension = self.device_timeout + 2 * TIMEOUT_MARGIN
         dp.action_set_timeout(self.uinfo, extension)
 
     def proc_run(self, outputfun):
@@ -415,7 +415,7 @@ class ActionBase(XmnrBase):
                 if not config_data:
                     return
                 yield config_data
-                self.log.debug("Data: "+str(config_data))
+                self.log.debug("Data: " + str(config_data))
         finally:
             ssocket.close()
 

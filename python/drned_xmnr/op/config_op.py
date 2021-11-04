@@ -153,29 +153,29 @@ class RecordStateOp(ConfigOp):
     def _perform(self, trans):
         self.log.debug("config_record_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
-        self.log.debug("incl_rollbacks="+str(self.include_rollbacks))
-        self.log.debug("style_format="+str(self.style_format))
+        self.log.debug("incl_rollbacks=" + str(self.include_rollbacks))
+        self.log.debug("style_format=" + str(self.style_format))
         try:
             # list_rollbacks() returns one less rollback than the second argument,
             # i.e. send 2 to get 1 rollback. Therefore the +1
-            rollbacks = _ncs.maapi.list_rollbacks(trans.maapi.msock, int(self.include_rollbacks)+1)
+            rollbacks = _ncs.maapi.list_rollbacks(trans.maapi.msock, int(self.include_rollbacks) + 1)
             # rollbacks are returned 'most recent first', i.e. reverse chronological order
         except _ncs.error.Error:
             rollbacks = []
-        self.log.debug("rollbacks="+str([r.fixed_nr for r in rollbacks]))
+        self.log.debug("rollbacks=" + str([r.fixed_nr for r in rollbacks]))
         index = 0
         state_filenames = []
         for rb in [None] + rollbacks:
             if rb is None:
                 self.log.debug("Recording current transaction state")
             else:
-                self.log.debug("Recording rollback"+str(rb.fixed_nr))
-                self.log.debug("Recording rollback"+str(rb.nr))
+                self.log.debug("Recording rollback" + str(rb.fixed_nr))
+                self.log.debug("Recording rollback" + str(rb.nr))
                 trans.load_rollback(rb.nr)
 
             state_name_index = state_name
             if index > 0:
-                state_name_index = state_name+"-"+str(index)
+                state_name_index = state_name + "-" + str(index)
             format = 'xml' if 'xml' == str(self.style_format) else 'cfg'
             existing_filename = self.state_name_to_existing_filename(state_name_index)
             if existing_filename is not None:
@@ -183,7 +183,7 @@ class RecordStateOp(ConfigOp):
                     raise ActionError("state {} already exists".format(state_name_index))
                 self.remove_state_file(existing_filename)
             state_filename = self.format_state_filename(state_name_index, format=format)
-            device_path = "/ncs:devices/device{"+self.dev_name+"}/config"
+            device_path = "/ncs:devices/device{" + self.dev_name + "}/config"
             config_type = _ncs.maapi.CONFIG_C
             if format == 'xml':
                 config_type = _ncs.maapi.CONFIG_XML
@@ -417,8 +417,9 @@ class ImportConvertCliFiles(ImportOp):
                 err = 'Conversion failed; the device driver is not working correctly'
             raise ActionError(err)
         if self.filter.failures:
-            raise ActionError('failed to convert configuration(s): ' +
-                              ', '.join(self.filter.failures))
+            raise ActionError(
+                'failed to convert configuration(s): ' + ', '.join(
+                    self.filter.failures))
         return {"success": "Imported states: " + ", ".join(sorted(states))}
 
     def complete_import(self, filename, state):

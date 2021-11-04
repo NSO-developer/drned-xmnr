@@ -11,6 +11,7 @@ import _ncs
 from ncs import maagic
 
 from . import base_op
+from .common_op import SaveDefaultConfigOp
 from .ex import ActionError
 
 if sys.version_info >= (3, 3):
@@ -75,7 +76,7 @@ class SetupOp(base_op.ActionBase):
         self.overwrite = params.overwrite
         self.queue = params.use_commit_queue
         self.save_default_config = params.save_default_config
-        #super(SetupOp, self).__init__()
+        # super(SetupOp, self).__init__()
         self.filter = DevcliLogMatch()
 
     def cli_filter(self, msg):

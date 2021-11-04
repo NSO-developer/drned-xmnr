@@ -39,10 +39,10 @@ class CoverageOp(base_op.ActionBase):
         fnames = ['--fname=' + yang for yang in yangfiles]
         args = [self.pytest_executable(),
                 '-s',
-                '--device='+self.dev_name,
+                '--device=' + self.dev_name,
                 '-k', 'test_coverage',
-                '--yangpath='+':'.join(yangpath)]
-        result, output = self.run_in_drned_env(args+fnames)
+                '--yangpath=' + ':'.join(yangpath)]
+        result, output = self.run_in_drned_env(args + fnames)
         if result != 0:
             raise ActionError("drned failed")
         self.parse_output(output)
