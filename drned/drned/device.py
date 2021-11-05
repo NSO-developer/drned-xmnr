@@ -965,7 +965,10 @@ class Device(object):
                 root = etree.parse(name)
                 dev = root.xpath('//ns:device/ns:name',
                                  namespaces={'ns':'http://tail-f.com/ns/ncs'})
-                dev[0].text = self.name
+                if dev:
+                    # The configuration may be empty and would not
+                    # contain the device name
+                    dev[0].text = self.name
                 temp.write(etree.tostring(root, pretty_print=True, encoding="unicode"))
         else:
             with open(name) as n:
