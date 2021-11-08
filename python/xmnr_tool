@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+import sys
+import argparse
+
+import _ncs
+from ncs import maapi, maagic
+
+
+def setup_device(device, host='127.0.0.1', port=_ncs.PORT, username='admin'):
+    with maapi.single_read_trans(username, 'system', ip=host, port=port) as trans:
+        root = maagic.get_root(trans)
+        dev = root.ncs__devices.device[device]
+        action = dev.drned_xmnr.setup.setup_xmnr
+        params = action.get_input()
+        params.overwrite = True
+        result = action.request(params)
+        if result.success is None:
+            print('setup failed:', result.failure, file=sys.stderr)
+            return False
+        return True
+
+
+def record_state(device, state, host='127.0.0.1', port=_ncs.PORT, username='admin'):
+    with maapi.single_read_trans(username, 'system', ip=host, port=port) as trans:
+        root = maagic.get_root(trans)
+        dev = root.ncs__devices.device[device]
+        sync = dev.sync_from.request()
+        if not sync.result:
+            print('sync-from failed', file=sys.stderr)
+            return False
+        action = dev.drned_xmnr.state.record_state
+        params = action.get_input()
+        params.overwrite = True
+        params.state_name = state
+        result = action.request(params)
+        if result.success is None:
+            print('record-state failed:', result.failure)
+            return False
+        return True
+
+
+if __name__ == '__main__':
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('-d', '--device', required=True)
+    argparser.add_argument('command', nargs=1,
+                           choices=['setup', 'record'])
+    argparser.add_argument('state', nargs='?',
+                           help='State name to be recorded.'
+                           ' Must be used with the command `record`.')
+    argparser.add_argument('-i', '--host', default='127.0.0.1')
+    argparser.add_argument('-p', '--port', default=_ncs.PORT)
+    args = argparser.parse_args()
+    if args.command == ['setup']:
+        result = setup_device(args.device, host=args.host, port=args.port)
+    elif args.command == ['record']:
+        if args.state is None:
+            argparser.print_usage(sys.stderr)
+            sys.exit(-1)
+        result = record_state(args.device, args.state,
+                              host=args.host, port=args.port)
+    sys.exit(0 if result else -1)
