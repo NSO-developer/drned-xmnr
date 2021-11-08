@@ -51,9 +51,11 @@
     !commit
     !drned-xmnr setup setup-xmnr overwrite true
     ???success
+    [progress import configs]
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/
+    ???failure no files found: ../cfgs/
     [timeout 30]
     -failure
-    [progress import configs]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../cfgs/*rad*.cfg
     ???success Imported states: rad1, rad2, short-rad1:1, short-rad1:2, short-rad1:3, short-rad2:1, short-rad2:2
     [timeout]

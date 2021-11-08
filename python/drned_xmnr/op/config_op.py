@@ -210,7 +210,8 @@ class ImportOp(ConfigOp):
         self.skip_existing = self.param_default(params, "skip_existing", None)
 
     def verify_filenames(self):
-        filenames = glob.glob(self.pattern)
+        maybefiles = glob.glob(self.pattern)
+        filenames = [filename for filename in maybefiles if os.path.isfile(filename)]
         if filenames == []:
             raise ActionError("no files found: " + self.pattern)
         states = [self.get_state_name(os.path.basename(filename))
