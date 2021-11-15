@@ -78,6 +78,14 @@ def cli2netconf(nsargs):
         print()  # make sure the exception is on a new line
         print(e)
         return -1
+    except BaseException as e:
+        if e.__class__.__name__ == 'Failed':
+            # result of `pytest.fail()` call - DrNED does that if NSO
+            # or the device responds in unexpected ways
+            print()
+            print('DrNED thrown a pytest failure')
+            return -1
+        raise  # give up
     return 0
 
 

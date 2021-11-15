@@ -112,7 +112,7 @@
     ?Deleted: ((usr0[1-6]|empty),? *){5}
     [timeout 40]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
-    [invoke suspend-for "importing state usr03" "Device communication timeout"]
+    [invoke suspend-for "importing state usr03" "Device communication (failure|timeout)"]
     [timeout]
     !do show devices device etrafo0 drned-xmnr state states
     """?

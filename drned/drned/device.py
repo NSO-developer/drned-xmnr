@@ -184,13 +184,14 @@ class Device(object):
             self.timeout(2 * 60 * 60)
         # Make a couple of connection attempts, with corrective actions
         retry_interval = 1
-        retry_number = 8
+        retry_number = 3
         for i in range(retry_number):
             try:
                 self.cmd("devices device %s connect" % self.name,
                          expect="result true")
                 break;
             except pytest.fail.Exception as e:
+                last_exc = e
                 if "SSH host key" in e.msg:
                     self.cmd("devices device %s ssh fetch-host-keys" % self.name)
                     self.cmd("commit") # Bypass normal commit
@@ -204,10 +205,9 @@ class Device(object):
                     # intermittent network issues. Sleep a while and
                     # try again.
                     time.sleep(retry_interval)
-                    retry_interval *= 2
         else:
             # Connect failed
-            raise
+            raise last_exc
         # First sync
         self.sync_from()
         # Start coverage session
