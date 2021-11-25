@@ -8,8 +8,11 @@ import operator
 import os
 import re
 import sys
+import socket
+import _ncs
+from ncs import maapi, maagic
 
-from devcli import Devcli, XDevice
+from devcli import Devcli
 from devcli import DevcliException, DevcliAuthException, DevcliDeviceException
 
 
@@ -28,6 +31,26 @@ def fname_set_descriptors(fnames):
         yield SetDesc(fname=fname, fset=d['set'], index=int(ix))
 
 
+def sync_from(device):
+    res = device.sync_from.request()
+    if not res.result:
+        print('sync-from failed:', res.info)
+        raise DevcliDeviceException('sync-from failed')
+
+
+def save(device, target):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sck, \
+            open(target, 'wb') as out:
+        sid = device._backend.save_config(_ncs.maapi.CONFIG_XML,
+                                          device._path + '/config')
+        _ncs.stream_connect(sck, sid, 0, '127.0.0.1', _ncs.PORT)
+        while True:
+            data = sck.recv(1024)
+            if len(data) <= 0:
+                break
+            out.write(data)
+
+
 def group_cli2netconf(device, devcli, group):
     for desc in group:
         base = os.path.basename(os.path.splitext(desc.fname)[0])
@@ -36,12 +59,12 @@ def group_cli2netconf(device, devcli, group):
         # Load config on device and read back
         devcli.load_config(desc.fname)
         try:
-            device.sync_from()
+            sync_from(device)
         except BaseException:
             devcli.clean_config()
-            device.sync_from()
+            sync_from(device)
             raise
-        device.save(target, fmt="xml")
+        save(device, target)
         print("converted", desc.fname, 'to', target)
 
 
@@ -65,14 +88,16 @@ def _cli2netconf(device, devcli, fnames):
             print('failed to convert group', groupname)
             print('exception:', e)
         devcli.restore_config(backup_config)
-    device.sync_from()
+    sync_from(device)
 
 
 def cli2netconf(nsargs):
     fnames = nsargs.files
     try:
         with closing(Devcli(nsargs)) as devcli, \
-                closing(XDevice(devcli.devname)) as device:
+                maapi.single_read_trans('admin', 'system') as tp:
+            root = maagic.get_root(tp)
+            device = root.devices.device[devcli.devname]
             _cli2netconf(device, devcli, fnames)
     except DevcliException as e:
         print()  # make sure the exception is on a new line
