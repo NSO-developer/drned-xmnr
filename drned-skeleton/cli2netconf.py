@@ -84,10 +84,16 @@ def _cli2netconf(device, devcli, fnames):
             raise
         except (DevcliAuthException, DevcliDeviceException):
             raise
-        except BaseException as e:
+        except DevcliException as e:
             print('failed to convert group', groupname)
             print('exception:', e)
-        devcli.restore_config(backup_config)
+        try:
+            devcli.restore_config(backup_config)
+        except DevcliException as e:
+            # this is serious, the device is left configured somehow
+            print('failed to restore device config after group', groupname)
+            print('exception:', e)
+            raise
     sync_from(device)
 
 
