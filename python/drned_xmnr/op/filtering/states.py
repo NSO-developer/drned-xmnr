@@ -116,7 +116,7 @@ class LogStateMachine(object):
 
     evtclasses = {InitStatesEvent, StartStateEvent, TransitionEvent,
                   InitFailedEvent, TransFailedEvent, InitialPrepareEvent,
-                  PyTestEvent, DrnedTeardownEvent}
+                  PyTestEvent}
 
     def __init__(self, level, init_state, context=None):
         self.stack = [init_state]

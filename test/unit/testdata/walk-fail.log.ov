@@ -1,6 +1,4 @@
 Prepare the device
 Test transition to empty
 Test transition to s-subnet3:*
-Device cleanup
 Test transition to s-subnet4
-Device cleanup

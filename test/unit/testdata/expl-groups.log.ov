@@ -1,18 +1,12 @@
 Found 3 states recorded for device dhcp0 which gives a total of 6 transitions.
 Starting with state empty
 Transition 1/6: empty ==> s-subnet3:1
-Device cleanup
 Transition 2/6: empty ==> s-subnet3:2
-Device cleanup
 Starting with state s-subnet3:1
 Transition 3/6: s-subnet3:1 ==> empty
-Device cleanup
 Transition 4/6: s-subnet3:1 ==> s-subnet3:2
-Device cleanup
 Transition failed
 Starting with state s-subnet3:2
 Transition 5/6: s-subnet3:2 ==> empty
-Device cleanup
 Transition 6/6: s-subnet3:2 ==> s-subnet3:1
-Device cleanup
 Transition failed
