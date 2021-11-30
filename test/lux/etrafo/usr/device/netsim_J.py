@@ -6,12 +6,15 @@ def _get_data(devcli):
     return None
 
 
+syncfifo = "/tmp/timeout-sync.fifo"
+
+
 class Devcfg(object):
     def __init__(self, path, name):
         self.path = path
         self.name = name
-        with open('/tmp/done.txt', 'a') as done:
-            print(f'start: {os.getcwd()}', file=done)
+        with open(syncfifo, "r") as fifo:
+            self.state = fifo.read()[:-1]
 
     def init_params(self, devname='netsim0',
                     ip='127.0.0.1', port=12022,
@@ -73,7 +76,7 @@ class Devcfg(object):
             ],
             "put-done": [
                 ("Error: (syntax error|bad value) on line", None, "failure"),
-                (self.get_prompt(), put_done, "commit"),
+                (self.get_prompt(), self.sync("put", "commit"), "commit"),
             ],
             "commit": [
                 ("Commit complete|No modifications to commit", None,
@@ -97,7 +100,12 @@ class Devcfg(object):
                  "restore-commit"),
             ],
             "restore-commit": [
-                (self.get_prompt(), "commit", "commit"),
+                (self.get_prompt(), "commit", "restore-done"),
+            ],
+            "restore-done": [
+                ("Commit complete|No modifications to commit",
+                 self.sync("restore"),
+                 "prompt-done"),
             ],
             # Exit
             "exit": [
@@ -111,11 +119,15 @@ class Devcfg(object):
             ],
         }
 
+    def sync(self, state, cmd=None):
+        def do_sync(devcli):
+            if 'usr03' in devcli.data:
+                with open(syncfifo, 'a') as fifo:
+                    print('commit: {}'.format(devcli.data), file=fifo)
+                with open(syncfifo, 'r') as fifo:
+                    fifo.read()
+            return cmd
 
-def put_done(devcli):
-    if 'usr03' in devcli.data:
-        with open('/tmp/timeout-sync.fifo', 'a') as fifo:
-            print('commit: {}'.format(devcli.data), file=fifo)
-        with open('/tmp/timeout-sync.fifo', 'r') as fifo:
-            fifo.read()
-    return "commit"
+        def do_nothing(_):
+            return cmd
+        return do_sync if state == self.state else do_nothing

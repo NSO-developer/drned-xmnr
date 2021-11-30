@@ -38,6 +38,9 @@
 [shell ncs-cli]
 
     [invoke prepare-test etrafo0]
+    # the empty state not needed
+    !drned-xmnr state delete-state state-name-pattern empty
+    ?Deleted: empty
     # remove redundant users
     !no config users user public
     !no config users user private
@@ -92,6 +95,9 @@
 [shell ncs-cli]
     
     [progress convert with timeout]
+[shell fifo]
+    !echo put > $fifo
+[shell ncs-cli]
     [timeout 20]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
     [invoke suspend-import "failed to import group .*/usr03"]
@@ -131,8 +137,11 @@
     """
 
     [progress convert with a dead device]
+[shell fifo]
+    !echo put > $fifo
+[shell ncs-cli]
     !drned-xmnr state delete-state state-name-pattern *
-    ?Deleted: ((usr0[1-6]|empty),? *){5}
+    ?Deleted: (usr0[1-6],? *){4}
 
     !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
     [invoke suspend-import "Device communication timeout"]
