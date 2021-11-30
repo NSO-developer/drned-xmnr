@@ -3,6 +3,7 @@
 [include common.luxinc]
 
 [global ECONFD_DIR=$$NCS_DIR/netsim/confd/erlang/econfd]
+[global fifo=/tmp/timeout-sync.fifo]
 
 [macro econfd-check]
     [local beamfile=$ECONFD_DIR/ebin/econfd.beam]
@@ -53,25 +54,47 @@
     ! -s econfd -s ec_transform -noinput
     ?ec_transform_server: Server started
 
+[macro suspend-import resume_pattern]
+[shell fifo]
+    [timeout 20]
+    !cat $fifo
+    ?commit: .*usr03
+[shell ncs-cli]
+    ?importing state usr03
+[shell netsim]
+    ~$_CTRL_Z_
+    ?Stopped
+[shell fifo]
+    !echo continue > $fifo
+[shell ncs-cli]
+    [timeout 30]
+    ?$resume_pattern
+[shell netsim]
+    !fg
+[shell ncs-cli]
+[endmacro]
+
 [macro suspend-for stop_pattern resume_pattern]
     ?$stop_pattern
 [shell netsim]
     ~$_CTRL_Z_
-
+    ?Stopped
 [shell ncs-cli]
     ?$resume_pattern
-
 [shell netsim]
     !fg
-
 [shell ncs-cli]
 [endmacro]
 
+[shell fifo]
+    !mkfifo $fifo
+    ?SH-PROMPT
 [shell ncs-cli]
+    
     [progress convert with timeout]
     [timeout 20]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
-    [invoke suspend-for "importing state usr03" "failed to import group .*"]
+    [invoke suspend-import "failed to import group .*/usr03"]
     ?importing state usr06
     ?failure failed to convert configuration.s.: [^ ]*usr03
     [timeout]
@@ -110,9 +133,9 @@
     [progress convert with a dead device]
     !drned-xmnr state delete-state state-name-pattern *
     ?Deleted: ((usr0[1-6]|empty),? *){5}
-    [timeout 40]
+
     !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
-    [invoke suspend-for "importing state usr03" "Device communication (failure|timeout)"]
+    [invoke suspend-import "Device communication timeout"]
     [timeout]
     !do show devices device etrafo0 drned-xmnr state states
     """?
@@ -125,4 +148,6 @@
     """
 
 [cleanup]
+    !rm -f $fifo
+    ?SH-PROMPT
     [invoke cleanup]

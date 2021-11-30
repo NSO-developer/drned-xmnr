@@ -10,6 +10,8 @@ class Devcfg(object):
     def __init__(self, path, name):
         self.path = path
         self.name = name
+        with open('/tmp/done.txt', 'a') as done:
+            print(f'start: {os.getcwd()}', file=done)
 
     def init_params(self, devname='netsim0',
                     ip='127.0.0.1', port=12022,
@@ -71,7 +73,7 @@ class Devcfg(object):
             ],
             "put-done": [
                 ("Error: (syntax error|bad value) on line", None, "failure"),
-                (self.get_prompt(), "commit", "commit"),
+                (self.get_prompt(), put_done, "commit"),
             ],
             "commit": [
                 ("Commit complete|No modifications to commit", None,
@@ -108,3 +110,12 @@ class Devcfg(object):
                 ("Connection to .* closed\\.", None, "done"),
             ],
         }
+
+
+def put_done(devcli):
+    if 'usr03' in devcli.data:
+        with open('/tmp/timeout-sync.fifo', 'a') as fifo:
+            print('commit: {}'.format(devcli.data), file=fifo)
+        with open('/tmp/timeout-sync.fifo', 'r') as fifo:
+            fifo.read()
+    return "commit"
