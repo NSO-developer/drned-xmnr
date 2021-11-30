@@ -20,6 +20,9 @@ testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
 SetDesc = namedtuple('SetDesc', ['fname', 'fset', 'index'])
 
 
+backup_config = 'drned-backup'
+
+
 def fname_set_descriptors(fnames):
     for fname in sorted(fnames):
         m = testrx.match(fname)
@@ -61,7 +64,7 @@ def group_cli2netconf(device, devcli, group):
         try:
             sync_from(device)
         except BaseException:
-            devcli.clean_config()
+            devcli.restore_config(backup_config)
             sync_from(device)
             raise
         save(device, target)
@@ -70,7 +73,6 @@ def group_cli2netconf(device, devcli, group):
 
 def _cli2netconf(device, devcli, fnames):
     # Save initial CLI state
-    backup_config = 'drned-backup'
     devcli.save_config(backup_config)
     namegroups = itertools.groupby(fname_set_descriptors(fnames),
                                    key=operator.attrgetter('fset'))

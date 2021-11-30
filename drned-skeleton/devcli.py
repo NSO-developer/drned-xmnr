@@ -161,13 +161,11 @@ class Devcli:
             raise DevcliException("Failed to get config into %s" % fname)
         return self
 
-    def restore_config(self, fname=None):
+    def restore_config(self, fname):
         """Restore configuration on the device.
 
         If `fname` is not provided, the initial configuration is used.
         """
-        if fname is None:
-            fname = self.initial_config
         self._banner(fname)
         self.data = fname
         self.interstate(["restore", "exit"])
@@ -178,13 +176,11 @@ class Devcli:
     def clean_config(self):
         """Clean all device configuration and enter initial state.
         """
-        return self.restore_config()
+        return self.restore_config(self.initial_config)
 
-    def save_config(self, fname=None):
+    def save_config(self, fname):
         """Save the initial configuration.
         """
-        if fname is None:
-            fname = self.initial_config
         self._banner(fname)
         self.data = fname
         self.interstate(["save", "exit"])

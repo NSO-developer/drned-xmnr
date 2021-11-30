@@ -8,7 +8,7 @@ from devcli import Devcli, XDevice, DevcliException
 
 def _load_default_config(nso_device, target_device):
     try:
-        target_device.restore_config()
+        target_device.clean_config()
         nso_device.sync_from()
     except DevcliException as e:
         print()
