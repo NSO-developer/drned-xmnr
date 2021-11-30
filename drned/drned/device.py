@@ -147,9 +147,6 @@ class Device(object):
             self.cmd("java-vm java-logging logger com.tailf.packages.ned " +
                      "level %s" % (self.java_log_level))
 
-        # Must use self.show() here since config may contain strings
-        # that mimic a prompt
-        self.show("show full-configuration devices device %s" % self.name)
         # Get NED name
         self.cmd("show full-configuration devices device %s device-type" % self.name)
         device_type = re.search("device-type\\s+(\\S+)\\s+ned-id", self.ncs_buf, re.MULTILINE)

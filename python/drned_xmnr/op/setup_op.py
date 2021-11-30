@@ -82,7 +82,7 @@ class SetupOp(base_op.ActionBase):
     def cli_filter(self, msg):
         report = self.filter.match(msg)
         if report is not None:
-            super(SaveDefaultConfigOp, self).cli_filter(report + '\n')
+            super(SetupOp, self).cli_filter(report + '\n')
 
     def perform(self):
         # device and states directory should have been already created
