@@ -2,11 +2,11 @@ from __future__ import print_function
 
 from contextlib import closing
 
-from devcli import Devcli, XDevice
+from devcli import Devcli, NcsDevice
 
 
 def _save_default_config(nso_device, target_device):
-    target_device.save_config()
+    target_device.backup_config()
 
 
 def save_default_config(nsargs):
@@ -14,7 +14,7 @@ def save_default_config(nsargs):
         return closing(Devcli(nsargs))
 
     def init_nso_dev(devcli):
-        return closing(XDevice(devcli.devname))
+        return NcsDevice(devcli.devname)
 
     with init_cli_dev() as target_device, \
             init_nso_dev(target_device) as nso_device:

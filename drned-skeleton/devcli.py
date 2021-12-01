@@ -210,6 +210,11 @@ class Devcli:
         """
         return self.restore_config(self.initial_config)
 
+    def backup_config(self):
+        """Save the device initial configuration.
+        """
+        return self.save_config(self.initial_config)
+
     def save_config(self, fname):
         """Save the initial configuration.
         """
