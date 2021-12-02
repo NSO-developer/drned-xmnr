@@ -70,11 +70,21 @@
 [endmacro]
 
 
+[macro fix-netsim-gid device]
+    [my nsdir=netsim/$device/${device}0/cdb/]
+    ~xmlstarlet ed -N aaa="http://tail-f.com/ns/aaa/1.1"
+    ~ -u '//aaa:aaa//aaa:user[aaa:name="admin"]/aaa:gid' -v $(id -g)
+    ! $nsdir/aaa_init.xml > $nsdir/ns_aaa_init.xml
+    [invoke shell-check-prompt groupfix]
+    !rm $nsdir/aaa_init.xml
+[endmacro]
+
 [macro start-ncs-netsim device]
     [progress create and start the netsim]
     !ncs-netsim delete-network
     !ncs-netsim create-network packages/$device 1 $device
     [invoke shell-check-prompt create-network]
+    [invoke fix-netsim-gid $device]
     !ncs-netsim start
     [invoke shell-check-prompt netsim]
     [progress start ncs]

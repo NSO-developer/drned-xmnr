@@ -42,6 +42,7 @@
 [shell os]
     !ncs-netsim add-to-network packages/cisco-ios 1 cisco-nc
     [invoke shell-check]
+    [invoke fix-netsim-gid cisco-nc]
     !ncs-netsim start cisco-nc0
     [invoke shell-check]
 [shell ncs-cli]
@@ -172,6 +173,7 @@
     !sed 's/self.password = .*/self.password = "nimda"/' $driver > $broken
     [invoke shell-check]
 [shell ncs-cli]
+    -
     !drned-xmnr driver $broken
     !commit
     [timeout 20]
