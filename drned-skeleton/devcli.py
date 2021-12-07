@@ -10,10 +10,11 @@ import inspect
 import os
 import pexpect
 import sys
-import types
 from time import sleep
 
-import drned
+import socket
+import _ncs
+from ncs import maapi, maagic
 
 
 VERBOSE = True
@@ -52,9 +53,40 @@ class DevcliDeviceException(DevcliException):
         return 'device communication failure: ' + str(self.args[0])
 
 
-class XDevice(drned.Device):
+class NcsDevice:
+    def __init__(self, devname):
+        self.devname = devname
+
+    def __enter__(self):
+        self.tc = maapi.single_read_trans('admin', 'system')
+        self.tp = self.tc.__enter__()
+        root = maagic.get_root(self.tp)
+        self.device = root.devices.device[self.devname]
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return self.tc.__exit__(exc_type, exc_value, traceback)
+
     def close(self):
-        self.ncs.close()
+        self.tp.maapi.close()
+
+    def sync_from(self):
+        res = self.device.sync_from.request()
+        if not res.result:
+            print('sync-from failed:', res.info)
+            raise DevcliDeviceException('sync-from failed')
+
+    def save(self, target):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sck, \
+                open(target, 'wb') as out:
+            path = self.device._path + '/config'
+            sid = self.device._backend.save_config(_ncs.maapi.CONFIG_XML, path)
+            _ncs.stream_connect(sck, sid, 0, '127.0.0.1', _ncs.PORT)
+            while True:
+                data = sck.recv(1024)
+                if len(data) <= 0:
+                    break
+                out.write(data)
 
 
 class Devcli:
@@ -161,13 +193,11 @@ class Devcli:
             raise DevcliException("Failed to get config into %s" % fname)
         return self
 
-    def restore_config(self, fname=None):
+    def restore_config(self, fname):
         """Restore configuration on the device.
 
         If `fname` is not provided, the initial configuration is used.
         """
-        if fname is None:
-            fname = self.initial_config
         self._banner(fname)
         self.data = fname
         self.interstate(["restore", "exit"])
@@ -178,13 +208,16 @@ class Devcli:
     def clean_config(self):
         """Clean all device configuration and enter initial state.
         """
-        return self.restore_config()
+        return self.restore_config(self.initial_config)
 
-    def save_config(self, fname=None):
+    def backup_config(self):
+        """Save the device initial configuration.
+        """
+        return self.save_config(self.initial_config)
+
+    def save_config(self, fname):
         """Save the initial configuration.
         """
-        if fname is None:
-            fname = self.initial_config
         self._banner(fname)
         self.data = fname
         self.interstate(["save", "exit"])
@@ -228,8 +261,7 @@ class Devcli:
             (p, cmd, state) = state_def[n]
             if state is None:
                 raise IOError("%s : %s" % (cmd, self.cli.before))
-            if isinstance(cmd, types.FunctionType) \
-               or isinstance(cmd, types.BuiltinFunctionType):
+            if callable(cmd):
                 cmd = cmd(self)
             if self.verbose:
                 print("MATCHED '%s', SEND: '%s' -> NEXT_STATE: '%s'" %

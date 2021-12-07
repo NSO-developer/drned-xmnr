@@ -1,8 +1,17 @@
-[doc Testing event filtering and processing for DrNED transitions]
+[doc]
+Testing event filtering and processing for DrNED transitions
+
+The test uses named pipe (mkfifo) to synchronize between the test and
+the device driver.  The synchronization makes sure that timeouts occur
+predictably.
+[enddoc]
+
+
 
 [include common.luxinc]
 
 [global ECONFD_DIR=$$NCS_DIR/netsim/confd/erlang/econfd]
+[global fifo=/tmp/timeout-sync.fifo]
 
 [macro econfd-check]
     [local beamfile=$ECONFD_DIR/ebin/econfd.beam]
@@ -37,6 +46,9 @@
 [shell ncs-cli]
 
     [invoke prepare-test etrafo0]
+    # the empty state not needed
+    !drned-xmnr state delete-state state-name-pattern empty
+    ?Deleted: empty
     # remove redundant users
     !no config users user public
     !no config users user private
@@ -53,25 +65,47 @@
     ! -s econfd -s ec_transform -noinput
     ?ec_transform_server: Server started
 
+[macro suspend-import resume_pattern]
+[shell fifo]
+    [timeout 20]
+    !cat $fifo
+    ?sync: .*usr03
+[shell ncs-cli]
+    ?importing state usr03
+[shell netsim]
+    ~$_CTRL_Z_
+    ?Stopped
+[shell fifo]
+    !echo continue > $fifo
+[shell ncs-cli]
+    [timeout 40]
+    ?$resume_pattern
+[shell netsim]
+    !fg
+[shell ncs-cli]
+[endmacro]
+
 [macro suspend-for stop_pattern resume_pattern]
     ?$stop_pattern
 [shell netsim]
     ~$_CTRL_Z_
-
+    ?Stopped
 [shell ncs-cli]
     ?$resume_pattern
-
 [shell netsim]
     !fg
-
 [shell ncs-cli]
 [endmacro]
 
+[shell fifo]
+    !mkfifo $fifo
+    ?SH-PROMPT
+    !echo put > $fifo
 [shell ncs-cli]
     [progress convert with timeout]
     [timeout 20]
     !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
-    [invoke suspend-for "importing state usr03" "failed to import group .*"]
+    [invoke suspend-import "failed to import group .*/usr03"]
     ?importing state usr06
     ?failure failed to convert configuration.s.: [^ ]*usr03
     [timeout]
@@ -79,7 +113,6 @@
     """?
     STATE *DISABLED *
     -----* *
-    empty *- *
     usr01 *- *
     usr02 *- *
     usr04 *- *
@@ -107,12 +140,40 @@
     admin@ncs.*
     """
 
-    [progress convert with a dead device]
+    [progress convert with restore timeout]
+[shell fifo]
+    !echo restore > $fifo
+[shell ncs-cli]
     !drned-xmnr state delete-state state-name-pattern *
-    ?Deleted: ((usr0[1-6]|empty),? *){5}
-    [timeout 40]
+    ?Deleted: (usr0[1-6],? *){4}
+
     !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
-    [invoke suspend-for "importing state usr03" "Device communication timeout"]
+    [invoke suspend-import "failed to restore the device config"]
+    [timeout 10]
+    ?failed to convert.*usr03
+    [timeout]
+    !do show devices device etrafo0 drned-xmnr state states
+    # usr03 has been converted, it failed while restoring initial
+    # state; usr04 should not show up
+    """?
+    STATE *DISABLED *
+    -----* *
+    usr01 *- *
+    usr02 *- *
+    usr03 *- *
+
+    admin@ncs.*
+    """
+
+    [progress convert with a dead device]
+[shell fifo]
+    !echo put > $fifo
+[shell ncs-cli]
+    !drned-xmnr state delete-state state-name-pattern *
+    ?Deleted: (usr0[1-3],? *){3}
+
+    !drned-xmnr state import-convert-cli-files file-path-pattern ../etrafo/usr/usr*.cfg
+    [invoke suspend-import "Device communication timeout"]
     [timeout]
     !do show devices device etrafo0 drned-xmnr state states
     """?
@@ -125,4 +186,6 @@
     """
 
 [cleanup]
+    !rm -f $fifo
+    ?SH-PROMPT
     [invoke cleanup]

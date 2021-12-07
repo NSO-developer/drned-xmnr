@@ -3,12 +3,12 @@ from __future__ import print_function
 from contextlib import closing
 import sys
 
-from devcli import Devcli, XDevice, DevcliException
+from devcli import Devcli, NcsDevice, DevcliException
 
 
 def _load_default_config(nso_device, target_device):
     try:
-        target_device.restore_config()
+        target_device.clean_config()
         nso_device.sync_from()
     except DevcliException as e:
         print()
@@ -21,7 +21,7 @@ def load_default_config(nsargs):
         return closing(Devcli(nsargs))
 
     def init_nso_dev(devcli):
-        return closing(XDevice(devcli.devname))
+        return NcsDevice(devcli.devname)
 
     with init_cli_dev() as target_device, \
             init_nso_dev(target_device) as nso_device:

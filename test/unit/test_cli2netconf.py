@@ -1,5 +1,6 @@
 import operator
 import collections
+from contextlib import closing
 import os
 import random
 from six import functools
@@ -26,12 +27,12 @@ class MockDevcli(object):
         self.gen_method('load', filename)
         self.load_filename = filename
         if filename in self.failures['load']:
-            raise Exception('failed to load ' + filename)
+            raise cli2netconf.DevcliException('failed to load ' + filename)
 
     def sync_from(self):
         self.gen_method('sync')
         if self.load_filename in self.failures['sync']:
-            raise Exception('failed to sync ' + self.load_filename)
+            raise cli2netconf.DevcliException('failed to sync ' + self.load_filename)
 
     def close(self):
         pass
@@ -66,7 +67,7 @@ class ConvertPatch(object):
 
     An instance of this class is callable (so that it can be used as a
     return value of a function decorator).  The `__call__` method
-    creates a function wrapper, that creates a Devcli and XDevice mock
+    creates a function wrapper, that creates a Devcli and NcsDevice mock
     (there is only one common for both classes).
     '''
 
@@ -81,10 +82,10 @@ class ConvertPatch(object):
         self.instantiate_devcli().inst_init(*args)
         return self.devclimock
 
-    def xdev_instance(self, *args):
+    def ncsdev_instance(self, *args):
         # it's actually Devcli mock again, but we don't have the
         # Devcli init arguments now
-        return self.instantiate_devcli()
+        return closing(self.instantiate_devcli())
 
     def instantiate_devcli(self):
         if self.devclimock is None:
@@ -100,7 +101,7 @@ class ConvertPatch(object):
             print_ref = '__builtin__.print' if sys.version_info < (3,) else 'builtins.print'
             with patch.dict('os.environ', NC_WORKDIR='/'), \
                     patch('cli2netconf.Devcli', new=self.devclimock_instance), \
-                    patch('cli2netconf.XDevice', new=self.xdev_instance), \
+                    patch('cli2netconf.NcsDevice', new=self.ncsdev_instance), \
                     patch(print_ref, new=self.print_cap):
                 return fun(self_arg, self)
 
@@ -138,17 +139,17 @@ class TestCli2Netconf(object):
                 if filename in patcher.failures['load']:
                     groupname = base.split(':')[0]
                     assert 'failed to convert group ' + groupname == prints.pop()
-                    assert 'exception: failed to load ' + filename == prints.pop()
+                    assert 'exception: devcli exception: failed to load ' + filename == prints.pop()
                     break
                 assert 'sync' == calls.pop()
                 if filename in patcher.failures['sync']:
                     groupname = base.split(':')[0]
                     assert 'failed to convert group ' + groupname == prints.pop()
-                    assert 'exception: failed to sync ' + filename == prints.pop()
-                    assert 'clean_config' == calls.pop()
+                    assert 'exception: devcli exception: failed to sync ' + filename == prints.pop()
+                    assert ('restore_config', ('drned-backup',), {}) == calls.pop()
                     assert 'sync' == calls.pop()
                     break
-                assert ('save', (target,), {'fmt': 'xml'}) == calls.pop()
+                assert ('save', (target,), {}) == calls.pop()
                 assert 'converted {} to {}'.format(filename, target) == prints.pop()
             assert ('restore_config', ('drned-backup',), {}) == calls.pop()
         assert ['sync'] == calls

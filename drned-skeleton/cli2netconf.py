@@ -9,12 +9,15 @@ import os
 import re
 import sys
 
-from devcli import Devcli, XDevice
+from devcli import Devcli, NcsDevice
 from devcli import DevcliException, DevcliAuthException, DevcliDeviceException
 
 
 testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
 SetDesc = namedtuple('SetDesc', ['fname', 'fset', 'index'])
+
+
+backup_config = 'drned-backup'
 
 
 def fname_set_descriptors(fnames):
@@ -38,16 +41,15 @@ def group_cli2netconf(device, devcli, group):
         try:
             device.sync_from()
         except BaseException:
-            devcli.clean_config()
+            devcli.restore_config(backup_config)
             device.sync_from()
             raise
-        device.save(target, fmt="xml")
+        device.save(target)
         print("converted", desc.fname, 'to', target)
 
 
 def _cli2netconf(device, devcli, fnames):
     # Save initial CLI state
-    backup_config = 'drned-backup'
     devcli.save_config(backup_config)
     namegroups = itertools.groupby(fname_set_descriptors(fnames),
                                    key=operator.attrgetter('fset'))
@@ -61,10 +63,16 @@ def _cli2netconf(device, devcli, fnames):
             raise
         except (DevcliAuthException, DevcliDeviceException):
             raise
-        except BaseException as e:
+        except DevcliException as e:
             print('failed to convert group', groupname)
             print('exception:', e)
-        devcli.restore_config(backup_config)
+        try:
+            devcli.restore_config(backup_config)
+        except DevcliException as e:
+            # this is serious, the device is left configured somehow
+            print('failed to restore device config after group', groupname)
+            print('exception:', e)
+            raise
     device.sync_from()
 
 
@@ -72,12 +80,20 @@ def cli2netconf(nsargs):
     fnames = nsargs.files
     try:
         with closing(Devcli(nsargs)) as devcli, \
-                closing(XDevice(devcli.devname)) as device:
+                NcsDevice(devcli.devname) as device:
             _cli2netconf(device, devcli, fnames)
     except DevcliException as e:
         print()  # make sure the exception is on a new line
         print(e)
         return -1
+    except BaseException as e:
+        if e.__class__.__name__ == 'Failed':
+            # result of `pytest.fail()` call - DrNED does that if NSO
+            # or the device responds in unexpected ways
+            print()
+            print('DrNED thrown a pytest failure')
+            return -1
+        raise  # give up
     return 0
 
 

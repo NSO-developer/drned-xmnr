@@ -6,10 +6,16 @@ def _get_data(devcli):
     return None
 
 
+syncfifo = "/tmp/timeout-sync.fifo"
+
+
 class Devcfg(object):
     def __init__(self, path, name):
         self.path = path
         self.name = name
+        self.state_file = None
+        with open(syncfifo, "r") as fifo:
+            self.state = fifo.read()[:-1]
 
     def init_params(self, devname='netsim0',
                     ip='127.0.0.1', port=12022,
@@ -71,7 +77,7 @@ class Devcfg(object):
             ],
             "put-done": [
                 ("Error: (syntax error|bad value) on line", None, "failure"),
-                (self.get_prompt(), "commit", "commit"),
+                (self.get_prompt(), self.put_sync, "commit"),
             ],
             "commit": [
                 ("Commit complete|No modifications to commit", None,
@@ -95,7 +101,7 @@ class Devcfg(object):
                  "restore-commit"),
             ],
             "restore-commit": [
-                (self.get_prompt(), "commit", "commit"),
+                (self.get_prompt(), self.restore_sync, "commit"),
             ],
             # Exit
             "exit": [
@@ -108,3 +114,23 @@ class Devcfg(object):
                 ("Connection to .* closed\\.", None, "done"),
             ],
         }
+
+    def put_sync(self, devcli):
+        self.state_file = None
+        if "usr03" in devcli.data:
+            self.state_file = devcli.data
+            if self.state == "put":
+                self.sync(devcli)
+        return "commit"
+
+    def restore_sync(self, devcli):
+        if self.state_file is not None and self.state == "restore":
+            print('syncing restore')
+            self.sync(devcli)
+        return "commit"
+
+    def sync(self, devcli):
+        with open(syncfifo, 'a') as fifo:
+            print('sync: {}'.format(self.state_file), file=fifo)
+        with open(syncfifo, 'r') as fifo:
+            fifo.read()

@@ -349,6 +349,7 @@ class ConvertMatch(DevcliLogMatch):
         r'(?:(?P<convert>converting [^ ]* to [^ ]*/(?P<cnvstate>[^/]*)[.]xml)'
         r'|(?P<converted>converted [^ ]* to (?P<target>[^ ]*/(?P<donestate>[^/]*)[.]xml))'
         r'|(?P<failure>failed to convert group (?P<group>.*))'
+        r'|(?P<restore_failed>failed to restore device config after group (?P<rest_group>.*))'
         r'|(?P<format>Filename format not understood: (?P<filename>.*))'
         r')$')
     matchrx = re.compile(matchexpr)
@@ -376,6 +377,10 @@ class ConvertMatch(DevcliLogMatch):
             group = gd['group']
             self.failures.append(group)
             return 'failed to import group ' + group
+        elif match.lastgroup == 'restore_failed':
+            group = gd['rest_group']
+            self.failures.append(group)
+            return 'failed to restore the device config after converting ' + group
         elif match.lastgroup == 'format':
             filename = gd['filename']
             msg = 'unknown filename format: {}; should be name[:index].ext'
