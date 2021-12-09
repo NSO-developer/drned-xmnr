@@ -1091,9 +1091,7 @@ class DrnedWalkOutput(DrnedOutput):
             yield intro_output.format(state_to=state, end_op=end_op)
             if self.filter_type != 'overview':
                 yield trans_output.format(state_to=state)
-        if self.filter_type == 'overview':
-            yield 'Device cleanup\n'
-        else:
+        if self.filter_type != 'overview':
             yield outro_output
 
     def full_output(self):
