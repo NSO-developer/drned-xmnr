@@ -18,6 +18,8 @@ import _ncs.dp as dp
 import _ncs.maapi as _maapi
 from ncs import maapi, maagic
 
+from drned_xmnr.namespaces.drned_xmnr_ns import ns
+
 from .ex import ActionError
 
 
@@ -56,14 +58,25 @@ all three layers with increasing margin:
 
 
 class CliLogger(object):
-    def __init__(self, uinfo, cli_log_filename):
+    def __init__(self, uinfo, dev_name, cli_log_filename):
         self.uinfo = uinfo
         self.cli_log_file = open(cli_log_filename, 'a') if cli_log_filename is not None else None
         self.maapi = maapi.Maapi()
+        self.maapi.start_user_session('admin', 'system')
+        self.trans = maapi.Transaction(self.maapi, rw=_ncs.READ, db=_ncs.OPERATIONAL)
+        root = maagic.get_root(self.trans)
+        apoint = root.ncs_state.internal.callpoints.actionpoint[ns.actionpoint_xmnr_cli_log]
+        if apoint.daemon.id is not None:
+            self.cli_log_action = root.drned_xmnr.cli_log_message
+            self.cli_log_params = self.cli_log_action.get_input()
+            self.cli_log_params.device = dev_name
+        else:
+            self.cli_log_action = self.cli_log_params = None
 
     def close(self):
         if self.cli_log_file is not None:
             self.cli_log_file.close()
+        self.trans.finish()
         self.maapi.close()
 
     def log(self, msg):
@@ -72,6 +85,9 @@ class CliLogger(object):
         if self.cli_log_file is not None:
             self.cli_log_file.write(msg)
             self.cli_log_file.flush()
+        if self.cli_log_action is not None:
+            self.cli_log_params.message = msg
+            self.cli_log_action.request(self.cli_log_params)
 
 
 class XmnrBase(object):
@@ -215,7 +231,7 @@ class ActionBase(XmnrBase):
 
     def perform_action(self):
         with self.open_log_file() as self.log_file, \
-             closing(CliLogger(self.uinfo, self.cli_log_filename)) as self.cli_logger:
+             closing(CliLogger(self.uinfo, self.dev_name, self.cli_log_filename)) as self.cli_logger:
             return self.perform()
 
     def abort_action(self):

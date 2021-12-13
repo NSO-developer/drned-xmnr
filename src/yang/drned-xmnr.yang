@@ -93,6 +93,20 @@ module drned-xmnr {
          running).";
       type string;
     }
+    tailf:action cli-log-message {
+      tailf:actionpoint xmnr-cli-log;
+      tailf:info
+        "If registered, all output that would be printed to CLI is
+         also sent to the action callback.";
+      input {
+        leaf device {
+          type string;
+        }
+        leaf message {
+          type string;
+        }
+      }
+    }
     container log-detail {
       typedef filter {
         type enumeration {
