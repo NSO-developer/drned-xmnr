@@ -62,6 +62,7 @@ def _cli2netconf(device, devcli, fnames):
             print('Keyboard interrupt, abort')
             raise
         except (DevcliAuthException, DevcliDeviceException):
+            # these are critical - don't try to recover
             raise
         except DevcliException as e:
             print('failed to convert group', groupname)

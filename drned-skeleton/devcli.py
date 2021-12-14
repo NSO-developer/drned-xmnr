@@ -74,7 +74,7 @@ class NcsDevice:
         res = self.device.sync_from.request()
         if not res.result:
             print('sync-from failed:', res.info)
-            raise DevcliDeviceException('sync-from failed')
+            raise DevcliException('sync-from failed')
 
     def save(self, target):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sck, \
