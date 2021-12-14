@@ -58,9 +58,13 @@ all three layers with increasing margin:
 
 
 class CliLogger(object):
-    def __init__(self, uinfo, dev_name, cli_log_filename):
-        self.uinfo = uinfo
-        self.cli_log_file = open(cli_log_filename, 'a') if cli_log_filename is not None else None
+    def __init__(self, action):
+        self.uinfo = action.uinfo
+        if action.cli_log_filename is not None:
+            self.cli_log_file = open(action.cli_log_filename, 'a')
+            self.cli_log_file.write(action.log_header())
+        else:
+            self.cli_log_file = None
         self.maapi = maapi.Maapi()
         self.maapi.start_user_session('admin', 'system')
         self.trans = maapi.Transaction(self.maapi, rw=_ncs.READ, db=_ncs.OPERATIONAL)
@@ -69,7 +73,7 @@ class CliLogger(object):
         if apoint.daemon.id is not None:
             self.cli_log_action = root.drned_xmnr.cli_log_message
             self.cli_log_params = self.cli_log_action.get_input()
-            self.cli_log_params.device = dev_name
+            self.cli_log_params.device = action.dev_name
         else:
             self.cli_log_action = self.cli_log_params = None
 
@@ -219,19 +223,22 @@ class ActionBase(XmnrBase):
         # Implement in subclasses
         pass
 
+    def log_header(self):
+        msg = '{} - {}'.format(dt.now(), self.action_name)
+        return '\n{}\n{}\n{}\n'.format('-' * len(msg), msg, '-' * len(msg))
+
     @contextmanager
-    def open_log_file(self):
-        if self.log_filename is None:
+    def open_log_file(self, path):
+        if path is None:
             yield None
         else:
-            with open(os.path.join(self.dev_test_dir, self.log_filename), 'a') as lf:
-                msg = '{} - {}'.format(dt.now(), self.action_name)
-                lf.write('\n{}\n{}\n{}\n'.format('-' * len(msg), msg, '-' * len(msg)))
+            with open(os.path.join(self.dev_test_dir, path), 'a') as lf:
+                lf.write(self.log_header())
                 yield lf
 
     def perform_action(self):
-        with self.open_log_file() as self.log_file, \
-             closing(CliLogger(self.uinfo, self.dev_name, self.cli_log_filename)) as self.cli_logger:
+        with self.open_log_file(self.log_filename) as self.log_file, \
+             closing(CliLogger(self)) as self.cli_logger:
             return self.perform()
 
     def abort_action(self):
@@ -303,6 +310,7 @@ class ActionBase(XmnrBase):
             self.cli_logger.log(msg)
 
     def cli_filter(self, msg):
+        print('cli filter', msg)
         self.cli_write(msg)
 
     def progress_msg(self, msg):

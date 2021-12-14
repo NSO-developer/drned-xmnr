@@ -117,7 +117,7 @@ def ncs_mock():
                     packages=Mock(package={'drned-xmnr': Mock(directory=XMNR_INSTALL)}),
                     drned_xmnr=Mock(xmnr_directory=XMNR_DIRECTORY,
                                     drned_directory=DRNED_DIRECTORY,
-                                    log_detail=Mock(cli='all', redirect=None),
+                                    log_detail=Mock(cli='all'),
                                     cli_log_file=None,
                                     xmnr_log_file=None),
                     ncs_state=mock_path(['internal', 'callpoints', 'actionpoint'], apmock))

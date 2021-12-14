@@ -129,10 +129,6 @@ module drned-xmnr {
         type filter;
         default drned-overview;
       }
-      leaf redirect {
-        tailf:info "File where to redirect the CLI output";
-        type string;
-      }
     }
     container last-test-results {
       config false;
