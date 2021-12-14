@@ -43,8 +43,10 @@
     !ncs-netsim add-to-network packages/cisco-ios 1 cisco-nc
     [invoke shell-check]
     [invoke fix-netsim-gid cisco-nc]
+    [timeout 10]
     !ncs-netsim start cisco-nc0
     [invoke shell-check]
+    [timeout]
 [shell ncs-cli]
     [local tweak=sed -e 's/10023/12023/' -e 's/cli>/netconf>/']
     [invoke prepare-ncs-tweak cisco-nc0 $tweak cisco-nc0]
@@ -182,15 +184,16 @@
 
 
 [cleanup]
-    !ncs_cli -u admin -C
-    ???admin@ncs#
-    !config
-    !devices device cisco-nc0 drned-xmnr driver $driver
-    !commit
-    ?Commit complete|No modifications
-    !end
-    !exit
-    ?SH-PROMPT:
-    !rm -f $broken
-    ?SH-PROMPT:
+    # !ncs_cli -u admin -C
+    # -Failed to connect to server
+    # ???admin@ncs#
+    # !config
+    # !devices device cisco-nc0 drned-xmnr driver $driver
+    # !commit
+    # ?Commit complete|No modifications
+    # !end
+    # !exit
+    # ?SH-PROMPT:
+    # !rm -f $broken
+    # ?SH-PROMPT:
     [invoke cleanup]

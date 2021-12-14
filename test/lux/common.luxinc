@@ -86,10 +86,10 @@
     !ncs-netsim create-network packages/$device 1 $device
     [invoke shell-check-prompt create-network]
     [invoke fix-netsim-gid $device]
+    [timeout 10]
     !ncs-netsim start
     [invoke shell-check-prompt netsim]
     [progress start ncs]
-    [timeout 10]
     !ncs --stop; ncs
     [invoke shell-check-prompt ncs]
     [timeout]
