@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 
 import ncs
 from ncs.dp import Action, Daemon
+import drned_xmnr.namespaces.drned_xmnr_ns as ns
 
 
 class LogAction(Action):
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     ap.add_argument('-p', '--port', type=int, default=ncs.PORT)
     args = ap.parse_args()
     d = Daemon(name='clilogger', ip=args.ip, port=args.port)
-    action = LogAction(daemon=d, actionpoint='xmnr-cli-log')
+    action = LogAction(daemon=d, actionpoint=ns.ns.actionpoint_xmnr_cli_log)
     d.start()
     print('logger started, hit <ENTER> to quit\n')
     sys.stdin.read(1)
