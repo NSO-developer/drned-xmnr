@@ -142,8 +142,8 @@ class StreamData(object):
             self.data = []
         else:
             # reversing to have better performance for pop
-            self.data = list(reversed([data[i*chunk:(i+1)*chunk]
-                                       for i in range(0, (len(data)+chunk-1)//chunk)]))
+            self.data = list(reversed([data[i * chunk:(i + 1) * chunk]
+                                       for i in range(0, (len(data) + chunk - 1) // chunk)]))
 
     def __iter__(self):
         return self
@@ -199,7 +199,7 @@ class SystemMock(XtestMock):
         self.ff_patcher = ff_patcher
         try:
             self.ff_patcher.fs.add_real_file('/dev/null', read_only=False)
-        except FileExistsError:
+        except FileExistsError:  # noqa: F821 (to support Python 2.7 with flake8)
             # happens on newer pyfakefs - /dev/null is created automatically
             pass
         self.proc_stream = StreamData()

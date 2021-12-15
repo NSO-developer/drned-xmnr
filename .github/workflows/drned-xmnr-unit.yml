@@ -35,9 +35,9 @@ jobs:
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 ${XMNR_DIR}/python --count --ignore=E501,F401,F403,W504,W503 --show-source --statistics
+          flake8 ${XMNR_DIR}/python ${XMNR_DIR}/test/unit/ --count --max-line-length=120 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 ${XMNR_DIR}/python --ignore=F401,F403,W504,W503,C901,F841 --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          flake8 ${XMNR_DIR}/python ${XMNR_DIR}/test/unit/ --count --exit-zero --max-complexity=25 --max-line-length=120 --statistics
       - name: Test with pytest
         run:
           PYTHONPATH=${XMNR_DIR}/python:${XMNR_DIR}/drned-skeleton:${PYTHONPATH} pytest -s -v ${XMNR_DIR}/test/unit
