@@ -1,10 +1,22 @@
 from __future__ import print_function
 
-from .base_op import ActionBase
-from .ex import ActionError
-
-
+import os
 import re
+
+from _ncs import OPERATIONAL
+from ncs import maagic
+
+from datetime import datetime
+
+from drned_xmnr.namespaces.drned_xmnr_ns import ns
+
+from .base_op import ActionBase
+from .base_op import maapi_keyless_create
+from .ex import ActionError
+from .parse_log_errors import ProblemData, gather_problems
+
+from typing import List, Optional
+from drned_xmnr.common_types import ActionResult
 
 
 class DevcliLogMatch(object):
@@ -107,3 +119,73 @@ class SaveDefaultConfigOp(ActionBase):
         if self.filter.devcli_error is None:
             return {'success': 'Saved initial config.'}
         return {'failure': 'Could not save config.'}
+
+
+class ParseLogErrorsOp(ActionBase):
+    """ Action handler used to parse and print errors from drned-xmnr logfiles.
+    """
+    action_name = 'xmnr parse-log-errors'
+
+    def _init_params(self, params):
+        self.target_log = self.param_default(params, "target_log", None)
+
+    def perform(self):
+        self.parsed_problems: Optional[List[ProblemData]] = None
+        try:
+            filepath = self._get_target_filepath()
+            with open(filepath, 'r', newline='\n') as logfile:
+                self.parsed_problems = gather_problems(logfile)
+        except OSError as ose:
+            # TODO - do not reveal potential filepath attempted?
+            msg = "Couldn't read target log file: {0}".format(os.strerror(ose.errno))
+            raise ActionError(msg)
+        return self.run_with_trans(self._store_parsed_problems, write=True, db=OPERATIONAL)
+
+    def _store_parsed_problems(self, trans) -> ActionResult:
+        problems_count = self._store_problems(trans)
+        return {'success': 'Target %s parsed - %d problems found.' % (self.target_log, problems_count)}
+
+    def _get_target_filepath(self):
+        tag = self.target_log
+        if tag == ns.drned_xmnr_common_xmnr_log:
+            path = os.path.join(
+                os.getcwd(), 'logs', 'ncs-python-vm-drned-xmnr.log'
+            )
+        elif tag == ns.drned_xmnr_device_trace:
+            path = os.path.join(
+                # self.dev_test_dir,
+                os.getcwd(), 'logs',
+                'netconf-' + self.dev_name + '.trace'
+            )
+        else:
+            raise ActionError("Unimplemented target log...")
+        return path
+
+    def _store_problems(self, trans) -> int:
+        if self.parsed_problems is None:
+            return 0
+        problem_count = len(self.parsed_problems)
+
+        # clean up previously stored problems
+        root = maagic.get_root(trans)
+        device_xmnr_node = root.devices.device[self.dev_name].drned_xmnr
+        problems_node = device_xmnr_node.parsed_problems
+        problems_node.problems.delete()
+        problems_node.target_log = self.target_log
+        problems_node.parse_time = datetime.now()
+
+        # and push new ones into CDB
+        problem_list = problems_node.problems
+        for problem in self.parsed_problems:
+            problem_instance = problem_list.create(problem.line_num)
+            problem_instance.phase = problem.phase
+            problem_instance.test_case = problem.test_case
+            if problem.time is not None:
+                problem_instance.time = problem.time
+            for (j, line) in enumerate(problem.lines):
+                line_instance = maapi_keyless_create(problem_instance.message_lines, j)
+                line_instance.line = line.rstrip()
+        problems_node.count = problem_count
+
+        trans.apply()
+        return problem_count

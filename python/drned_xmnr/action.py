@@ -48,6 +48,7 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_collect_: coverage_op.CoverageOp,
         ns.ns.drned_xmnr_load_default_config_: common_op.LoadDefaultConfigOp,
         ns.ns.drned_xmnr_save_default_config_: common_op.SaveDefaultConfigOp,
+        ns.ns.drned_xmnr_parse_log_errors_: common_op.ParseLogErrorsOp,
     }
 
     def init(self):

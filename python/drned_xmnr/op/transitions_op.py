@@ -14,14 +14,6 @@ from . import base_op
 from . import filtering
 
 
-if _ncs.LIB_VSN < 0x07060000:
-    def keyless_create(node, i):
-        return node.create(i)
-else:
-    def keyless_create(node, _i):
-        return node.create()
-
-
 class TransitionsOp(base_op.ActionBase):
     def perform(self):
         '''Performs the transition action and process DrNED output.
@@ -115,7 +107,7 @@ class TransitionsOp(base_op.ActionBase):
         results.device = self.dev_name
         results.transition.delete()
         for i, event in enumerate(self.event_context.test_events):
-            tsinst = keyless_create(results.transition, i)
+            tsinst = base_op.maapi_keyless_create(results.transition, i)
             tsinst['from'] = event.start
             tsinst.to = event.to
             if event.failure is not None:

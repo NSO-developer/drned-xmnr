@@ -28,6 +28,14 @@ else:
     def text_data(data):
         return data
 
+
+if _ncs.LIB_VSN < 0x07060000:
+    def maapi_keyless_create(node, i):
+        return node.create(i)
+else:
+    def maapi_keyless_create(node, _i):
+        return node.create()
+
 TIMEOUT_MARGIN = 5
 '''Number of seconds between the device timeout and action timeout.
 When XMNR gets any output from a DrNED test, it extends the action
