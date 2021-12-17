@@ -289,9 +289,9 @@ class ActionBase(XmnrBase):
             try:
                 drdir = env['DRNED']
             except KeyError:
-                raise ActionError('DrNED installation directory not set; ' +
-                                  'set /drned-xmnr/drned-directory or the ' +
-                                  'environment variable DRNED')
+                raise ActionError('DrNED installation directory not set; '
+                                  + 'set /drned-xmnr/drned-directory or the '
+                                  + 'environment variable DRNED')
         elif drdir == "builtin" or drdir is None:
             drdir = os.path.join(self.dev_test_dir, 'drned')
         drdir = os.path.abspath(drdir)

@@ -18,7 +18,7 @@ import os
 import six
 
 from drned_xmnr.op import filtering
-from drned_xmnr.op.filtering.states import TransitionDesc
+from drned_xmnr.op.filtering.states import TransitionDesc # noqa
 
 
 class FilteringTest(object):

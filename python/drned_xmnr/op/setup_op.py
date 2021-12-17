@@ -11,7 +11,6 @@ import _ncs
 from ncs import maagic
 
 from . import base_op
-from .common_op import SaveDefaultConfigOp
 from .ex import ActionError
 
 if sys.version_info >= (3, 3):

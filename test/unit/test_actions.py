@@ -431,8 +431,7 @@ class TestStates(TestBase):
 
     def check_states(self, states, disabled=[]):
         statesfiles = os.listdir(os.path.join(self.test_run_dir, 'states'))
-        assert (sorted(statesfiles) ==
-                self.state_files(states, disabled))
+        assert (sorted(statesfiles) == self.state_files(states, disabled))
 
     @xtest_patch
     def test_states_data(self, xpatch):
@@ -754,8 +753,8 @@ class TestTransitions(TransitionsTestBase):
         else:
             state_dir = os.path.join(self.test_run_dir, 'states')
             full_dir = os.path.abspath(state_dir)
-            test_args = ['--fname={}'.format(os.path.join(full_dir, state + '.state.cfg'))
-                         for state in fnames]
+            test_args = ['--fname={}'.format(os.path.join(full_dir, state_fname + '.state.cfg'))
+                         for state_fname in fnames]
             if not rollback:
                 test_args += ['--end-op', '']
             test_args += ['--ordered=false', '-k', 'test_template_set']
@@ -836,7 +835,7 @@ class TestTransitions(TransitionsTestBase):
         if states is None:
             states = self.states
         ls = len(states)
-        max = ls*ls if count is None else count
+        max = ls * ls if count is None else count
         calls = 0
         transitions = 0
         call_iter = iter(popen_mock.call_args_list)
@@ -879,7 +878,7 @@ class TestTransitions(TransitionsTestBase):
         with mock.patch('time.time', side_effect=timer.time):
             output = self.invoke_action('explore-transitions',
                                         states=self.states,
-                                        stop_after=self.stop_params(seconds=TIME_SEC-1))
+                                        stop_after=self.stop_params(seconds=TIME_SEC - 1))
             self.check_output(output)
             # for every len(states) transitions under test there is one more
             exp_calls = TIME_SEC + TIME_SEC // len(self.states) + 1
@@ -887,7 +886,7 @@ class TestTransitions(TransitionsTestBase):
             timer.reset(step=60)
             output = self.invoke_action('explore-transitions',
                                         states=self.states,
-                                        stop_after=self.stop_params(minutes=TIME_MIN-1))
+                                        stop_after=self.stop_params(minutes=TIME_MIN - 1))
             self.check_output(output)
             exp_calls += TIME_MIN + TIME_MIN // len(self.states) + 1
             assert len(popen_mock.call_args_list) == exp_calls
@@ -1020,7 +1019,7 @@ class DrnedExploreOutput(DrnedOutput):
         if self.filter_type == 'none':
             return
         count = len(self.state_data)
-        num_transitions = count * (count-1)
+        num_transitions = count * (count - 1)
         yield 'Found {} states recorded for device {} '.format(count, mocklib.DEVICE_NAME)
         yield 'which gives a total of {} transitions.\n'.format(num_transitions)
         index = 0
