@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+if [ -z "$XMNR_ROOT"]
+then
+    export XMNR_ROOT=$(readlink -f ../../..)
+fi
+pypath=${NCS_DIR}/src/ncs/pyapi:$XMNR_ROOT/test
+
+if [ -z "$PYTHONPATH" ]; then
+    export PYTHONPATH=${pypath}
+else
+    export PYTHONPATH=${pypath}:$PYTHONPATH
+fi
+
+if [ "$1" == "-c" ]
+then
+    # ncs checks python version when starting up
+    exec python "$@"
+else
+    include='*drned-skeleton/*.py,*/drned_xmnr*/*.py'
+    export COVERAGE_FILE=$XMNR_ROOT/test/.coverage
+    export COVERAGE_RCFILE=$XMNR_ROOT/test/.coveragerc
+    cov_cmd="coverage run --parallel"
+    # PYTHON_RUNNER used for running Devcli tasks, relevant source only under drned-skeleton/
+    export PYTHON_RUNNER="$cov_cmd --source $XMNR_ROOT/drned-skeleton"
+    # now start the VM with coverage - sources only under python/
+    exec $cov_cmd --source $XMNR_ROOT/python ${NCS_DIR}/src/ncs/pyapi/ncs_pyvm/startup.py "$@"
+fi

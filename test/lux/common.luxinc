@@ -80,6 +80,25 @@
     !rm $nsdir/aaa_init.xml
 [endmacro]
 
+[macro start-ncs-with-coverage]
+    [progress start ncs with coverage]
+    !NCNS="http://tail-f.com/yang/tailf-ncs-config"
+    ~xmlstarlet ed -N nc=$$NCNS -s '/nc:ncs-config' -t elem -n python-vm ncs.conf
+    ~ | xmlstarlet ed -N nc=$$NCNS -s /nc:ncs-config/nc:python-vm -t elem -n start-command -v ./coverage-start
+    ! > ncs-coverage.conf
+    [invoke shell-check-prompt xmlstarlet]
+    !cp ../coverage-start .
+    !chmod a+x ./coverage-start
+    !ncs --stop; ncs -c ncs-coverage.conf
+    [invoke shell-check-prompt ncs]
+[endmacro]
+
+[macro start-ncs-without-coverage]
+    [progress start ncs]
+    !ncs --stop; ncs
+    [invoke shell-check-prompt ncs]
+[endmacro]
+
 [macro start-ncs-netsim device]
     [progress create and start the netsim]
     !ncs-netsim delete-network
@@ -89,9 +108,9 @@
     [timeout 10]
     !ncs-netsim start
     [invoke shell-check-prompt netsim]
-    [progress start ncs]
-    !ncs --stop; ncs
-    [invoke shell-check-prompt ncs]
+    !echo -n start-ncs-; test -z "$$LUX_COVERAGE" && echo without-coverage || echo with-coverage
+    ?(start-ncs-(with|without)-coverage)
+    [invoke $1]
     [timeout]
     [invoke prepare-xmnr]
 [endmacro]

@@ -3,3 +3,4 @@
 **/ncs-run/
 **/.tox/
 test/lux/drned-xmnr
+/test/.coverage
