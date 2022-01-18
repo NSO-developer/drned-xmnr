@@ -367,10 +367,12 @@ class ActionBase(XmnrBase):
 
     def devcli_run(self, script, script_args):
         driver, username, passwd, ip, port = self.run_with_trans(self.get_devcli_params)
-        args = ['python', script, '--devname', self.dev_name,
-                '--driver', driver,
-                '--ip', ip, '--port', str(port),
-                '--workdir', 'drned-ncs', '--timeout', str(self.device_timeout)]
+        runner = os.environ.get('PYTHON_RUNNER', 'python')
+        runner_args = runner.split()
+        args = runner_args + [script, '--devname', self.dev_name,
+                              '--driver', driver,
+                              '--ip', ip, '--port', str(port),
+                              '--workdir', 'drned-ncs', '--timeout', str(self.device_timeout)]
         if username is not None:
             args.extend(['--username', username])
             if passwd is not None:

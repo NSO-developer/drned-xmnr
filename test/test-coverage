@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+# Entry point for test coverage report for XMNR. Can be run just
+#
+# $ ./test-coverage
+#
+# but you may want/need to set some environment variables:
+#
+# * multiplier (defaults to 2000) - sets lux tests timeout scale;
+#   coverage slows the Python VM a little bit, if your environment is
+#   too slow, you may want to increase that;
+#
+# * relative_paths (defaults to true) (you shouldn't need to change
+#   that)
+#
+# Dependencies: everything in unit/requirements.txt plus coverage,
+# i.e. you may need to do something like:
+#
+# $ pip install -r unit/requirements.txt; pip install coverage paramiko
+
+cd $(dirname $0)
+export XMNR_ROOT=$(readlink -f ../)
+
+rm -f .coverage .coverage.*
+
+export PYTHONPATH=$XMNR_ROOT/python:$XMNR_ROOT/drned-skeleton:$NCS_DIR/src/ncs/pyapi
+coverage run --source 'drned_xmnr' -m pytest unit/
+LUX_COVERAGE=yes lux --var=relative_paths=${relative_paths:-true} --multiplier ${multipler:-2000} lux/*.lux
+
+PYTHONPATH=$PWD coverage combine --append
+
+echo
+echo 'Run "coverage report" or "coverage html" now'
