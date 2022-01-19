@@ -44,7 +44,7 @@ class CoverageOp(base_op.ActionBase):
                 '--yangpath=' + ':'.join(yangpath)]
         result, output = self.run_in_drned_env(args + fnames)
         if result != 0:
-            raise ActionError("drned failed")
+            raise ActionError("drned failed; 'coverage reset' might be needed")
         self.parse_output(output)
         return {'success': "Completed successfully"}
 

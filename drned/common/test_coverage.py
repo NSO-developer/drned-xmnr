@@ -284,6 +284,11 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
         if VERBOSE:
             sys.stdout.write("\nREAD_DIR: " + dir)
         for fn in sorted(os.listdir("drned-work/coverage/%s" % dir)):
+            leaf_lists = dict()
+            current_list_prefix = list()
+            current_key_vals = None
+            current_key_names = None
+            list_keys = dict()
             if VERBOSE:
                 sys.stdout.write('.')
                 sys.stdout.flush()
@@ -321,12 +326,6 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
                     # Empty DB -> noting set initially or all deleted in the
                     # end
                     cfgnodes = []
-
-                leaf_lists = dict()
-                current_list_prefix = list()
-                current_key_vals = None
-                current_key_names = None
-                list_keys = dict()
 
                 for e in cfgnodes:
                     if (e.text and e.text.strip() != "") or not e.getchildren():

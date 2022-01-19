@@ -300,10 +300,6 @@ class ActionBase(XmnrBase):
             env['PYTHONPATH'] += os.pathsep + drdir
         else:
             env['PYTHONPATH'] = drdir
-        try:
-            env['PYTHONPATH'] += os.pathsep + env['NCS_DIR'] + '/lib/pyang'
-        except KeyError:
-            raise ActionError('NCS_DIR not set')
         env['PYTHONUNBUFFERED'] = '1'
         path = env['PATH']
         # need to remove exec path inserted by NSO
