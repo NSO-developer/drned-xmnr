@@ -105,7 +105,7 @@ dual_mode = {
 }
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def device(request):
     devname = request.config.getoption("--device")
     if devname == None:
@@ -128,7 +128,7 @@ def device(request):
         print('Failed states:', device.failed_states)
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def device_raw(request):
     devname = request.config.getoption("--device")
     if devname == None:
@@ -140,18 +140,18 @@ def device_raw(request):
     yield device
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def yangpath(request):
     yield request.config.getoption("--yangpath")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def ordered(request):
     option = request.config.getoption("--ordered")
     yield "true" if option is None else option
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def schema(request):
     yang = getattr(request.module, "yang")
     if yang is None:
@@ -178,7 +178,7 @@ def schema(request):
     yield schema
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def iteration(request):
     iterargs = request.config.getoption("--iteration")
     iterlist = []
@@ -195,37 +195,37 @@ def iteration(request):
     yield iterlist
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def all(request):
     yield request.config.getoption("--all")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def diff(request):
     yield request.config.getoption("--diff")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def devname(request):
     yield request.config.getoption("--device")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def argv(request):
     yield request.config.getoption("--argv")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def end_op(request):
     yield request.config.getoption("--end-op")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def exclude(request):
     yield request.config.getoption("--exclude")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def fname(request):
     files = []
     fname = request.config.getoption("--fname")
@@ -236,31 +236,31 @@ def fname(request):
     yield files
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def include(request):
     yield request.config.getoption("--include")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def init(request):
     yield request.config.getoption("--init")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def init_op(request):
     yield request.config.getoption("--init-op")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def op(request):
     yield request.config.getoption("--op")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def root(request):
     yield request.config.getoption("--root")
 
 
-@pytest.yield_fixture(scope=SCOPE)
+@pytest.fixture(scope=SCOPE)
 def use(request):
     yield request.config.getoption("--use")
