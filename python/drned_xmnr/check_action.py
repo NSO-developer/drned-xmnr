@@ -12,7 +12,7 @@ REQ_GE = '>='
 
 REQ_DEFAULTS = [
     ('pexpect', None),
-    ('pytest', (3, 0)),
+    ('pytest', [3, 0]),
     ('lxml', None)]
 
 
