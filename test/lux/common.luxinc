@@ -46,8 +46,9 @@
     !cd ncs-run/packages
     [invoke shell-check]
     !mkdir drned-xmnr
-    ~tar cf - -C ../../../../ python src drned drned-skeleton load-dir package-meta-data.xml |
-    !tar xf - -C drned-xmnr
+    ~tar cf - -C ../../../../ python src drned drned-skeleton load-dir
+    ~ requirements.txt package-meta-data.xml |
+    ! tar xf - -C drned-xmnr
     [invoke shell-check-prompt copy]
     !make -C drned-xmnr/src clean all
     [invoke shell-check-prompt make-xmnr]

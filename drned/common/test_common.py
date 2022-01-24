@@ -5,7 +5,7 @@ import subprocess
 
 # Compare two config files but ignore comments
 def filecmp(a, b):
-    return os.system("diff -I '^ *!' -I '^ */\*' %s %s" % (a, b)) == 0
+    return os.system("diff -I '^ *!' -I '^ */\\*' %s %s" % (a, b)) == 0
 
 
 def check_output(command, **args):

@@ -33,8 +33,11 @@ class XmnrCheck(application.Application):
             try:
                 mod = importlib.import_module(package)
             except ModuleNotFoundError:
-                errmsg = 'XMNR cannot run without the package {}'.format(package)
-                raise XmnrCheckException(errmsg)
+                if package == 'pyang':
+                    self.log.warning('running without pyang')
+                else:
+                    errmsg = 'XMNR cannot run without the package {}'.format(package)
+                    raise XmnrCheckException(errmsg)
             if version is not None:
                 imported_version = parse_version(mod.__version__)
                 if imported_version < version:

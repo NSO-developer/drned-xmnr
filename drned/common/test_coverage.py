@@ -2,6 +2,7 @@ import optparse
 import json
 import datetime
 import drned
+from drned import schema
 import pytest
 import os
 import re
@@ -236,7 +237,7 @@ def test_coverage(fname, argv, all, devname, yangpath=""):
 
     print("\nUse YANG file(s):\n%s\n" % "\n".join(fname))
 
-    _Coverage.schema = drned.Schema(fname, [], yangpath)
+    _Coverage.schema = schema.Schema(fname, [], yangpath)
 
     skip_lists = []
     skip_leaves = []
