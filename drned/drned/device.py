@@ -484,7 +484,7 @@ class Device(object):
         """
         self.trace(INDENT + inspect.stack()[0][3] + "()")
         self.cmd("devices device %s drned-xmnr load-default-config" %
-                 self.name, expect="result true")
+                 self.name, expect="success")
         return self
 
     def commit_id_next(self, index):
@@ -888,15 +888,11 @@ class Device(object):
 
         # If the previous NETCONF attempts failed, try native device CLI.
         # -- temporarily disabled until nested action invocation resolved...
-        # if not succeeded:
-        #     try:
-        #         self.reload_default_config()
-        #     except BaseException as ex:
-        #         pytest.fail("Failed to restore default config.")
-
-        # Check if restore successful
         if not succeeded:
-            pytest.fail("Failed to restore default config.")
+            try:
+                self.reload_default_config()
+            except BaseException as ex:
+                pytest.fail("Failed to restore default config.", ex)
 
         # self.save("drned-work/after-session.cfg")
         # if not common.filecmp("drned-work/before-session.cfg",
