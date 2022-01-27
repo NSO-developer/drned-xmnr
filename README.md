@@ -1,3 +1,6 @@
+![Build Status](https://github.com/NSO-developer/drned-xmnr/actions/workflows/drned-xmnr-unit.yml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/NSO-developer/drned-xmnr/badge.svg)](https://coveralls.io/github/NSO-developer/drned-xmnr)
+
 # DrNED Examiner
 
 A Doctor's bag of tools for examining & diagnosing your NSO NEDs
