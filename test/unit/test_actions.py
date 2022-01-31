@@ -1108,7 +1108,7 @@ class TransitionsLogFiltersTestBase(TransitionsTestBase):
     def setup_filter(self, xpatch, level, redirect=None):
         root = xpatch.ncs.data['root']
         root.drned_xmnr.log_detail.cli = level
-        root.drned_xmnr.log_detail.redirect = redirect
+        root.drned_xmnr.cli_log_file = redirect
 
     def filter_test_run(self, xpatch, filter_type, output_data, state_data, action, **params):
         self.setup_filter(xpatch, filter_type)
@@ -1206,14 +1206,17 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
     """
     @xtest_patch
     def test_filter_redirect(self, xpatch):
-        self.setup_filter(xpatch, 'drned-overview', 'redirect.output')
+        redir_file = os.path.join(self.test_run_dir, 'redirect.output')
+        self.setup_filter(xpatch, 'drned-overview', redir_file)
         self.setup_states_data(xpatch.system)
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
         output = self.invoke_action('walk-states', states=self.states,
                                     rollback=False)
         assert output.error is None
         assert output.failure == 'Operation failed'
-        with open(os.path.join(self.test_run_dir, 'redirect.output')) as r_out:
+        with open(redir_file) as r_out:
+            print('redir:', r_out.read())
+        with open(redir_file) as r_out:
             assert r_out.readline() == '\n'
             assert re.match('-+$', r_out.readline()) is not None
             assert re.match(r'[0-9]{4}(-[0-9]{2}){2} [0-9]{2}(:[0-9]{2}){2}\.[0-9]* - walk states$',

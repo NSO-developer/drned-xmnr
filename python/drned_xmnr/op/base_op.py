@@ -10,13 +10,15 @@ import subprocess
 import threading
 import signal
 from datetime import datetime as dt
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 
 import _ncs
 
 import _ncs.dp as dp
 import _ncs.maapi as _maapi
 from ncs import maapi, maagic
+
+from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
 from .ex import ActionError
 
@@ -55,6 +57,43 @@ all three layers with increasing margin:
 '''
 
 
+class CliLogger(object):
+    def __init__(self, action):
+        self.uinfo = action.uinfo
+        if action.cli_log_filename is not None:
+            self.cli_log_file = open(action.cli_log_filename, 'a')
+            self.cli_log_file.write(action.log_header())
+        else:
+            self.cli_log_file = None
+        self.maapi = maapi.Maapi()
+        self.maapi.start_user_session('admin', 'system')
+        self.trans = maapi.Transaction(self.maapi, rw=_ncs.READ, db=_ncs.OPERATIONAL)
+        root = maagic.get_root(self.trans)
+        apoint = root.ncs_state.internal.callpoints.actionpoint[ns.actionpoint_xmnr_cli_log]
+        if apoint.daemon.id is not None:
+            self.cli_log_action = root.drned_xmnr.cli_log_message
+            self.cli_log_params = self.cli_log_action.get_input()
+            self.cli_log_params.device = action.dev_name
+        else:
+            self.cli_log_action = self.cli_log_params = None
+
+    def close(self):
+        if self.cli_log_file is not None:
+            self.cli_log_file.close()
+        self.trans.finish()
+        self.maapi.close()
+
+    def log(self, msg):
+        if self.uinfo.context == 'cli':
+            _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
+        if self.cli_log_file is not None:
+            self.cli_log_file.write(msg)
+            self.cli_log_file.flush()
+        if self.cli_log_action is not None:
+            self.cli_log_params.message = msg
+            self.cli_log_action.request(self.cli_log_params)
+
+
 class XmnrBase(object):
     xml_statefile_extension = '.state.xml'
     cfg_statefile_extension = '.state.cfg'
@@ -71,6 +110,7 @@ class XmnrBase(object):
         root = maagic.get_root(trans)
         self.xmnr_directory = os.path.abspath(root.drned_xmnr.xmnr_directory)
         self.log_filename = root.drned_xmnr.xmnr_log_file
+        self.cli_log_filename = root.drned_xmnr.cli_log_file
         self.dev_test_dir = os.path.join(self.xmnr_directory, self.dev_name, 'test')
         self.drned_run_directory = os.path.join(self.dev_test_dir, 'drned-skeleton')
         self.using_builtin_drned = root.drned_xmnr.drned_directory == "builtin"
@@ -176,7 +216,6 @@ class ActionBase(XmnrBase):
         self.drned_process = None
         self.aborted = False
         self.abort_lock = threading.Lock()
-        self.maapi = maapi.Maapi()
         self.run_with_trans(self._setup_xmnr)
         self._init_params(params)
 
@@ -184,19 +223,22 @@ class ActionBase(XmnrBase):
         # Implement in subclasses
         pass
 
+    def log_header(self):
+        msg = '{} - {}'.format(dt.now(), self.action_name)
+        return '\n{}\n{}\n{}\n'.format('-' * len(msg), msg, '-' * len(msg))
+
     @contextmanager
     def open_log_file(self, path):
-        with open(os.path.join(self.dev_test_dir, path), 'a') as lf:
-            msg = '{} - {}'.format(dt.now(), self.action_name)
-            lf.write('\n{}\n{}\n{}\n'.format('-' * len(msg), msg, '-' * len(msg)))
-            yield lf
+        if path is None:
+            yield None
+        else:
+            with open(os.path.join(self.dev_test_dir, path), 'a') as lf:
+                lf.write(self.log_header())
+                yield lf
 
     def perform_action(self):
-        if self.log_filename is not None:
-            with self.open_log_file(self.log_filename) as self.log_file:
-                return self.perform()
-        else:
-            self.log_file = None
+        with self.open_log_file(self.log_filename) as self.log_file, \
+             closing(CliLogger(self)) as self.cli_logger:
             return self.perform()
 
     def abort_action(self):
@@ -265,11 +307,11 @@ class ActionBase(XmnrBase):
     def cli_write(self, msg):
         if not self.aborted:
             # cannot write to CLI after an abort
-            _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
+            self.cli_logger.log(msg)
 
     def cli_filter(self, msg):
-        if self.uinfo.context == 'cli':
-            self.cli_write(msg)
+        print('cli filter', msg)
+        self.cli_write(msg)
 
     def progress_msg(self, msg):
         self.log.debug(msg)

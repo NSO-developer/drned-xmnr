@@ -84,6 +84,29 @@ module drned-xmnr {
          from the CLI.";
       type string;
     }
+    leaf cli-log-file {
+      tailf:info
+        "If set, all output that would be printed to CLI, goes to that
+         file; if run from a CLI session, output is printed both to
+         CLI as well as to the file.  The path should be absolute
+         (otherwise the file is opened wherever xmnr happens to be
+         running).";
+      type string;
+    }
+    tailf:action cli-log-message {
+      tailf:actionpoint xmnr-cli-log;
+      tailf:info
+        "If registered, all output that would be printed to CLI is
+         also sent to the action callback.";
+      input {
+        leaf device {
+          type string;
+        }
+        leaf message {
+          type string;
+        }
+      }
+    }
     container log-detail {
       typedef filter {
         type enumeration {
@@ -105,10 +128,6 @@ module drned-xmnr {
         tailf:info "CLI output detail level";
         type filter;
         default drned-overview;
-      }
-      leaf redirect {
-        tailf:info "File where to redirect the CLI output";
-        type string;
       }
     }
     container last-test-results {

@@ -31,28 +31,18 @@ class TransitionsOp(base_op.ActionBase):
         with transition events that are stored in operational CDB.
 
         '''
-        detail, redirect = self.run_with_trans(self.get_log_detail)
+        detail = self.run_with_trans(self.get_log_detail)
         self.filter_cr = None
-        if redirect is not None:
-            with self.open_log_file(redirect) as rfile:
-                result = self.perform_with_output(detail, rfile.write)
-        elif self.uinfo.context == 'cli':
-            result = self.perform_with_output(detail, self.cli_write)
-        else:
-            result = self.perform_with_output('none', None)
+        self.event_context = filtering.TransitionEventContext()
+        with closing(self.event_context):
+            with closing(self.build_filter(detail, self.cli_write)) as self.filter_cr:
+                result = self.perform_transitions()
         self.run_with_trans(self.store_transition_events, write=True, db=_ncs.OPERATIONAL)
         return result
 
-    def perform_with_output(self, detail, output):
-        self.event_context = filtering.TransitionEventContext()
-        with closing(self.event_context):
-            with closing(self.build_filter(detail, output)) as self.filter_cr:
-                return self.perform_transitions()
-
     def get_log_detail(self, trans):
         root = maagic.get_root(trans)
-        detail = root.drned_xmnr.log_detail
-        return detail.cli, detail.redirect
+        return root.drned_xmnr.log_detail.cli
 
     def cli_filter(self, msg):
         if self.filter_cr is not None:

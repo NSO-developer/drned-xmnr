@@ -95,6 +95,14 @@ class MockNcsError(Exception):
     pass
 
 
+def mock_path(path, value):
+    if len(path) == 1:
+        rhs = value
+    else:
+        rhs = mock_path(path[1:], value)
+    return Mock(**{path[0]: rhs})
+
+
 @contextmanager
 def ncs_mock():
     nonex = Mock(exists=lambda: False)
@@ -103,13 +111,16 @@ def ncs_mock():
     authgrp = Mock(default_map=Mock(remote_name='admin', remote_password='admin',
                                     same_name=nonex, same_pass=nonex),
                    umap={})
+    apmock = {'xmnr-cli-log': mock_path(['daemon', 'id'], None)}
     rootmock = Mock(devices=Mock(device={DEVICE_NAME: device},
                                  authgroups=Mock(group={'default': authgrp})),
                     packages=Mock(package={'drned-xmnr': Mock(directory=XMNR_INSTALL)}),
                     drned_xmnr=Mock(xmnr_directory=XMNR_DIRECTORY,
                                     drned_directory=DRNED_DIRECTORY,
-                                    log_detail=Mock(cli='all', redirect=None),
-                                    xmnr_log_file=None))
+                                    log_detail=Mock(cli='all'),
+                                    cli_log_file=None,
+                                    xmnr_log_file=None),
+                    ncs_state=mock_path(['internal', 'callpoints', 'actionpoint'], apmock))
     ncs_items = ['_ncs.stream_connect', '_ncs.dp.action_set_timeout', '_ncs.maapi.cli_write',
                  '_ncs.decrypt']
     maapi_inst = MaapiMock()
@@ -295,6 +306,7 @@ def init_mocks():
     ns = Mock(ns=Mock(actionpoint_drned_xmnr='drned-xmnr',
                       callpoint_coverage_data='coverage-data',
                       callpoint_xmnr_states='xmnr-states',
+                      actionpoint_xmnr_cli_log='xmnr-cli-log',
                       **nsdict))
     namespaces = Mock(drned_xmnr_ns=ns)
     __import__('drned_xmnr').namespaces = namespaces
