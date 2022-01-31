@@ -94,6 +94,7 @@ module drned-xmnr {
       type string;
     }
     tailf:action cli-log-message {
+      tailf:hidden "cli-logger";
       tailf:actionpoint xmnr-cli-log;
       tailf:info
         "If registered, all output that would be printed to CLI is

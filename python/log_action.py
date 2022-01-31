@@ -11,7 +11,7 @@ import drned_xmnr.namespaces.drned_xmnr_ns as ns
 class LogAction(Action):
     @Action.action
     def cb_action(self, uinfo, name, kp, input, output):
-        sys.stdout.write(f'{input.device}: {input.message}')
+        sys.stdout.write('{input.device}: {input.message}'.format(input=input))
 
 
 if __name__ == '__main__':
