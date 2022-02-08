@@ -32,6 +32,7 @@ jobs:
           python -m pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f ${XMNR_DIR}/test/unit/requirements.txt ]; then pip install -r ${XMNR_DIR}/test/unit/requirements.txt; fi
+          python -m pip install coverage coveralls
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
@@ -40,4 +41,26 @@ jobs:
           flake8 ${XMNR_DIR}/python ${XMNR_DIR}/test/unit/ --count --exit-zero --max-complexity=25 --max-line-length=120 --statistics
       - name: Test with pytest
         run:
-          PYTHONPATH=${XMNR_DIR}/python:${XMNR_DIR}/drned-skeleton:${PYTHONPATH} pytest -s -v ${XMNR_DIR}/test/unit
+          PYTHONPATH=${XMNR_DIR}/python:${XMNR_DIR}/drned-skeleton:${PYTHONPATH} coverage run -m pytest -s -v ${XMNR_DIR}/test/unit
+      - name: Upload Coverage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
+          COVERALLS_PARALLEL: true
+        run: |
+          coveralls
+
+
+  coveralls:
+    name: Indicate completion to coveralls.io
+    needs: build
+    runs-on: ubuntu-latest
+    container: python:3-slim
+    steps:
+    - name: Finished
+      run: |
+        python -m pip install --upgrade coveralls
+        coveralls --service=github --finish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
