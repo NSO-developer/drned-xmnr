@@ -15,8 +15,10 @@ from .base_op import maapi_keyless_create
 from .ex import ActionError
 from .parse_log_errors import ProblemData, gather_problems
 
-from typing import List, Optional
-from drned_xmnr.common_types import ActionResult
+from typing import Any, Dict, List, Optional, TypeVar
+from drned_xmnr.typing_xmnr import ActionResult, Tctx
+from ncs.maagic import Node
+from ncs.maapi import Transaction
 
 
 class DevcliLogMatch(object):
@@ -38,14 +40,14 @@ class DevcliLogMatch(object):
         r')$')
     matchrx = re.compile(matchexpr)
 
-    def __init__(self):
-        self.waitstate = None
-        self.devcli_error = None
+    def __init__(self) -> None:
+        self.waitstate: Optional[str] = None
+        self.devcli_error: Optional[str] = None
 
-    def match(self, msg):
+    def match(self, msg: str) -> Optional[str]:
         match = DevcliLogMatch.matchrx.match(msg)
         if match is None:
-            return
+            return None
         if match.lastgroup == 'traceback':
             self.devcli_error = 'the device driver appears to be broken'
             return 'device driver failed'
@@ -68,6 +70,7 @@ class DevcliLogMatch(object):
         elif match.lastgroup == 'authfailed':
             self.devcli_error = 'failed to authenticate'
             return 'Failed to authenticate to the device CLI'
+        return None
 
 
 class LoadDefaultConfigOp(ActionBase):
@@ -77,16 +80,16 @@ class LoadDefaultConfigOp(ActionBase):
     """
     action_name = 'xmnr load-default-config'
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         super(LoadDefaultConfigOp, self).__init__(*args)
         self.filter = DevcliLogMatch()
 
-    def cli_filter(self, msg):
+    def cli_filter(self, msg: str) -> None:
         report = self.filter.match(msg)
         if report is not None:
             super(LoadDefaultConfigOp, self).cli_filter(report + '\n')
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         result, _ = self.devcli_run('load-default-config.py', [])
         if result != 0:
             raise ActionError('Failed to load default configuration!')
@@ -102,16 +105,16 @@ class SaveDefaultConfigOp(ActionBase):
     """
     action_name = 'xmnr save-default-config'
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         super(SaveDefaultConfigOp, self).__init__(*args)
         self.filter = DevcliLogMatch()
 
-    def cli_filter(self, msg):
+    def cli_filter(self, msg: str) -> None:
         report = self.filter.match(msg)
         if report is not None:
             super(SaveDefaultConfigOp, self).cli_filter(report + '\n')
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         result, _ = self.devcli_run('save-default-config.py', [])
         if result != 0:
             raise ActionError('Failed to save default configuration!')
@@ -126,10 +129,10 @@ class ParseLogErrorsOp(ActionBase):
     """
     action_name = 'xmnr parse-log-errors'
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.target_log = self.param_default(params, "target_log", None)
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         self.parsed_problems: Optional[List[ProblemData]] = None
         try:
             filepath = self._get_target_filepath()
@@ -141,11 +144,11 @@ class ParseLogErrorsOp(ActionBase):
             raise ActionError(msg)
         return self.run_with_trans(self._store_parsed_problems, write=True, db=OPERATIONAL)
 
-    def _store_parsed_problems(self, trans) -> ActionResult:
+    def _store_parsed_problems(self, trans: Transaction) -> ActionResult:
         problems_count = self._store_problems(trans)
         return {'success': 'Target %s parsed - %d problems found.' % (self.target_log, problems_count)}
 
-    def _get_target_filepath(self):
+    def _get_target_filepath(self) -> str:
         tag = self.target_log
         if tag == ns.drned_xmnr_common_xmnr_log:
             path = os.path.join(
@@ -161,7 +164,7 @@ class ParseLogErrorsOp(ActionBase):
             raise ActionError("Unimplemented target log...")
         return path
 
-    def _store_problems(self, trans) -> int:
+    def _store_problems(self, trans: Transaction) -> int:
         if self.parsed_problems is None:
             return 0
         problem_count = len(self.parsed_problems)
@@ -189,3 +192,20 @@ class ParseLogErrorsOp(ActionBase):
 
         trans.apply()
         return problem_count
+
+
+class Handler(object):
+    ''' Stub data provider handler.
+        See documentation of ncs.experimental.DataCallbacks for details.
+    '''
+
+    def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
+        pass
+
+    NextType = TypeVar('NextType')
+
+    def get_next(self, tctx: Tctx, kp: str, args: Dict[str, Any], next: NextType) -> Optional[NextType]:
+        return None
+
+    def count(self) -> int:
+        return 0

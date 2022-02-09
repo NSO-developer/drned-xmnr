@@ -1,5 +1,3 @@
-# -*- mode: python; python-indent: 4 -*-
-
 import os
 import re
 import glob
@@ -11,7 +9,13 @@ from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
 from . import base_op
 from .ex import ActionError
-from .common_op import DevcliLogMatch
+from .common_op import DevcliLogMatch, Handler
+
+from typing import Any, Dict, List, Optional, Set, Tuple
+from drned_xmnr.typing_xmnr import ActionResult, Tctx
+from ncs.log import Log
+from ncs.maagic import Node
+from ncs.maapi import Transaction
 
 
 state_metadata = """\
@@ -22,11 +26,11 @@ mode = override
 
 
 class ConfigOp(base_op.ActionBase):
-    def write_metadata(self, state_filename):
+    def write_metadata(self, state_filename: str) -> None:
         with open(state_filename + self.metadata_extension, 'w') as meta:
             meta.write(state_metadata)
 
-    def remove_state_file(self, state_filename):
+    def remove_state_file(self, state_filename: str) -> None:
         os.remove(state_filename)
         for suffix in (self.metadata_extension, self.flag_file_extension):
             try:
@@ -38,11 +42,11 @@ class ConfigOp(base_op.ActionBase):
 class StateParamOp(ConfigOp):
     """Common superclass for actions using `state-or-pattern` grouping.
     """
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.state_name_pattern = params.state_name_pattern
         self.state_name = params.state_name
 
-    def get_state_filenames(self):
+    def get_state_filenames(self) -> List[str]:
         if self.state_name_pattern is None:
             state_filenames = [self.state_name_to_filename(self.state_name)]
         else:
@@ -55,7 +59,7 @@ class StateParamOp(ConfigOp):
 class DeleteStateOp(StateParamOp):
     action_name = 'delete state'
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         self.log.debug("config_delete_state() with device {0}".format(self.dev_name))
         state_filenames = self.get_state_filenames()
         for state_filename in state_filenames:
@@ -70,7 +74,7 @@ class DeleteStateOp(StateParamOp):
 class DisableStateOp(StateParamOp):
     action_name = 'disable state'
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         self.log.debug('disable state with device {}'.format(self.dev_name))
         state_filenames = self.get_state_filenames()
         for state_filename in state_filenames:
@@ -87,7 +91,7 @@ class DisableStateOp(StateParamOp):
 class EnableStateOp(StateParamOp):
     action_name = 'ensable state'
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         self.log.debug('enable state with device {}'.format(self.dev_name))
         state_filenames = self.get_state_filenames()
         for state_filename in state_filenames:
@@ -104,10 +108,10 @@ class EnableStateOp(StateParamOp):
 class ListStatesOp(ConfigOp):
     action_name = 'list states'
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         pass
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         self.log.debug("config_list_states() with device {0}".format(self.dev_name))
         state_files = self.get_state_files()
         disabled_files = self.get_disabled_state_files()
@@ -123,34 +127,37 @@ class ListStatesOp(ConfigOp):
 class ViewStateOp(ConfigOp):
     action_name = 'view state'
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.state_name = params.state_name
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         self.log.debug("config_view_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
+        failed_result = {'failure': "Could not view " + state_name}
         state_filename = self.state_name_to_existing_filename(state_name)
+        if state_filename is None:
+            return failed_result
         try:
             with open(state_filename, 'r') as f:
                 state_str = f.read()
                 return {'success': state_str}
         except OSError:
-            return {'failure': "Could not view " + state_name}
+            return failed_result
 
 
 class RecordStateOp(ConfigOp):
     action_name = 'record state'
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.state_name = self.param_default(params, "state_name", "")
         self.include_rollbacks = self.param_default(params, "including_rollbacks", 0)
         self.style_format = self.param_default(params, "format", "c-style")
         self.overwrite = params.overwrite
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         return self.run_with_trans(self._perform, write=True)
 
-    def _perform(self, trans):
+    def _perform(self, trans: Transaction) -> ActionResult:
         self.log.debug("config_record_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
         self.log.debug("incl_rollbacks=" + str(self.include_rollbacks))
@@ -204,12 +211,12 @@ class RecordStateOp(ConfigOp):
 
 
 class ImportOp(ConfigOp):
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.pattern = params.file_path_pattern
         self.overwrite = self.param_default(params, "overwrite", None)
         self.skip_existing = self.param_default(params, "skip_existing", None)
 
-    def verify_filenames(self):
+    def verify_filenames(self) -> Tuple[List[str], List[str], Set[str]]:
         maybefiles = glob.glob(self.pattern)
         filenames = [filename for filename in maybefiles if os.path.isfile(filename)]
         if filenames == []:
@@ -223,7 +230,7 @@ class ImportOp(ConfigOp):
             raise ActionError("States already exist: " + ", ".join(conflicts))
         return filenames, states, conflicts
 
-    def get_state_name(self, origname):
+    def get_state_name(self, origname: str) -> str:
         (base, ext) = os.path.splitext(origname)
         (base1, ext1) = os.path.splitext(base)
         if ext1 == ".state":
@@ -235,13 +242,13 @@ class ImportOp(ConfigOp):
 class ImportStateFiles(ImportOp):
     action_name = 'import states'
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         super(ImportStateFiles, self)._init_params(params)
-        self.file_format = self.param_default(params, "format", "")
+        self.file_format: str = self.param_default(params, "format", "")
         self.state_format = params.target_format
         self.merge = params.merge
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         filenames, states, conflicts = self.verify_filenames()
         for (source, target) in zip(filenames, states):
             if target in conflicts and self.overwrite:
@@ -263,7 +270,7 @@ class ImportStateFiles(ImportOp):
 
         return {"success": "Imported states: " + ", ".join(states)}
 
-    def import_file(self, source_file, state):
+    def import_file(self, source_file: str, state: str) -> None:
         tmpfile1 = "/tmp/" + os.path.basename(source_file) + ".tmp1"
         tmpfile2 = "/tmp/" + os.path.basename(source_file) + ".tmp2"
         if self.file_format == "c-style":
@@ -295,7 +302,7 @@ class ImportStateFiles(ImportOp):
         shutil.move(tmpfile2, filename)
         self.write_metadata(filename)
 
-    def run_xslt(self, nso_xml_file, xml_file):
+    def run_xslt(self, nso_xml_file: str, xml_file: str) -> None:
         xslt_root = etree.XML('''\
         <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
           <xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>
@@ -330,7 +337,7 @@ class ImportStateFiles(ImportOp):
         with open(nso_xml_file, "w+") as outfile:
             nso_xml.write(outfile.name)
 
-    def run_create_state(self, trans, source_file, state_file):
+    def run_create_state(self, trans: Transaction, source_file: str, state_file: str) -> None:
         dev_config = "/ncs:devices/device{{{}}}/config".format(self.dev_name)
         if not self.merge:
             trans.delete(dev_config)
@@ -354,13 +361,13 @@ class ConvertMatch(DevcliLogMatch):
         r')$')
     matchrx = re.compile(matchexpr)
 
-    def __init__(self, converter):
+    def __init__(self, converter: ImportOp) -> None:
         super(ConvertMatch, self).__init__()
-        self.failures = []
+        self.failures: List[str] = []
         self.waitstate = None
         self.converter = converter
 
-    def match(self, msg):
+    def match(self, msg: str) -> Optional[str]:
         report = super(ConvertMatch, self).match(msg)
         if report is not None:
             return report
@@ -370,7 +377,7 @@ class ConvertMatch(DevcliLogMatch):
         gd = match.groupdict()
         if match.lastgroup == 'convert':
             return 'importing state ' + gd['cnvstate']
-        elif match.lastgroup == 'converted':
+        elif match.lastgroup == 'converted' and isinstance(self.converter, ImportConvertCliFiles):
             self.converter.complete_import(gd['target'], gd['donestate'])
             return None
         elif match.lastgroup == 'failure':
@@ -394,16 +401,16 @@ class ImportConvertCliFiles(ImportOp):
 
     NC_WORKDIR = 'drned-ncs'
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         super(ImportConvertCliFiles, self).__init__(*args)
-        self.filter = ConvertMatch(self)
+        self.filter: ConvertMatch = ConvertMatch(self)
 
-    def cli_filter(self, msg):
+    def cli_filter(self, msg: str) -> None:
         report = self.filter.match(msg)
         if report is not None:
             super(ImportConvertCliFiles, self).cli_filter(report + '\n')
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         filenames, states, conflicts = self.verify_filenames()
         if conflicts and not self.overwrite and self.skip_existing:
             filenames = [v for i, v in enumerate(filenames) if states[i] not in conflicts]
@@ -428,7 +435,7 @@ class ImportConvertCliFiles(ImportOp):
                     self.filter.failures))
         return {"success": "Imported states: " + ", ".join(sorted(states))}
 
-    def complete_import(self, filename, state):
+    def complete_import(self, filename: str, state: str) -> None:
         xml = os.path.splitext(os.path.basename(filename))[0] + '.xml'
         source = os.path.join(self.drned_run_directory, self.NC_WORKDIR, xml)
         if os.path.exists(source):
@@ -446,10 +453,10 @@ class ImportConvertCliFiles(ImportOp):
 class CheckStates(ConfigOp):
     action_name = 'check states'
 
-    def _init_params(self, params):
-        self.validate = params.validate
+    def _init_params(self, params: Node) -> None:
+        self.validate: bool = params.validate
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         states = self.get_states()
         self.log.debug('checking states: {}'.format(states))
         failures = []
@@ -466,7 +473,7 @@ class CheckStates(ConfigOp):
             msg = 'states not consistent with the device model: {}'
             return {'failure': msg.format(''.join(failures))}
 
-    def test_filename_load(self, trans, filename):
+    def test_filename_load(self, trans: Transaction, filename: str) -> None:
         flag = (_ncs.maapi.CONFIG_C if filename.endswith(self.cfg_statefile_extension)
                 else _ncs.maapi.CONFIG_XML)
         trans.load_config(flag + _ncs.maapi.CONFIG_MERGE, filename)
@@ -474,15 +481,15 @@ class CheckStates(ConfigOp):
             trans.validate(True)
 
 
-class StatesProvider(object):
-    def __init__(self, log):
+class StatesProvider(Handler):
+    def __init__(self, log: Log) -> None:
         self.log = log
 
-    def get_states_data(self, tctx, args):
-        return StatesData.get_data(tctx, args['device'], self.log, StatesData.states)
+    def get_states_data(self, tctx: Tctx, device: str) -> List[Tuple[str, bool]]:
+        return StatesData.get_data(tctx, device, self.log, StatesData.states)
 
-    def get_object(self, tctx, kp, args):
-        states = sorted(self.get_states_data(tctx, args))
+    def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
+        states = sorted(self.get_states_data(tctx, args['device']))
         disabled_tag = _ncs.Value((ns.hash, ns.drned_xmnr_disabled), _ncs.C_XMLTAG)
         return {'states': [{'state': state, 'disabled': disabled_tag} if disabled
                            else {'state': state}
@@ -490,7 +497,7 @@ class StatesProvider(object):
 
 
 class StatesData(base_op.XmnrDeviceData):
-    def states(self):
+    def states(self) -> List[Tuple[str, bool]]:
         return [(self.state_filename_to_name(filename),
                  os.path.exists(filename + self.flag_file_extension))
                 for filename in self.get_state_files()]

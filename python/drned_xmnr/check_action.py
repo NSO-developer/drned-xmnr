@@ -1,10 +1,18 @@
+from __future__ import annotations
+
 import os
 import sys
 import importlib
 
+from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Union
+from ncs.log import Log
+
+Version = List[int]
+Requirement = Tuple[str, Optional[Version]]
+
 REQ_GE = '>='
 
-REQ_DEFAULTS = [
+REQ_DEFAULTS: List[Requirement] = [
     ('pexpect', None),
     ('pytest', [3, 0]),
     ('lxml', None)]
@@ -14,13 +22,16 @@ class XmnrCheckException(Exception):
     pass
 
 
-def parse_version(verstr):
+def parse_version(verstr: str) -> Version:
     return [int(vnum) for vnum in verstr.split('.')]
 
 
-def check(log=None):
+def check(log: Optional[Log] = None) -> None:
     if sys.version_info < (3, 6):
         raise XmnrCheckException('Required Python 3.6 or newer')
+    if TYPE_CHECKING:
+        package: str
+        version: Optional[Version]
     for (package, version) in xmnr_requirements(log):
         try:
             mod = importlib.import_module(package)
@@ -43,7 +54,10 @@ def check(log=None):
                 log.debug('using package {}'.format(package))
 
 
-def xmnr_requirements(log):
+XmnrRequirementItem = Union[Requirement, Tuple[str, None]]
+
+
+def xmnr_requirements(log: Optional[Log]) -> Iterator[XmnrRequirementItem]:
     base = os.path.realpath(os.path.dirname(__file__))
     pkg_path = os.path.dirname(os.path.dirname(base))
     try:

@@ -8,31 +8,37 @@ that takes care of generating filtered output and transition events.
 import re
 from .cort import coroutine
 
+from typing import Generator, Pattern
+from drned_xmnr.typing_xmnr import StrConsumer
+
 
 class LineOutputEvent(object):
     indent = 3 * ' '
-    state_name_regexp = re.compile(r'.*/states/([^/]*?)(?:\.state)?\.(cfg|xml)')
+    state_name_regexp: Pattern[str] = re.compile(r'.*/states/([^/]*?)(?:\.state)?\.(cfg|xml)')
 
     @staticmethod
-    def indent_line(line):
+    def indent_line(line: str) -> str:
         return '{}{}'.format(LineOutputEvent.indent, line)
 
-    def __init__(self, line):
+    def __init__(self, line: str) -> None:
         self.line = line
         self.complete = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Line event {} {}'.format(self.__class__.__name__, self.line)
 
-    def mark_complete(self):
+    def mark_complete(self) -> None:
         self.complete = True
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         return self.line
 
 
+EventConsumer = Generator[None, LineOutputEvent, None]
+
+
 class InitialPrepareEvent(LineOutputEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(InitialPrepareEvent, self).__init__('Prepare the device')
 
 
@@ -41,7 +47,7 @@ class InitStatesEvent(LineOutputEvent):
 
 
 class StartStateEvent(LineOutputEvent):
-    def __init__(self, line, state):
+    def __init__(self, line: str, state: str) -> None:
         super(StartStateEvent, self).__init__(line)
         self.state = state
 
@@ -59,16 +65,19 @@ class TransFailedEvent(LineOutputEvent):
 
 
 class PyTestEvent(LineOutputEvent):
-    def produce_line(self):
-        state = self.state_name_regexp.search(self.line).groups()[0]
+    def produce_line(self) -> str:
+        s = self.state_name_regexp.search(self.line)
+        if s is None:
+            raise Exception("Invalid PyTestEvent")
+        state = s.groups()[0]
         return 'Test transition to {}'.format(state)
 
 
 class DrnedPrepareEvent(LineOutputEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(DrnedPrepareEvent, self).__init__('')
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         return self.indent_line('prepare the device')
 
 
@@ -77,14 +86,14 @@ class DrnedEvent(LineOutputEvent):
 
 
 class DrnedActionEvent(DrnedEvent):
-    def __init__(self, line, action):
+    def __init__(self, line: str, action: str) -> None:
         super(DrnedActionEvent, self).__init__(line)
         self.action = action
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned event ' + self.action
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         if self.action == 'compare_config':
             line = 'compare config'
         else:
@@ -93,8 +102,11 @@ class DrnedActionEvent(DrnedEvent):
 
 
 class DrnedLoadEvent(DrnedActionEvent):
-    def __init__(self, line):
-        self.state = self.state_name_regexp.search(line).groups()[0]
+    def __init__(self, line: str) -> None:
+        s = self.state_name_regexp.search(line)
+        if s is None:
+            raise Exception("Invalid DrnedLoadEvent")
+        self.state = s.groups()[0]
         super(DrnedLoadEvent, self).__init__(line, 'load ' + self.state)
 
 
@@ -103,84 +115,81 @@ class DrnedCommitEvent(DrnedEvent):
 
 
 class DrnedCommitQueueEvent(DrnedCommitEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(DrnedCommitQueueEvent, self).__init__('')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned commit queue event'
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         return self.indent_line('commit...')  # should not be used?
 
 
 class DrnedCommitNoqueueEvent(DrnedCommitEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(DrnedCommitNoqueueEvent, self).__init__('')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned commit event'
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         return self.indent_line('commit...')  # should not be used?
 
 
 class DrnedCommitNNEvent(DrnedCommitEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(DrnedCommitNNEvent, self).__init__('')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned commit no-networking event'
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         # should not be used?
         return self.indent_line('commit no networking...')
 
 
 class DrnedCommitResultEvent(DrnedCommitEvent):
-    def __init__(self, line, success):
+    def __init__(self, line: str, success: bool) -> None:
         super(DrnedCommitResultEvent, self).__init__(line)
         self.success = success
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned commit result event'
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         line = '    succeeded' if self.success else '    failed'
         return self.indent_line(line)
 
 
 class DrnedEmptyCommitEvent(DrnedCommitResultEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(DrnedEmptyCommitEvent, self).__init__('    (no modifications)', True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned empty commit event'
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         return self.indent_line(self.line)
 
 
 class DrnedCommitCompleteEvent(DrnedCommitResultEvent):
-    def __init__(self, line):
+    def __init__(self, line: str) -> None:
         super(DrnedCommitCompleteEvent, self).__init__(line, True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned commit complete event'
 
 
 class DrnedFailureReasonEvent(DrnedCommitResultEvent):
-    def __init__(self, msg):
+    def __init__(self, msg: str) -> None:
         super(DrnedFailureReasonEvent, self).__init__(msg, False)
         self.msg = msg
-        if 'transport timeout' in msg:
-            self.reason = 'device request timeout'
-        else:
-            self.reason = None
+        self.reason = 'device request timeout' if 'transport timeout' in msg else None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned commit failure: {}'.format(self.reason)
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         max = 40
         if len(self.msg) > max:
             msg = self.msg[:max] + "..."
@@ -191,66 +200,66 @@ class DrnedFailureReasonEvent(DrnedCommitResultEvent):
 
 
 class DrnedCompareEvent(LineOutputEvent):
-    def __init__(self, success):
+    def __init__(self, success: bool) -> None:
         super(DrnedCompareEvent, self).__init__('')
         self.success = success
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned compare complete event: {}'.format(self.success)
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         line = '    succeeded' if self.success else '    failed'
         return self.indent_line(line)
 
 
 class DrnedFailedStatesEvent(LineOutputEvent):
-    def __init__(self, failed_states):
+    def __init__(self, failed_states: str) -> None:
         super(DrnedFailedStatesEvent, self).__init__('')
         self.failed_states = failed_states
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned walk-states failures: {}'.format(self.failed_states)
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         return 'Failed states {}'.format(self.failed_states)
 
 
 class DrnedTeardownEvent(LineOutputEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(DrnedTeardownEvent, self).__init__('')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Drned teardown event'
 
-    def produce_line(self):
+    def produce_line(self) -> str:
         return 'Device cleanup'
 
 
 class DrnedRestoreEvent(DrnedActionEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(DrnedRestoreEvent, self).__init__('restore', 'load before-session')
 
 
 class TerminateEvent(LineOutputEvent):
-    def __init__(self):
+    def __init__(self) -> None:
         super(TerminateEvent, self).__init__('')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Terminate event'
 
-    def produce_line(self):
-        return None
+    def produce_line(self) -> str:
+        return ''
 
 
 class EventGenerator(object):
-    def __init__(self, consumer):
+    def __init__(self, consumer: EventConsumer) -> None:
         self.consumer = consumer
-        self.coroutine = event_generator(consumer)
+        self.coroutine: StrConsumer = event_generator(consumer)
 
-    def send(self, data):
+    def send(self, data: str) -> None:
         self.coroutine.send(data)
 
-    def close(self):
+    def close(self) -> None:
         try:
             # we need to let the consumer know; but it can raise
             # StopIteration
@@ -260,7 +269,7 @@ class EventGenerator(object):
         self.coroutine.close()
 
 
-line_regexp = re.compile('''\
+line_regexp: Pattern[str] = re.compile('''\
 (?:\
 (?P<init_states>Found [0-9]* states recorded for device .*)|\
 (?P<start>Starting with state (?P<state>.*))|\
@@ -287,7 +296,7 @@ line_regexp = re.compile('''\
 
 
 @coroutine
-def event_generator(consumer):
+def event_generator(consumer: EventConsumer) -> StrConsumer:
     '''Based on the line input, generate events and pass them to the consumer.
     '''
     try:

@@ -10,6 +10,11 @@ from lxml import etree
 import _ncs
 from ncs import maagic
 
+from typing import Optional, Pattern
+from drned_xmnr.typing_xmnr import ActionResult
+from ncs.maagic import Node
+from ncs.maapi import Transaction
+
 from . import base_op
 from .ex import ActionError
 
@@ -21,7 +26,7 @@ class DevcliLogMatch(object):
     should call the `match` method of this class.
 
     """
-    matchexpr = (
+    matchexpr: str = (
         r'(?:(?P<devcli>.*DevcliException: No device definition found)'
         r'|(?P<traceback>Traceback [(]most recent call last[)]:)'
         r'|(?P<newstate>^STATE: (?P<state>[^ ]*) : .*)'
@@ -30,16 +35,16 @@ class DevcliLogMatch(object):
         r'|(?P<timeout>device communication failure: .*Timeout.*)'
         r'|(?P<authfailed>failed to authenticate)'
         r')$')
-    matchrx = re.compile(matchexpr)
+    matchrx: Pattern[str] = re.compile(matchexpr)
 
-    def __init__(self):
-        self.waitstate = None
-        self.devcli_error = None
+    def __init__(self) -> None:
+        self.waitstate: Optional[str] = None
+        self.devcli_error: Optional[str] = None
 
-    def match(self, msg):
+    def match(self, msg: str) -> Optional[str]:
         match = DevcliLogMatch.matchrx.match(msg)
         if match is None:
-            return
+            return None
         if match.lastgroup == 'traceback':
             self.devcli_error = 'the device driver appears to be broken'
             return 'device driver failed'
@@ -58,24 +63,25 @@ class DevcliLogMatch(object):
         elif match.lastgroup == 'authfailed':
             self.devcli_error = 'failed to authenticate'
             return 'Failed to authenticate to the device CLI'
+        return None
 
 
 class SetupOp(base_op.ActionBase):
     action_name = 'xmnr setup'
 
-    def _init_params(self, params):
-        self.overwrite = params.overwrite
-        self.queue = params.use_commit_queue
+    def _init_params(self, params: Node) -> None:
+        self.overwrite: bool = params.overwrite
+        self.queue: bool = params.use_commit_queue
         self.save_default_config = params.save_default_config
         # super(SetupOp, self).__init__()
         self.filter = DevcliLogMatch()
 
-    def cli_filter(self, msg):
+    def cli_filter(self, msg: str) -> None:
         report = self.filter.match(msg)
         if report is not None:
             super(SetupOp, self).cli_filter(report + '\n')
 
-    def perform(self):
+    def perform(self) -> ActionResult:
         # device and states directory should have been already created
         self.run_with_trans(self.prepare_setup)
         try:
@@ -136,13 +142,13 @@ class SetupOp(base_op.ActionBase):
 
         return {'success': "XMNR set up for device " + self.dev_name}
 
-    def prepare_setup(self, trans):
+    def prepare_setup(self, trans: Transaction) -> None:
         root = maagic.get_root(trans)
         xmnr_pkg = root.packages.package['drned-xmnr'].directory
         self.drned_skeleton = os.path.join(xmnr_pkg, 'drned-skeleton')
         self.drned_submod = os.path.join(xmnr_pkg, 'drned')
 
-    def find_ned_package(self, root, ned_id, ned_type):
+    def find_ned_package(self, root: Node, ned_id: str, ned_type: str) -> Node:
         for package in root.packages.package:
             for component in package.component:
                 try:
@@ -152,7 +158,7 @@ class SetupOp(base_op.ActionBase):
                     continue
         return None
 
-    def setup_drned(self):
+    def setup_drned(self) -> None:
         env = self.run_with_trans(self.setup_drned_env)
         self.drned_process = subprocess.Popen(['make', 'env.sh'],
                                               env=env,
@@ -184,8 +190,8 @@ class SetupOp(base_op.ActionBase):
                 msg = "Failed to symlink the the target {}".format(ncs_target)
             raise ActionError(msg)
 
-    def format_device_cfg(self, trans):
-        def del_element(elem, name):
+    def format_device_cfg(self, trans: Transaction) -> None:
+        def del_element(elem: Node, name: str) -> None:
             subel = elem.find('{http://tail-f.com/ns/ncs}' + name)
             if subel is not None:
                 elem.remove(subel)

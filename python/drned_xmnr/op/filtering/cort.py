@@ -6,10 +6,15 @@ See [David Beazly's presentation](http://www.dabeaz.com/coroutines/Coroutines.pd
 
 import functools
 
+from typing import Any, Callable, Generator, Protocol, TypeVar
+from drned_xmnr.typing_xmnr import StrConsumer, StrWriter
 
-def coroutine(fn):
+FnRes = TypeVar('FnRes')
+
+
+def coroutine(fn: Callable[..., Generator[None, FnRes, None]]) -> Callable[..., Generator[None, FnRes, None]]:
     @functools.wraps(fn)
-    def start(*args, **kwargs):
+    def start(*args: Any, **kwargs: Any) -> Generator[None, FnRes, None]:
         cr = fn(*args, **kwargs)
         next(cr)
         return cr
@@ -17,13 +22,18 @@ def coroutine(fn):
 
 
 @coroutine
-def drop():
+def drop() -> Generator[None, Any, None]:
     while True:
         yield
 
 
+class IsStrConsumer(Protocol):
+    def send(self, msg: str) -> None: ...
+    def close(self) -> None: ...
+
+
 @coroutine
-def fork(c1, c2):
+def fork(c1: IsStrConsumer, c2: IsStrConsumer) -> StrConsumer:
     while True:
         item = yield
         c1.send(item)
@@ -31,7 +41,7 @@ def fork(c1, c2):
 
 
 @coroutine
-def filter_sink(writer):
+def filter_sink(writer: StrWriter) -> StrConsumer:
     while True:
         item = yield
         if isinstance(item, str):

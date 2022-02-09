@@ -1,4 +1,4 @@
-# -*- mode: python; python-indent: 4 -*-
+from __future__ import annotations
 
 import fcntl
 import os
@@ -22,13 +22,29 @@ from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
 from .ex import ActionError
 
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Type, TypeVar, TextIO
+from drned_xmnr.typing_xmnr import ActionResult, Tctx
+from ncs.log import Log
+from ncs.maagic import Node
+from ncs.maapi import Transaction
 
-if _ncs.LIB_VSN < 0x07060000:
-    def maapi_keyless_create(node, i):
+ReturnCode = int
+ProcessResult = Tuple[ReturnCode, str]
+
+
+def text_data(data: bytes) -> str:
+    if sys.version_info >= (3, 0):
+        return data.decode()
+    else:
+        return data
+
+
+def maapi_keyless_create(node: Node, i: int) -> Node:
+    if _ncs.LIB_VSN < 0x07060000:
         return node.create(i)
-else:
-    def maapi_keyless_create(node, _i):
+    else:
         return node.create()
+
 
 TIMEOUT_MARGIN = 5
 '''Number of seconds between the device timeout and action timeout.
@@ -58,8 +74,9 @@ all three layers with increasing margin:
 
 
 class CliLogger(object):
-    def __init__(self, action):
+    def __init__(self, action: ActionBase) -> None:
         self.uinfo = action.uinfo
+        self.cli_log_file: Optional[TextIO]
         if action.cli_log_filename is not None:
             self.cli_log_file = open(action.cli_log_filename, 'a')
             self.cli_log_file.write(action.log_header())
@@ -77,13 +94,13 @@ class CliLogger(object):
         else:
             self.cli_log_action = self.cli_log_params = None
 
-    def close(self):
+    def close(self) -> None:
         if self.cli_log_file is not None:
             self.cli_log_file.close()
         self.trans.finish()
         self.maapi.close()
 
-    def log(self, msg):
+    def log(self, msg: str) -> None:
         if self.uinfo.context == 'cli':
             _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
         if self.cli_log_file is not None:
@@ -102,11 +119,11 @@ class XmnrBase(object):
     xml_extensions = [xml_statefile_extension, '.xml']
     cfg_extensions = [cfg_statefile_extension, '.cfg']
 
-    def __init__(self, dev_name, log_obj):
-        self.dev_name = dev_name
-        self.log = log_obj
+    def __init__(self, dev_name: str, log_obj: Log) -> None:
+        self.dev_name: str = dev_name
+        self.log: Log = log_obj
 
-    def _setup_xmnr(self, trans):
+    def _setup_xmnr(self, trans: Transaction) -> None:
         root = maagic.get_root(trans)
         self.xmnr_directory = os.path.abspath(root.drned_xmnr.xmnr_directory)
         self.log_filename = root.drned_xmnr.xmnr_log_file
@@ -126,14 +143,14 @@ class XmnrBase(object):
         except OSError:
             pass
 
-    def format_state_filename(self, statename, format='xml', suffix=None):
+    def format_state_filename(self, statename: str, format: str = 'xml', suffix: Optional[str] = None) -> str:
         """Just convert the state name to the right filename."""
         if suffix is None:
             suffix = (self.cfg_statefile_extension if format == 'cfg'
                       else self.xml_statefile_extension)
         return os.path.join(self.states_dir, statename + suffix)
 
-    def state_name_to_existing_filename(self, statename, format='any'):
+    def state_name_to_existing_filename(self, statename: str, format: str = 'any') -> Optional[str]:
         suffixes = []
         if format != 'cfg':
             suffixes += self.xml_extensions
@@ -145,7 +162,7 @@ class XmnrBase(object):
                 return path
         return None
 
-    def state_name_to_filename(self, statename, format='any', existing=True):
+    def state_name_to_filename(self, statename: str, format: str = 'any', existing: bool = True) -> str:
         """Look for a state file.
 
         :param bool existing: if True, the file must exist, otherwise fail
@@ -161,26 +178,27 @@ class XmnrBase(object):
         return self.format_state_filename(statename,
                                           format=('xml' if format != 'cfg' else 'cfg'))
 
-    def state_filename_to_name(self, filename):
+    def state_filename_to_name(self, filename: str) -> str:
         for extension in self.xml_extensions + self.cfg_extensions:
             if filename.endswith(extension):
                 return os.path.basename(filename)[:-len(extension)]
+        raise ActionError("Unsupported extention for filename " + filename)
 
-    def get_states(self):
+    def get_states(self) -> List[str]:
         return [self.state_filename_to_name(f) for f in self.get_state_files()]
 
-    def get_state_files(self):
+    def get_state_files(self) -> List[str]:
         return self.get_state_files_by_pattern('*')
 
-    def get_disabled_state_files(self):
+    def get_disabled_state_files(self) -> List[str]:
         return [filename for filename in self.get_state_files()
                 if os.path.exists(filename + self.flag_file_extension)]
 
-    def is_state_disabled(self, state):
+    def is_state_disabled(self, state: str) -> bool:
         return os.path.exists(self.state_name_to_filename(state) + self.flag_file_extension)
 
-    def get_state_files_by_pattern(self, pattern):
-        files = {}
+    def get_state_files_by_pattern(self, pattern: str) -> List[str]:
+        files: Dict[str, Set[str]] = {}
         for suff in ['.xml', '.cfg']:
             files[suff] = set()
             for part in ['.state', '']:
@@ -195,11 +213,11 @@ class Progressor(object):
     Progress messages come in chunks and need to be re-chunked into
     lines.  This class is not directly related to The Noon Universe.
     """
-    def __init__(self, action):
+    def __init__(self, action: ActionBase) -> None:
         self.buf = ""
         self.action = action
 
-    def progress(self, chunk):
+    def progress(self, chunk: str) -> None:
         lines = chunk.split('\n')
         lines[0] = self.buf + lines[0]
         for line in lines[:-1]:
@@ -207,28 +225,42 @@ class Progressor(object):
         self.buf = lines[-1]
 
 
+ParamType = TypeVar('ParamType', str, int, None)
+
+
 class ActionBase(XmnrBase):
     _pytest_executable = None
+    action_name: str
 
-    def __init__(self, uinfo, dev_name, params, log_obj):
+    def perform(self) -> ActionResult:
+        pass
+
+    # TODO - may want to add fields/methods to class to make more explicit requirement for sub-classes
+    # if TYPE_CHECKING:
+        # action_name: str
+        # def perform(self) -> ActionResult: ...
+
+    def __init__(self, uinfo: _ncs.UserInfo, dev_name: str, params: Node, log_obj: Log) -> None:
         super(ActionBase, self).__init__(dev_name, log_obj)
         self.uinfo = uinfo
-        self.drned_process = None
-        self.aborted = False
+        self.drned_process: Optional[subprocess.Popen[bytes]] = None
+        self.aborted: bool = False
         self.abort_lock = threading.Lock()
+        self.log_file: Optional[TextIO] = None
+        # self.maapi = maapi.Maapi()
         self.run_with_trans(self._setup_xmnr)
         self._init_params(params)
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         # Implement in subclasses
         pass
 
-    def log_header(self):
+    def log_header(self) -> str:
         msg = '{} - {}'.format(dt.now(), self.action_name)
         return '\n{}\n{}\n{}\n'.format('-' * len(msg), msg, '-' * len(msg))
 
     @contextmanager
-    def open_log_file(self, path):
+    def open_log_file(self, path: str) -> Iterator[TextIO]:
         if path is None:
             yield None
         else:
@@ -236,23 +268,23 @@ class ActionBase(XmnrBase):
                 lf.write(self.log_header())
                 yield lf
 
-    def perform_action(self):
+    def perform_action(self) -> ActionResult:
         with self.open_log_file(self.log_filename) as self.log_file, \
              closing(CliLogger(self)) as self.cli_logger:
             return self.perform()
 
-    def abort_action(self):
+    def abort_action(self) -> None:
         with self.abort_lock:
             self.aborted = True
             self.terminate_drned_process()
 
-    def param_default(self, params, name, default):
-        value = getattr(params, name, None)
+    def param_default(self, params: Node, name: str, default: ParamType) -> ParamType:
+        value: Optional[ParamType] = getattr(params, name, None)
         if value is None:
             return default
         return value
 
-    def run_with_trans(self, callback, write=False, db=_ncs.RUNNING):
+    def run_with_trans(self, callback: Callable[[Transaction], Any], write: bool = False, db: int = _ncs.RUNNING) -> Any:
         if write:
             # we do not want to write to the user's transaction
             with maapi.single_write_trans(self.uinfo.username, self.uinfo.context, db=db) as trans:
@@ -264,13 +296,17 @@ class ActionBase(XmnrBase):
             mp = maapi.Maapi()
             return callback(mp.attach(self.uinfo.actx_thandle))
 
-    def extend_timeout(self):
+    def extend_timeout(self) -> None:
         '''Tell NSO to wait a bit longer.  See also `TIMEOUT_MARGIN`.
         '''
         extension = self.device_timeout + 2 * TIMEOUT_MARGIN
         dp.action_set_timeout(self.uinfo, extension)
 
-    def proc_run(self, outputfun):
+    def proc_run(self, outputfun: Callable[[str], None]) -> ProcessResult:
+        if self.drned_process is None:
+            raise ActionError("Missing DrNED process")
+        if self.drned_process.stdout is None:
+            raise ActionError("DrNED process missing stdout")
         fd = self.drned_process.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
@@ -294,7 +330,7 @@ class ActionBase(XmnrBase):
         self.log.debug("run_finished, output len=" + str(len(stdoutdata)))
         return self.drned_process.wait(), stdoutdata
 
-    def terminate_drned_process(self):
+    def terminate_drned_process(self) -> None:
         if self.drned_process is None:
             return
         try:
@@ -304,23 +340,23 @@ class ActionBase(XmnrBase):
             self.log.debug("process not responding to SIGINT - killing instead")
             self.drned_process.kill()
 
-    def cli_write(self, msg):
+    def cli_write(self, msg: str) -> None:
         if not self.aborted:
             # cannot write to CLI after an abort
             self.cli_logger.log(msg)
 
-    def cli_filter(self, msg):
+    def cli_filter(self, msg: str) -> None:
         print('cli filter', msg)
         self.cli_write(msg)
 
-    def progress_msg(self, msg):
+    def progress_msg(self, msg: str) -> None:
         self.log.debug(msg)
         self.cli_filter(msg)
         if self.log_file is not None:
             self.log_file.write(msg + '\n')
             self.log_file.flush()
 
-    def setup_drned_env(self, trans):
+    def setup_drned_env(self, trans: Transaction) -> Dict[str, str]:
         """Build a dictionary that is supposed to be passed to `Popen` as the
         environment.
         """
@@ -349,16 +385,16 @@ class ActionBase(XmnrBase):
                                       if 'ncs/erts' not in ppart)
         return env
 
-    def check_which(self, executable):
+    def check_which(self, executable: str) -> bool:
         with open('/dev/null', 'wb') as devnull:
             return subprocess.call(['which', executable], stdout=devnull) == 0
 
-    def pytest_executable(self):
+    def pytest_executable(self) -> str:
         if ActionBase._pytest_executable is None:
             ActionBase._pytest_executable = self.find_pytest_executable()
         return ActionBase._pytest_executable
 
-    def find_pytest_executable(self):
+    def find_pytest_executable(self) -> str:
         suffix = str(sys.version_info[0])  # '3', most likely
         execs = ['pytest', 'py.test', 'pytest-' + suffix, 'py.test-' + suffix]
         for executable in execs:
@@ -367,7 +403,7 @@ class ActionBase(XmnrBase):
                 return executable
         raise ActionError('PyTest not installed - pytest executable not found')
 
-    def get_authgroup_info(self, trans, root, locuser, authmap):
+    def get_authgroup_info(self, trans: Transaction, root: Node, locuser: str, authmap: Node) -> Tuple[Optional[str], Optional[str]]:
         if authmap.same_user.exists():
             username = locuser
         else:
@@ -383,14 +419,14 @@ class ActionBase(XmnrBase):
         trans.maapi.install_crypto_keys()
         return username, _ncs.decrypt(upwd)
 
-    def get_devcli_params(self, trans):
+    def get_devcli_params(self, trans: Transaction) -> Tuple[str, Optional[str], Optional[str], str, int]:
         root = maagic.get_root(trans)
         device_node = root.devices.device[self.dev_name]
         ip = device_node.address
         port = device_node.drned_xmnr.cli_port
         if port is None:
             port = device_node.port
-        driver = device_node.drned_xmnr.driver
+        driver: Optional[str] = device_node.drned_xmnr.driver
         if driver is None:
             raise ActionError('device driver not configured, cannot continue')
         authgroup_name = device_node.authgroup
@@ -403,7 +439,7 @@ class ActionBase(XmnrBase):
         user, passwd = self.get_authgroup_info(trans, root, locuser, authmap)
         return driver, user, passwd, ip, port
 
-    def devcli_run(self, script, script_args):
+    def devcli_run(self, script: str, script_args: List[str]) -> ProcessResult:
         driver, username, passwd, ip, port = self.run_with_trans(self.get_devcli_params)
         runner = os.environ.get('PYTHON_RUNNER', 'python')
         runner_args = runner.split()
@@ -418,7 +454,7 @@ class ActionBase(XmnrBase):
         args.extend(script_args)
         return self.run_in_drned_env(args)
 
-    def run_in_drned_env(self, args, **envdict):
+    def run_in_drned_env(self, args: List[str], **envdict: Any) -> ProcessResult:
         env = self.run_with_trans(self.setup_drned_env)
         env.update(envdict)
         self.log.debug("using env {0}\n".format(env))
@@ -440,7 +476,7 @@ class ActionBase(XmnrBase):
         finally:
             self.drned_process = None
 
-    def save_config(self, trans, config_type, path):
+    def save_config(self, trans: Transaction, config_type: int, path: str) -> Iterator[bytes]:
         save_id = trans.save_config(config_type, path)
         try:
             ssocket = socket.socket()
@@ -462,14 +498,18 @@ class ActionBase(XmnrBase):
 
 class XmnrDeviceData(XmnrBase):
     """Base for XMNR data providers."""
+
+    DataType = TypeVar('DataType')
+    ClassType = TypeVar('ClassType', bound='XmnrDeviceData')
+
     @classmethod
-    def get_data(clazz, tctx, device, log, data_cb):
+    def get_data(clazz: Type[ClassType], tctx: Tctx, device: str, log: Log, data_cb: Callable[[ClassType], DataType]) -> DataType:
         with maapi.Maapi() as mp:
             with mp.attach(tctx) as trans:
                 dd = clazz(device, log, trans)
                 data = data_cb(dd)
                 return data
 
-    def __init__(self, device, log, trans):
+    def __init__(self, device: str, log: Log, trans: Transaction) -> None:
         super(XmnrDeviceData, self).__init__(device, log)
         self._setup_xmnr(trans)

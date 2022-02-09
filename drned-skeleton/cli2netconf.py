@@ -12,15 +12,18 @@ import sys
 from devcli import Devcli, NcsDevice
 from devcli import DevcliException, DevcliAuthException, DevcliDeviceException
 
+from typing import Iterator, List, Pattern
+from argparse import Namespace
 
-testrx = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
+
+testrx: Pattern[str] = re.compile(r'(?P<set>[^:.]*)(?::(?P<index>[0-9]+))?(?:\..*)?$')
 SetDesc = namedtuple('SetDesc', ['fname', 'fset', 'index'])
 
 
 backup_config = 'drned-backup'
 
 
-def fname_set_descriptors(fnames):
+def fname_set_descriptors(fnames: List[str]) -> Iterator[SetDesc]:
     for fname in sorted(fnames):
         m = testrx.match(fname)
         if m is None:
@@ -31,7 +34,7 @@ def fname_set_descriptors(fnames):
         yield SetDesc(fname=fname, fset=d['set'], index=int(ix))
 
 
-def group_cli2netconf(device, devcli, group):
+def group_cli2netconf(device: NcsDevice, devcli: Devcli, group: List[SetDesc]) -> None:
     for desc in group:
         base = os.path.basename(os.path.splitext(desc.fname)[0])
         target = os.path.join(devcli.workdir, base + ".xml")
@@ -48,7 +51,7 @@ def group_cli2netconf(device, devcli, group):
         print("converted", desc.fname, 'to', target)
 
 
-def _cli2netconf(device, devcli, fnames):
+def _cli2netconf(device: NcsDevice, devcli: Devcli, fnames: List[str]) -> None:
     # Save initial CLI state
     devcli.save_config(backup_config)
     namegroups = itertools.groupby(fname_set_descriptors(fnames),
@@ -77,7 +80,7 @@ def _cli2netconf(device, devcli, fnames):
     device.sync_from()
 
 
-def cli2netconf(nsargs):
+def cli2netconf(nsargs: Namespace) -> int:
     fnames = nsargs.files
     try:
         with closing(Devcli(nsargs)) as devcli, \

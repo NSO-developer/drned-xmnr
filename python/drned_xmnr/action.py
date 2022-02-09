@@ -1,5 +1,4 @@
-# -*- mode: python; python-indent: 4 -*-
-from __future__ import print_function
+from __future__ import annotations, print_function
 
 import os
 import glob
@@ -19,19 +18,18 @@ from drned_xmnr.op import coverage_op
 from drned_xmnr.op import common_op
 from drned_xmnr.op.ex import ActionError
 
+from typing import Any, Dict, List, Optional, Tuple, Type
+from drned_xmnr.typing_xmnr import OptArgs, ActionResult
+from drned_xmnr.op.base_op import ActionBase
+from ncs.log import Log
+from ncs.maagic import Node
+
 assert sys.version_info >= (3, 6)
 # Not tested with anything lower
 
 
-def param_default(params, tag, default):
-    matching_param_list = [p.v for p in params if p.tag == tag]
-    if len(matching_param_list) == 0:
-        return default
-    return str(matching_param_list[0])
-
-
 class ActionHandler(dp.Action):
-    handlers = {
+    handlers: Dict[str, Type[ActionBase]] = {
         ns.ns.drned_xmnr_setup_xmnr_: setup_op.SetupOp,
         ns.ns.drned_xmnr_delete_state_: config_op.DeleteStateOp,
         ns.ns.drned_xmnr_disable_state_: config_op.DisableStateOp,
@@ -52,20 +50,23 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_parse_log_errors_: common_op.ParseLogErrorsOp,
     }
 
-    def init(self):
-        self.running_handler = None
+    def init(self) -> None:
+        self.running_handler: Optional[ActionBase] = None
 
     @dp.Action.action
-    def cb_action(self, uinfo, op_name, kp, params, output):
+    def cb_action(self, uinfo: _ncs.UserInfo, op_name: str, kp: _ncs.HKeypathRef, input: Node, output: Node) -> Any:
         self.log.debug("========== drned_xmnr cb_action() ==========")
         dev_name = str(kp[-3][0])
         self.log.debug("thandle={0} usid={1}".format(uinfo.actx_thandle, uinfo.usid))
 
+        handler_error = {'failure': "Operation not implemented: {0}".format(op_name)}
         try:
             if op_name not in self.handlers:
-                raise ActionError({'failure': "Operation not implemented: {0}".format(op_name)})
+                raise ActionError(handler_error)
             handler_cls = self.handlers[op_name]
-            self.running_handler = handler_cls(uinfo, dev_name, params, self.log)
+            self.running_handler = handler_cls(uinfo, dev_name, input, self.log)
+            if self.running_handler is None:
+                raise ActionError(handler_error)
             result = self.running_handler.perform_action()
             return self.action_response(uinfo, result, output)
 
@@ -80,13 +81,15 @@ class ActionHandler(dp.Action):
         finally:
             self.running_handler = None
 
-    def cb_abort(self, uinfo):
+    def cb_abort(self, uinfo: _ncs.UserInfo) -> None:
         self.log.debug('aborting the action')
         handler = self.running_handler
         if handler is not None:
             handler.abort_action()
 
-    def action_response(self, uinfo, result, output):
+    def action_response(self, uinfo: _ncs.UserInfo, result: ActionResult, output: Node) -> None:
+        if result is None:
+            return
         if 'error' in result:
             output.error = result['error']
         if 'success' in result:
@@ -99,18 +102,18 @@ class CompletionHandler(dp.Action):
 
     # @dp.Action.completion
     # wrapper does not exist in PyAPI at the time of this implementation
-    def cb_completion(self, uinfo, cli_style, token, completion_char,
-                      kp, cmdpath, cmdparam_id, simpleType, extra):
+    def cb_completion(self, uinfo: _ncs.UserInfo, cli_style: int, token: str, completion_char: int,
+                      kp: _ncs.HKeypathRef, cmdpath: str, cmdparam_id: str, simpleType: Optional[Tuple[str, str]], extra: str) -> Any:
         self.log.debug("========== drned_xmnr cb_completion() ==========")
         self.log.debug("thandle={0} usid={1}".format(uinfo.actx_thandle,
                                                      uinfo.usid))
 
-        def prep_path_str(path):
+        def prep_path_str(path: str) -> str:
             """ Add trailing '/' to an input path it is a directory. """
             output = os.path.join(path, '') if os.path.isdir(path) else path
             return str(output)
 
-        def hack_completions_list(completion_char, values):
+        def hack_completions_list(completion_char: int, values: List[str]) -> None:
             """ Hack preventing CLI to add whitespace after the only
                 completion value (would end file path completion).
                 We don't want to see the '/CLONE' in '?' completions... """
@@ -137,8 +140,8 @@ class CompletionHandler(dp.Action):
             dp.return_worker_socket(self._state, self._make_key(uinfo))
 
 
-class XmnrDataHandler(object):
-    def __init__(self, daemon, actionpoint, log=None, init_args=None):
+class XmnrDataHandler(application.Service):
+    def __init__(self, daemon: dp.Daemon, servicepoint: str, log: Optional[Log] = None, init_args: OptArgs = None) -> None:
         # FIXME: really experimental
         self._state = dp._daemon_as_dict(daemon)
         ctx = self._state['ctx']
@@ -151,7 +154,7 @@ class XmnrDataHandler(object):
                      config_op.StatesProvider(self.log))
         _ncs.dp.register_data_cb(ctx, ns.ns.callpoint_xmnr_states, scb)
 
-    def start(self):
+    def start(self) -> None:
         self.log.debug('started XMNR data')
 
 
@@ -160,11 +163,11 @@ class XmnrDataHandler(object):
 # ---------------------------------------------
 
 class Xmnr(application.Application):
-    def setup(self):
+    def setup(self) -> None:
         self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler)
         self.register_action('drned-xmnr-completion', CompletionHandler)
         self.register_service(ns.ns.callpoint_coverage_data, XmnrDataHandler)
         self.register_service(ns.ns.callpoint_xmnr_states, XmnrDataHandler)
 
-    def finish(self):
+    def finish(self) -> None:
         pass

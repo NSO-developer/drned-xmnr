@@ -1,5 +1,3 @@
-# -*- mode: python; python-indent: 4 -*-
-
 import os
 import time
 import random
@@ -13,9 +11,24 @@ from ncs import maagic
 from . import base_op
 from . import filtering
 
+from typing import Iterator, List, Literal, Optional, Union
+from drned_xmnr.typing_xmnr import ActionResult, LogLevel, StrConsumer, StrWriter
+from .filtering.events import EventConsumer, EventGenerator
+from .filtering.cort import IsStrConsumer
+from ncs.maagic import Node
+from ncs.maapi import Transaction
+
 
 class TransitionsOp(base_op.ActionBase):
-    def perform(self):
+
+    def perform_transitions(self) -> ActionResult:
+        ''' Implemented in sub-classes. '''
+        pass
+
+    def event_processor(self, level: LogLevel, sink: StrConsumer) -> EventConsumer:
+        pass
+
+    def perform(self) -> ActionResult:
         '''Performs the transition action and process DrNED output.
 
         The DrNED output is filtered and sent to right destinations
@@ -24,7 +37,7 @@ class TransitionsOp(base_op.ActionBase):
 
         '''
         detail = self.run_with_trans(self.get_log_detail)
-        self.filter_cr = None
+        self.filter_cr: Optional[IsStrConsumer] = None
         self.event_context = filtering.TransitionEventContext()
         with closing(self.event_context):
             with closing(self.build_filter(detail, self.cli_write)) as self.filter_cr:
@@ -32,15 +45,17 @@ class TransitionsOp(base_op.ActionBase):
         self.run_with_trans(self.store_transition_events, write=True, db=_ncs.OPERATIONAL)
         return result
 
-    def get_log_detail(self, trans):
+    def get_log_detail(self, trans: Transaction) -> Optional[LogLevel]:
         root = maagic.get_root(trans)
-        return root.drned_xmnr.log_detail.cli
+        cli_val: Optional[LogLevel] = root.drned_xmnr.log_detail.cli
+        return cli_val
 
-    def cli_filter(self, msg):
-        if self.filter_cr is not None:
+    # TODO - Event vs str?
+    def cli_filter(self, msg: str) -> None:
+        if self.filter_cr is not None and isinstance(self.filter_cr, EventGenerator):
             self.filter_cr.send(msg)
 
-    def build_filter(self, level, writer):
+    def build_filter(self, level: LogLevel, writer: StrWriter) -> IsStrConsumer:
         '''Builds a pipe to process DrNED output lines.
 
         Lines from the DrNED output need all to be processed by the
@@ -58,11 +73,12 @@ class TransitionsOp(base_op.ActionBase):
         else:
             sink = filtering.filter_sink(writer)
         events = filtering.EventGenerator(self.event_processor(level, sink))
+        # events  = cast(StrConsumer, events)
         if level == 'all':
             return filtering.fork(events, filtering.filter_sink(writer))
         return events
 
-    def drned_run(self, drned_args):
+    def drned_run(self, drned_args: List[str]) -> base_op.ProcessResult:
         args = ["-s", "--tb=short", "--device=" + self.dev_name] + drned_args
         if not self.using_builtin_drned:
             args.append("--unreserved")
@@ -70,7 +86,7 @@ class TransitionsOp(base_op.ActionBase):
         self.log.debug("drned: {0}".format(args))
         return self.run_in_drned_env(args)
 
-    def transition_to_state(self, state_name, rollback=False):
+    def transition_to_state(self, state_name: str, rollback: bool = False) -> Union[Literal[True], str]:
         filename = self.state_name_to_filename(state_name)
         self.log.debug("Transition_to_state: {0}\n".format(state_name))
         filepath = os.path.relpath(filename, self.drned_run_directory)
@@ -88,7 +104,7 @@ class TransitionsOp(base_op.ActionBase):
                      'load': 'load',
                      'rollback': 'rollback'}
 
-    def store_transition_events(self, trans):
+    def store_transition_events(self, trans: Transaction) -> None:
         '''Cleanup and populate the `last_test_results` container.
 
         '''
@@ -115,14 +131,14 @@ class TransitionsOp(base_op.ActionBase):
 class TransitionToStateOp(TransitionsOp):
     action_name = 'transition to state'
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.state_name = self.param_default(params, "state_name", "")
         self.rollback = params.rollback
 
-    def event_processor(self, level, sink):
+    def event_processor(self, level: LogLevel, sink: StrConsumer) -> EventConsumer:
         return filtering.transition_output_filter(level, sink, self.event_context)
 
-    def perform_transitions(self):
+    def perform_transitions(self) -> ActionResult:
         msg = "config_transition_to_state() with device {0} to state {1}" \
               .format(self.dev_name, self.state_name)
         self.log.debug(msg)
@@ -139,10 +155,10 @@ class StatesTransitionsOp(TransitionsOp):
     grouping.
     """
 
-    def filter_states(self, states):
+    def filter_states(self, states: List[str]) -> List[str]:
         return states
 
-    def get_transition_filenames(self, params):
+    def get_transition_filenames(self, params: Node) -> None:
         states = list(params.states)
         if states == []:
             states = [state for state in self.get_states()
@@ -159,20 +175,20 @@ class StatesTransitionsOp(TransitionsOp):
 class ExploreTransitionsOp(StatesTransitionsOp):
     action_name = 'explore transitions'
 
-    def event_processor(self, level, sink):
+    def event_processor(self, level: LogLevel, sink: StrConsumer) -> EventConsumer:
         return filtering.explore_output_filter(level, sink, self.event_context)
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.get_transition_filenames(params)
         stp = params.stop_after
-        self.stop_time = 24 * int(self.param_default(stp, "days", 0))
+        self.stop_time: int = 24 * int(self.param_default(stp, "days", 0))
         self.stop_time = 60 * int(self.param_default(stp, "hours", self.stop_time))
         self.stop_time = 60 * int(self.param_default(stp, "minutes", self.stop_time))
         self.stop_time = int(self.param_default(stp, "seconds", self.stop_time))
         self.stop_percent = int(self.param_default(stp, "percent", 0))
         self.stop_cases = int(self.param_default(stp, "cases", 0))
 
-    def perform_transitions(self):
+    def perform_transitions(self) -> ActionResult:
         self.log.debug("config_explore_transitions() with device {0} states {1}"
                        .format(self.dev_name, self.state_filenames))
         states = self.state_filenames
@@ -195,7 +211,7 @@ class ExploreTransitionsOp(StatesTransitionsOp):
             transitions = transitions[:stop_cases]
         stop_time = self.stop_time
         if stop_time:
-            stop_time += time.time()
+            stop_time += int(time.time())
         self.log.debug("stop_cases = {0}, stop_time = {1}".format(stop_cases, stop_time))
         error_msgs = []
         prev_state = None
@@ -211,8 +227,8 @@ class ExploreTransitionsOp(StatesTransitionsOp):
             to_name = self.state_filename_to_name(to_state)
             if prev_state != from_state:
                 self.progress_msg("Starting with state {0}".format(from_name))
-                result = self.transition_to_state(from_name)
-                if result is not True:
+                tr_result = self.transition_to_state(from_name)
+                if tr_result is not True:
                     msg = "Failed to initialize state {0}".format(from_name)
                     self.progress_msg(msg)
                     self.log.warning(msg)
@@ -222,9 +238,9 @@ class ExploreTransitionsOp(StatesTransitionsOp):
                 prev_state = from_state
             self.progress_msg("Transition {0}/{1}: {2} ==> {3}"
                               .format(index + 1, num_transitions, from_name, to_name))
-            result = self.transition_to_state(to_name, rollback=True)
-            if result is not True:
-                failed_transitions.append((from_name, to_name, result))
+            tr_result = self.transition_to_state(to_name, rollback=True)
+            if tr_result is not True:
+                failed_transitions.append((from_name, to_name, tr_result))
                 self.progress_msg("Transition failed")
         if failed_transitions == [] and error_msgs == []:
             return {'success': "Completed successfully"}
@@ -239,14 +255,14 @@ class ExploreTransitionsOp(StatesTransitionsOp):
 class WalkTransitionsOp(StatesTransitionsOp):
     action_name = 'walk states'
 
-    def _init_params(self, params):
+    def _init_params(self, params: Node) -> None:
         self.get_transition_filenames(params)
         self.rollback = params.rollback
 
-    def filter_states(self, states):
+    def filter_states(self, states: List[str]) -> List[str]:
         return list(self.filter_state_sets(states))
 
-    def filter_state_sets(self, states):
+    def filter_state_sets(self, states: List[str]) -> Iterator[str]:
         """Filter out duplicate representatives of "state sets".
 
         For all states of the form state_name:N make sure that only
@@ -265,7 +281,7 @@ class WalkTransitionsOp(StatesTransitionsOp):
                     sets.add(base)
                     yield state
 
-    def perform_transitions(self):
+    def perform_transitions(self) -> ActionResult:
         self.log.debug("walking states {0}"
                        .format([self.state_filename_to_name(filename)
                                 for filename in self.state_filenames]))
@@ -281,5 +297,5 @@ class WalkTransitionsOp(StatesTransitionsOp):
             return {'failure': "failed to transition to states: " + ", ".join(ops)}
         return {'success': "Completed successfully"}
 
-    def event_processor(self, level, sink):
+    def event_processor(self, level: LogLevel, sink: StrConsumer) -> EventConsumer:
         return filtering.walk_output_filter(level, sink, self.event_context)

@@ -2,8 +2,6 @@
 symlinks:
 	rm -f conftest.py && ln -s $(abspath $(DRNED))/adm/conftest.py conftest.py
 	rm -f setup.cfg && ln -s $(abspath $(DRNED))/adm/setup.cfg setup.cfg
-	rm -f src/test_builtin.py \
-	    &&  ln -s $(abspath $(DRNED))/adm/test_builtin.py src/test_builtin.py
 .PHONY: symlinks
 
 # Create environment script
