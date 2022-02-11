@@ -152,33 +152,6 @@ def ordered(request):
 
 
 @pytest.fixture(scope=SCOPE)
-def schema(request):
-    yang = getattr(request.module, "yang")
-    if yang is None:
-        pytest.fail("Please enter a schema name using a \"yang\" variable " +
-                    "in the test module")
-    yang_leaf_map = None
-    yang_pattern_map = None
-    yang_type_map = None
-    yang_xpath_map = None
-    if hasattr(request.module, "yang_leaf_map"):
-        yang_leaf_map = getattr(request.module, "yang_leaf_map")
-    if hasattr(request.module, "yang_pattern_map"):
-        yang_pattern_map = getattr(request.module, "yang_pattern_map")
-    if hasattr(request.module, "yang_type_map"):
-        yang_type_map = getattr(request.module, "yang_type_map")
-    if hasattr(request.module, "yang_xpath_map"):
-        yang_xpath_map = getattr(request.module, "yang_xpath_map")
-    schema = drned.Schema(yang, map_list=
-                          [("leaf_map", yang_leaf_map),
-                           ("pattern_map", yang_pattern_map),
-                           ("type_map", yang_type_map),
-                           ("xpath_map", yang_xpath_map)])
-    assert schema is not None
-    yield schema
-
-
-@pytest.fixture(scope=SCOPE)
 def iteration(request):
     iterargs = request.config.getoption("--iteration")
     iterlist = []

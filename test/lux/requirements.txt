@@ -3,3 +3,4 @@ pexpect
 lxml
 requests
 paramiko
+pyang

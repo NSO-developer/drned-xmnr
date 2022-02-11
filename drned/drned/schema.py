@@ -3,7 +3,7 @@ import re
 import sys
 import pyang
 import itertools
-from pyang import statements
+from pyang import statements, repository, context
 
 from .node import drned_node
 
@@ -34,8 +34,8 @@ class Schema(object):
             if type(yangpath) is list:
                 yangpath = ':'.join(yangpath)
             path = yangpath + ":" + path
-        repos = pyang.FileRepository(path)
-        ctx = pyang.Context(repos)
+        repos = repository.FileRepository(path)
+        ctx = context.Context(repos)
         # String or list?
         if hasattr(name, "lower"):
             filenames = [name]

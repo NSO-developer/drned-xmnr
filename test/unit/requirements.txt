@@ -4,3 +4,4 @@ mock
 lxml
 pexpect
 six
+pyang
