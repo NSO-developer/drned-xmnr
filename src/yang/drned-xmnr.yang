@@ -566,6 +566,80 @@ module drned-xmnr {
           }
         }
       }
+
+      typedef target-log-type {
+        type enumeration {
+          enum device-trace {
+            tailf:info "Parse device specfic problems only";
+          }
+          enum common-xmnr-log {
+            tailf:info "Parse all problems from common XMNR log";
+          }
+        }
+      }
+
+      container parsed-problems {
+        config false;
+        tailf:cli-show-template
+            "$(target-log?Parsed log $(target-log),)"
+          + "$(target-log?:No log parsed - run device's action: drned-xmnr parse-log-errors.)"
+          + "$(parse-time? on $(parse-time),)"
+          + "$(count? $(count) problem/s found.)\n";
+        leaf target-log {
+          type target-log-type;
+        }
+        leaf parse-time {
+          type string;
+        }
+        leaf count {
+          type uint32;
+        }
+        list problems {
+          tailf:cli-suppress-mode;
+          tailf:cli-suppress-table;
+          tailf:cli-show-template-enter "";
+          tailf:cli-show-template-legend
+              'Line     Test-Case                                                   '
+            + '$(.selected~=phase?Phase       )'
+            + '$(.selected~=time?Time)\n'
+            + '======================================================================'
+            + '$(.selected~=phase?============)'
+            +'$(.selected~=time?========================)\n';
+
+          tailf:cli-show-template
+              '$(log-line-number|ljust:9)'
+            + '$(test-case|ljust:60)'
+            + '$(.selected~=phase?$(phase|ljust:12))'
+            + '$(.selected~=time?$(time))\n';
+          key 'log-line-number';
+          leaf log-line-number {
+            type uint32;
+          }
+          leaf test-case {
+            type string;
+          }
+          leaf phase {
+            type enumeration {
+              enum conversion;
+              enum test;
+            }
+          }
+          leaf time {
+            type string;
+            default "N/A";
+          }
+          list message-lines {
+            tailf:cli-suppress-table;
+            tailf:cli-suppress-mode;
+            tailf:cli-show-template-enter "";
+            tailf:cli-show-template
+              '$(line)\n';
+            leaf line {
+              type string;
+            }
+          }
+        }
+      }
       tailf:action load-default-config {
         tailf:info
           "Reset device to the default state by loading a previously stored
@@ -578,6 +652,19 @@ module drned-xmnr {
       tailf:action save-default-config {
         tailf:info "Save the device's running configuration as a default.";
         tailf:actionpoint drned-xmnr;
+        output {
+          uses action-output-common;
+        }
+      }
+      tailf:action parse-log-errors {
+        tailf:info "Shows problems present in XMNR related log files.";
+        tailf:actionpoint drned-xmnr;
+        input {
+          leaf target-log {
+            mandatory true;
+            type target-log-type;
+          }
+        }
         output {
           uses action-output-common;
         }

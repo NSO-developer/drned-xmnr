@@ -33,7 +33,7 @@ how to install these packages:
    for example in Ubuntu they can be installed like
 
         $ sudo apt install python3-pytest python3-lxml python3-pexpect
-       
+
    Note that these are packages that run with Python 3.  If you happen to be
    restricted to Python 2, install `python-pytest`, `python-lxm`, and
    `python-pexpect`.
@@ -55,26 +55,26 @@ how to install these packages:
    or for a system-wide installation
 
         $ sudo pip install -r requirements.txt
-       
+
  3. If it is required that the packages are not only user-specific but also
     project-specific, it is possible to use so called python virtual
     environments.  Using them can be greatly simplified by the tool `pipenv`
     which needs to be installed first (globally or per user):
-    
+
         $ pip install --user pipenv
-       
+
     or
 
         $ sudo pip install pipenv
-       
+
     Have a look at the file `Pipfile` - it tells `pipenv` what packages and in
     what versions need to be installed for the project environment.  The
     environment can be created with required packages using
-    
+
         $ pipenv install
-       
+
     Now, so as to enter the environment, run
-    
+
         $ pipenv shell
 
     This starts a new OS shell with paths pointing to the installed packages.
@@ -130,20 +130,20 @@ more details about the problem in case of failure).
  * **Coverage**
 
     DrNED is capable of reporting how big part of the device model your tests have
-    covered; the tool implements a simple wrapper around this DrNED capability, 
+    covered; the tool implements a simple wrapper around this DrNED capability,
     including status data providing the coverage report in a structured form.
 
 ## Debugging issues
 
-Your main tools for debugging issues are logs. 
+Your main tools for debugging issues are logs.
 
   * First you have the DrNED log that you control the filtering of via
-    `/drned-xmnr/log-detail/cli` and output via `/drned-xmnr/log-detail/redirect`. 
-    In an automated test environment, you would normally set the cli detail to 
+    `/drned-xmnr/log-detail/cli` and output via `/drned-xmnr/log-detail/redirect`.
+    In an automated test environment, you would normally set the cli detail to
     `drned-overview` to get the DrNED reports, and you would likely want to
     redirect the output to a file. When debugging issues, you may want to remove
-    the redirect to file and output everything to your CLI console with the 
-    log-detail set to `all`. 
+    the redirect to file and output everything to your CLI console with the
+    log-detail set to `all`.
   * Equally useful is the ncs-python-vm-drned-xmnr.log that you control through
     `/python-vm/logging/vm-levels/drned-xmnr/level/`. To maximize the information
     captured by this log, set to `level-debug`. The log can be found in the
@@ -152,7 +152,12 @@ Your main tools for debugging issues are logs.
     with the (virtual/physical) device. Set the `/devices/device/<my-device>/trace`
     to `pretty` or `raw` to capture the communication between the NED and the device.
   * For other issues detected and reported by NSO, refer to the NSO administration
-    guide for troubleshooting adivce. 
+    guide for troubleshooting adivce.
+  * Device specific action `parse-log-errors` below device's `drned-xmnr` node can be
+    used to parse either global drned-xmnr logfile, or device specific trace log.
+    After it's exection for a device, you can try checking the records parsed automatically
+    from the filesystem log files. Invoke the show command (device name appropriately
+    specified for your use-case): `show devices device MyDevice drned-xmnr parsed-problems`.
 
 ## Common problems
 
