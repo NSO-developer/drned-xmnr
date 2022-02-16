@@ -38,7 +38,7 @@ class ProblemMatcher:
 
 
 PROBLEM_MATCHERS = [
-    ProblemMatcher(match_start=" !! ", match_stop=">>>> \"exit\" >>>>", max_lines=16),
+    ProblemMatcher(match_start=" !! ", match_stop=">>>> \"exit\" >>>>", max_lines=100),
     ProblemMatcher(match_start="E  "),
     ProblemMatcher(match_start="sync-from failed:"),
     ProblemMatcher(match_start="Aborted: RPC error"),
@@ -58,8 +58,9 @@ TestCase = namedtuple('TestCase', ['phase', 'name'])
 class ProblemData:
     """ All the data describing single instance of problem
         parsed from the log lines. """
-    def __init__(self, line_num: int, test_case: Optional[TestCase]) -> None:
+    def __init__(self, line_num: int, match_start: str, test_case: Optional[TestCase]) -> None:
         self.line_num = line_num
+        self.match_start = match_start
         self.phase = None if test_case is None else test_case.phase
         self.test_case = "----unknown----" if test_case is None else str(test_case.name)
         self.time: Optional[str] = None
@@ -102,6 +103,30 @@ class PendingData:
             del self.problem.lines[0]
 
 
+def do_merge_problems(problems: List[ProblemData], problem: ProblemData) -> bool:
+    """ Check whether we want to merge pending problem to the last one stored.
+        (sometimes wrong EOLs split the error lines unexpectedly) """
+    if len(problems) < 1:
+        return False
+    last_problem = problems[-1]
+    if last_problem.match_start != problem.match_start:
+        return False
+    if last_problem.test_case != problem.test_case:
+        return False
+    if last_problem.phase != problem.phase:
+        return False
+    return True
+
+
+def add_new_problem(problems: List[ProblemData], problem: ProblemData) -> None:
+    """ Add the problem into resulting list - either as standalone record,
+        or merged into the last/previous one in case of mutual relation. """
+    if do_merge_problems(problems, problem):
+        problems[-1].lines += problem.lines
+    else:
+        problems.append(problem)
+
+
 # logger: List[str],
 def gather_problems(file: TextIO) -> List[ProblemData]:
     """ Read through the input file and collect data for all the idetified
@@ -115,7 +140,7 @@ def gather_problems(file: TextIO) -> List[ProblemData]:
         # new test-case opening
         if test_case is not None:
             if pending.problem is not None:
-                problems.append(pending.problem)
+                add_new_problem(problems, pending.problem)
                 pending.problem = None
             pending.test_case = test_case
             # logger.append("---- new test-case: line %d: %s" % (line_num + 1, test_case))
@@ -127,7 +152,7 @@ def gather_problems(file: TextIO) -> List[ProblemData]:
             if pending.matcher is None:
                 # no new problem for this log file line
                 continue
-            pending.problem = ProblemData(line_num + 1, pending.test_case)
+            pending.problem = ProblemData(line_num + 1, pending.matcher.match_start, pending.test_case)
             pending.update_problem(line)
             # logger.append("---- new problem on line: %d" % (line_num))
             continue
@@ -148,8 +173,9 @@ def gather_problems(file: TextIO) -> List[ProblemData]:
             pending.update_problem(line)
         # shorctut - two different matches cannot run in sequence with no separation
         else:
-            problems.append(pending.problem)
-            pending.problem = None
+            if pending.problem is not None:
+                add_new_problem(problems, pending.problem)
+                pending.problem = None
             pending.matcher = None
         # logger.append("---- normal line: %s" % (line))
 
