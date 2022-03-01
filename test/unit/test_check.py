@@ -1,11 +1,6 @@
 from pytest import fixture, raises
 from drned_xmnr.check_action import XmnrCheck, XmnrCheckException
-import sys
-if sys.version_info < (3, 0):
-    from mock import patch
-    ModuleNotFoundError = ImportError
-else:
-    from unittest.mock import patch
+from unittest.mock import patch
 
 
 @fixture
@@ -43,7 +38,7 @@ def old_package():
 
 class TestChecks:
     def test_version_check(self, bad_py_version):
-        with raises(XmnrCheckException, match='Required Python 2.7 or 3.6 or newer'):
+        with raises(XmnrCheckException, match='Required Python 3.6 or newer'):
             XmnrCheck().setup()
 
     def test_missing_package_check(self, missing_package):

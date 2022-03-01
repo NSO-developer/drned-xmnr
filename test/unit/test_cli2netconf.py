@@ -3,7 +3,7 @@ import collections
 from contextlib import closing
 import os
 import random
-from six import functools
+import functools
 import sys
 
 from .mocklib import patch, mock
@@ -98,11 +98,10 @@ class ConvertPatch(object):
         @functools.wraps(fun)
         def _wrapper(self_arg):
             # we need to capture output from the module functions
-            print_ref = '__builtin__.print' if sys.version_info < (3,) else 'builtins.print'
             with patch.dict('os.environ', NC_WORKDIR='/'), \
                     patch('cli2netconf.Devcli', new=self.devclimock_instance), \
                     patch('cli2netconf.NcsDevice', new=self.ncsdev_instance), \
-                    patch(print_ref, new=self.print_cap):
+                    patch('builtins.print', new=self.print_cap):
                 return fun(self_arg, self)
 
         return _wrapper

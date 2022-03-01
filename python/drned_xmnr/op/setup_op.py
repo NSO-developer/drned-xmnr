@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import os
-import sys
+import re
 import shutil
 import errno
 import subprocess
@@ -12,14 +12,6 @@ from ncs import maagic
 
 from . import base_op
 from .ex import ActionError
-
-if sys.version_info >= (3, 3):
-    import functools
-    et_tostring = functools.partial(etree.tostring, encoding='unicode')
-else:
-    et_tostring = etree.tostring
-
-import re
 
 
 class DevcliLogMatch(object):
@@ -207,4 +199,4 @@ class SetupOp(base_op.ActionBase):
         for name in ['ssh', 'connect-timeout', 'read-timeout', 'trace', 'config']:
             del_element(dev, name)
         with open(self.cfg_file, 'w') as cfg:
-            cfg.write(et_tostring(devices))
+            cfg.write(etree.tostring(devices, encoding='unicode'))

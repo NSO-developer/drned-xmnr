@@ -15,7 +15,7 @@ two filtering modes.
 from __future__ import print_function
 
 import os
-import six
+import io
 
 from drned_xmnr.op import filtering
 from drned_xmnr.op.filtering.states import TransitionDesc # noqa
@@ -37,7 +37,7 @@ class FilteringTest(object):
             events = eval(data.read())
         for level, ext in [('overview', self.log_overview_ext),
                            ('drned-overview', self.log_dred_ext)]:
-            out = six.StringIO()
+            out = io.StringIO()
             ctx = filtering.run_test_filter(self.filter, logfile, out=out, level=level)
             with open(logbase + ext) as res:
                 assert out.getvalue() == res.read()

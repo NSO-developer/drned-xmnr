@@ -21,23 +21,6 @@ VERBOSE = True
 INDENT = "=" * 30 + " "
 
 
-if sys.version_info > (3, 0):
-    pexpect_args = dict(encoding='utf-8')
-    os_makedirs = os.makedirs
-else:
-    pexpect_args = {}
-
-    def os_makedirs(dirname, exist_ok=False):
-        """
-        In Python 2.7 the argument exist_ok is not available for os.makedirs.
-        """
-        try:
-            os.makedirs(dirname)
-        except OSError:
-            if not exist_ok:
-                raise
-
-
 class DevcliException(Exception):
     def __str__(self):
         return 'devcli exception: ' + str(self.args[0])
@@ -154,7 +137,7 @@ class Devcli:
         for _ in range(3):
             try:
                 self.cli = pexpect.spawn(self.ssh, timeout=self.timeout,
-                                         logfile=sys.stdout, **pexpect_args)
+                                         logfile=sys.stdout, encoding='utf-8')
                 self.interstate_one("enter")
             except DevcliAuthException:
                 # no reason to retry
@@ -280,6 +263,6 @@ def devcli_init_dirs(workdir):
     """ Initialize directories needed by DrNED device.
     Returns working directory.
     """
-    os_makedirs('drned-work', exist_ok=True)
-    os_makedirs(workdir, exist_ok=True)
+    os.makedirs('drned-work', exist_ok=True)
+    os.makedirs(workdir, exist_ok=True)
     return workdir
