@@ -1,9 +1,21 @@
-from pytest import fixture, raises
-from drned_xmnr.check_action import XmnrCheck, XmnrCheckException
+from contextlib import contextmanager
+import importlib
+from pytest import raises
 from unittest.mock import patch
 
 
-@fixture
+def mock_check_import(mocker):
+    def test_fun_mock(test_fun):
+        def fun(self):
+            check_mod = importlib.import_module('drned_xmnr.check_action')
+            check = check_mod.check
+            with mocker():
+                test_fun(self, check, check_mod.XmnrCheckException)
+        return fun
+    return test_fun_mock
+
+
+@contextmanager
 def bad_py_version():
     with patch('sys.version_info', new=(3, 5)):
         yield
@@ -24,30 +36,39 @@ class ImportMock:
             return self
 
 
-@fixture
+@contextmanager
 def missing_package():
     with patch('importlib.import_module', new=ImportMock(True)):
         yield
 
 
-@fixture
+@contextmanager
 def old_package():
     with patch('importlib.import_module', new=ImportMock(False)):
         yield
 
 
+@contextmanager
+def no_patches():
+    yield
+
+
 class TestChecks:
-    def test_version_check(self, bad_py_version):
+    @mock_check_import(bad_py_version)
+    def test_version_check(self, check, XmnrCheckException):
         with raises(XmnrCheckException, match='Required Python 3.6 or newer'):
-            XmnrCheck().setup()
+            check()
 
-    def test_missing_package_check(self, missing_package):
+    @mock_check_import(missing_package)
+    def test_missing_package_check(self, check, XmnrCheckException):
         with raises(XmnrCheckException, match='XMNR cannot run without'):
-            XmnrCheck().setup()
+            check()
 
-    def test_old_package_check(self, old_package):
+    @mock_check_import(old_package)
+    def test_old_package_check(self, check, XmnrCheckException):
         with raises(XmnrCheckException, match='Required pytest>=3.0'):
-            XmnrCheck().setup()
+            check()
 
-    def test_succeed(self):
-        XmnrCheck().setup()
+    @mock_check_import(no_patches)
+    def test_succeed(self, check, _ignored):
+        check()

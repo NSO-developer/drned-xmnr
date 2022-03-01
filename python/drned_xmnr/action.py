@@ -9,6 +9,7 @@ import traceback
 import _ncs
 from ncs import dp, application, experimental
 import drned_xmnr.namespaces.drned_xmnr_ns as ns
+from drned_xmnr import check_action  # noqa
 
 # operation modules
 from drned_xmnr.op import config_op
@@ -159,7 +160,6 @@ class XmnrDataHandler(object):
 # ---------------------------------------------
 
 class Xmnr(application.Application):
-
     def setup(self):
         self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler)
         self.register_action('drned-xmnr-completion', CompletionHandler)
