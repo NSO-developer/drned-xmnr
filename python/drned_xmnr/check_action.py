@@ -4,10 +4,6 @@ import importlib
 
 from ncs import application
 
-if sys.version_info < (3, 0):
-    FileNotFoundError = IOError
-    ModuleNotFoundError = ImportError
-
 REQ_GE = '>='
 
 REQ_DEFAULTS = [
@@ -26,9 +22,8 @@ def parse_version(verstr):
 
 class XmnrCheck(application.Application):
     def setup(self):
-        if sys.version_info < (2, 7) or \
-           sys.version_info >= (3, 0) and sys.version_info < (3, 6):
-            raise XmnrCheckException('Required Python 2.7 or 3.6 or newer')
+        if sys.version_info < (3, 6):
+            raise XmnrCheckException('Required Python 3.6 or newer')
         for (package, version) in self.xmnr_requirements():
             try:
                 mod = importlib.import_module(package)

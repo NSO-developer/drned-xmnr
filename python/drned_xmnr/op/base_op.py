@@ -23,14 +23,6 @@ from drned_xmnr.namespaces.drned_xmnr_ns import ns
 from .ex import ActionError
 
 
-if sys.version_info >= (3, 0):
-    def text_data(data):
-        return data.decode()
-else:
-    def text_data(data):
-        return data
-
-
 if _ncs.LIB_VSN < 0x07060000:
     def maapi_keyless_create(node, i):
         return node.create(i)
@@ -290,7 +282,7 @@ class ActionBase(XmnrBase):
             if rlist:
                 buf = self.drned_process.stdout.read()
                 if buf is not None and len(buf) != 0:
-                    data = text_data(buf)
+                    data = buf.decode()
                     self.log.debug("run_outputfun, output len=" + str(len(data)))
                     outputfun(data)
                     self.extend_timeout()
@@ -367,7 +359,7 @@ class ActionBase(XmnrBase):
         return ActionBase._pytest_executable
 
     def find_pytest_executable(self):
-        suffix = str(sys.version_info[0])  # '2' or '3'
+        suffix = str(sys.version_info[0])  # '3', most likely
         execs = ['pytest', 'py.test', 'pytest-' + suffix, 'py.test-' + suffix]
         for executable in execs:
             if self.check_which(executable):

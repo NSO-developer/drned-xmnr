@@ -6,10 +6,7 @@ import sys
 from contextlib import contextmanager
 import functools
 from pyfakefs import fake_filesystem_unittest as ffs
-if sys.version_info >= (3, 3):
-    import unittest.mock as mock
-else:
-    import mock
+from unittest import mock
 
 patch = mock.patch
 Mock = mock.Mock

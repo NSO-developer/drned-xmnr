@@ -18,7 +18,7 @@ from drned_xmnr.op import coverage_op
 from drned_xmnr.op import common_op
 from drned_xmnr.op.ex import ActionError
 
-assert sys.version_info >= (2, 7)
+assert sys.version_info >= (3, 6)
 # Not tested with anything lower
 
 

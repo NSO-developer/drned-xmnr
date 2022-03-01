@@ -13,12 +13,6 @@ import functools
 import itertools
 import _ncs
 
-if sys.version_info >= (3, 0):
-    def bytestream(data):
-        return data.encode()
-else:
-    def bytestream(data):
-        return data
 
 device_data = '''\
     <config xmlns="http://tail-f.com/ns/config/1.0">
@@ -655,7 +649,7 @@ class TestConvertMessage(TestBase):
                 data.append('Filename format not understood: ' + path)
             else:
                 data.append('converting {}.cfg to {}'.format(state, path))
-        self.system.proc_data(b''.join(bytestream(line + '\n') for line in data))
+        self.system.proc_data(b''.join((line + '\n').encode() for line in data))
         return mock.DEFAULT
 
     def setup_and_start(self, xpatch, **setup_args):
@@ -975,8 +969,8 @@ class DrnedOutput(object):
         self.popen_mock.side_effect = self.popen_effect
 
     def popen_effect(self, *args, **kwargs):
-        next_data = next(self.output_iter)
-        self.system.proc_data(bytestream(next_data))
+        next_data = next(self.output_iter).encode()
+        self.system.proc_data(next_data)
         if self.failure:
             self.failure = False
             self.popen_mock.return_value.wait = mock.Mock(return_value=-1)
@@ -1267,7 +1261,7 @@ class TestCoverage(TestBase):
             collect_dict[group] = {}
             for entry in entries:
                 collect_dict[group][entry] = self.line_entry(randint(0, 1000), randint(0, 100))
-        xpatch.system.proc_data(bytestream(drned_collect_output.format(**collect_dict)))
+        xpatch.system.proc_data(drned_collect_output.format(**collect_dict).encode())
         output = self.invoke_action('collect', yang_patterns=['pat1', 'pat2'])
         self.check_output(output)
         log = mock.Mock()
