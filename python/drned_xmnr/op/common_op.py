@@ -13,7 +13,7 @@ from drned_xmnr.namespaces.drned_xmnr_ns import ns
 from .base_op import ActionBase
 from .base_op import maapi_keyless_create
 from .ex import ActionError
-from .parse_log_errors import ProblemData, gather_problems
+from .parse_log_errors import ProblemData, ProblemsParser
 
 from typing import List, Optional
 from drned_xmnr.common_types import ActionResult
@@ -130,11 +130,12 @@ class ParseLogErrorsOp(ActionBase):
         self.target_log = self.param_default(params, "target_log", None)
 
     def perform(self):
+        problem_parser = self.run_with_trans(self.init_problem_parser)
         self.parsed_problems: Optional[List[ProblemData]] = None
         try:
             filepath = self._get_target_filepath()
             with open(filepath, 'r', newline='\n') as logfile:
-                self.parsed_problems = gather_problems(logfile)
+                self.parsed_problems = problem_parser.gather_problems(logfile)
         except OSError as ose:
             # TODO - do not reveal potential filepath attempted?
             msg = "Couldn't read target log file: {0}".format(os.strerror(ose.errno))
@@ -160,6 +161,11 @@ class ParseLogErrorsOp(ActionBase):
         else:
             raise ActionError("Unimplemented target log...")
         return path
+
+    def init_problem_parser(self, trans) -> ProblemsParser:
+        root = maagic.get_root(trans)
+        list_node = root.drned_xmnr.error_patterns
+        return ProblemsParser(list_node)
 
     def _store_problems(self, trans) -> int:
         if self.parsed_problems is None:

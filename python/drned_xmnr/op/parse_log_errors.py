@@ -37,21 +37,6 @@ class ProblemMatcher:
         return pformat(vars(self))
 
 
-PROBLEM_MATCHERS = [
-    ProblemMatcher(match_start=" !! ", match_stop=">>>> \"exit\" >>>>", max_lines=100),
-    ProblemMatcher(match_start="E  "),
-    ProblemMatcher(match_start="sync-from failed:"),
-    ProblemMatcher(match_start="Aborted: RPC error"),
-]
-
-
-def _get_matcher(line: str) -> Optional[ProblemMatcher]:
-    for m in PROBLEM_MATCHERS:
-        if m.match_start in line:
-            return m
-    return None
-
-
 TestCase = namedtuple('TestCase', ['phase', 'name'])
 
 
@@ -127,59 +112,73 @@ def add_new_problem(problems: List[ProblemData], problem: ProblemData) -> None:
         problems.append(problem)
 
 
-# logger: List[str],
-def gather_problems(file: TextIO) -> List[ProblemData]:
-    """ Read through the input file and collect data for all the idetified
-        problems found inside. """
-    problems: List[ProblemData] = []
+class ProblemsParser:
+    def __init__(self, list_node) -> None:
+        self.matchers = []
+        for item in list_node:
+            match_start = item.match
+            match_stop = None if item.terminator is None else item.terminator
+            max_lines = 0 if item.max_lines is None else item.max_lines
+            self.matchers.append(ProblemMatcher(match_start=match_start, match_stop=match_stop, max_lines=max_lines))
 
-    pending = PendingData()
+    def _get_matcher(self, line: str) -> Optional[ProblemMatcher]:
+        for m in self.matchers:
+            if m.match_start in line:
+                return m
+        return None
 
-    for line_num, line in enumerate(file):
-        test_case = parse_test_case(line)
-        # new test-case opening
-        if test_case is not None:
-            if pending.problem is not None:
-                add_new_problem(problems, pending.problem)
-                pending.problem = None
-            pending.test_case = test_case
-            # logger.append("---- new test-case: line %d: %s" % (line_num + 1, test_case))
-            continue
+    def gather_problems(self, file: TextIO) -> List[ProblemData]:
+        """ Read through the input file and collect data for all the idetified
+            problems found inside. """
+        problems: List[ProblemData] = []
 
-        # potential start of new problem
-        if pending.matcher is None:
-            pending.matcher = _get_matcher(line)
-            if pending.matcher is None:
-                # no new problem for this log file line
-                continue
-            pending.problem = ProblemData(line_num + 1, pending.matcher.match_start, pending.test_case)
-            pending.update_problem(line)
-            # logger.append("---- new problem on line: %d" % (line_num))
-            continue
+        pending = PendingData()
 
-        # pending matcher with end pattern
-        if pending.matcher.match_stop is not None:
-            if pending.matcher.is_stop_line(line):
+        for line_num, line in enumerate(file):
+            test_case = parse_test_case(line)
+            # new test-case opening
+            if test_case is not None:
                 if pending.problem is not None:
-                    problems.append(pending.problem)
+                    add_new_problem(problems, pending.problem)
+                    pending.problem = None
+                pending.test_case = test_case
+                # logger.append("---- new test-case: line %d: %s" % (line_num + 1, test_case))
+                continue
+
+            # potential start of new problem
+            if pending.matcher is None:
+                pending.matcher = self._get_matcher(line)
+                if pending.matcher is None:
+                    # no new problem for this log file line
+                    continue
+                pending.problem = ProblemData(line_num + 1, pending.matcher.match_start, pending.test_case)
+                pending.update_problem(line)
+                # logger.append("---- new problem on line: %d" % (line_num))
+                continue
+
+            # pending matcher with end pattern
+            if pending.matcher.match_stop is not None:
+                if pending.matcher.is_stop_line(line):
+                    if pending.problem is not None:
+                        problems.append(pending.problem)
+                        pending.problem = None
+                    pending.matcher = None
+                else:
+                    pending.update_problem(line, pending=True)
+                continue
+
+            # pending exact matcher (no end pattern)
+            if pending.matcher.match_start in line:
+                pending.update_problem(line)
+            # shorctut - two different matches cannot run in sequence with no separation
+            else:
+                if pending.problem is not None:
+                    add_new_problem(problems, pending.problem)
                     pending.problem = None
                 pending.matcher = None
-            else:
-                pending.update_problem(line, pending=True)
-            continue
+            # logger.append("---- normal line: %s" % (line))
 
-        # pending exact matcher (no end pattern)
-        if pending.matcher.match_start in line:
-            pending.update_problem(line)
-        # shorctut - two different matches cannot run in sequence with no separation
-        else:
-            if pending.problem is not None:
-                add_new_problem(problems, pending.problem)
-                pending.problem = None
-            pending.matcher = None
-        # logger.append("---- normal line: %s" % (line))
-
-    return problems
+        return problems
 
 
 def _strip_pattern(pattern: str, line: str) -> str:
