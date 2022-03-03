@@ -152,11 +152,37 @@ Your main tools for debugging issues are logs.
     to `pretty` or `raw` to capture the communication between the NED and the device.
   * For other issues detected and reported by NSO, refer to the NSO administration
     guide for troubleshooting adivce.
-  * Device specific action `parse-log-errors` below device's `drned-xmnr` node can be
-    used to parse either global drned-xmnr logfile, or device specific trace log.
-    After it's exection for a device, you can try checking the records parsed automatically
-    from the filesystem log files. Invoke the show command (device name appropriately
-    specified for your use-case): `show devices device MyDevice drned-xmnr parsed-problems`.
+
+You can use device specific action `parse-log-errors` below device's `drned-xmnr`
+node to parse either global drned-xmnr logfile (`ncs-python-vm-drned-xmnr.log`),
+or device specific trace log.
+
+The action reads the log file, and "greps" all the clusters of lines matching
+an "error-paterns" defined in CDB under the path `/drned-xmnr/error-patterns`.
+Here are few examples of typical errors that you may encounted in log file:
+
+```
+admin@ncs(config)# show full-configuration drned-xmnr error-patterns
+drned-xmnr error-patterns match " !! "
+ terminator ">>>> \"exit\" >>>>"
+ max-lines  100
+!
+drned-xmnr error-patterns match "Aborted: RPC error"
+ exact
+!
+drned-xmnr error-patterns match "E  "
+ exact
+!
+drned-xmnr error-patterns match "sync-from failed:"
+ exact
+!
+```
+
+After executing the action, you can try checking the records retrieved from
+the filesystem log files. Invoke the show command (use device name specific
+for your use-case): `show devices device MyDevice drned-xmnr parsed-problems`.
+Invoke the above sohw command with extra parameters for more in-depth details
+(see tab completion in CLI).
 
 ## Common problems
 

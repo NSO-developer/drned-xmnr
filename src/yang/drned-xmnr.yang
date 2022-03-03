@@ -166,6 +166,32 @@ module drned-xmnr {
         }
       }
     }
+
+    list error-patterns {
+      key "match";
+      leaf match {
+        tailf:cli-expose-key-name;
+        type string;
+      }
+      choice matcher-type {
+        mandatory true;
+        case exact {
+          leaf exact {
+            mandatory true;
+            type empty;
+          }
+        }
+        case terminated {
+          leaf terminator {
+            mandatory true;
+            type string;
+          }
+        }
+      }
+      leaf max-lines {
+        type uint8;
+      }
+    }
   }
 
   augment /ncs:devices/ncs:device {
