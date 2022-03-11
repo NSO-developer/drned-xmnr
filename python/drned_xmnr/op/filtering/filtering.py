@@ -10,17 +10,20 @@ from typing import Callable, Optional, TextIO
 from drned_xmnr.typing_xmnr import LogLevel
 
 
-def transition_output_filter(level: LogLevel, sink: StrConsumer, context: Optional[TransitionEventContext] = None) -> EventConsumer:
+def transition_output_filter(level: LogLevel, sink: StrConsumer,
+                             context: Optional[TransitionEventContext] = None) -> EventConsumer:
     machine = LogStateMachine(level, TransitionTestState(), context)
     return run_event_machine(machine, sink)
 
 
-def explore_output_filter(level: LogLevel, sink: StrConsumer, context: Optional[TransitionEventContext] = None) -> EventConsumer:
+def explore_output_filter(level: LogLevel, sink: StrConsumer,
+                          context: Optional[TransitionEventContext] = None) -> EventConsumer:
     machine = LogStateMachine(level, ExploreState(), context)
     return run_event_machine(machine, sink)
 
 
-def walk_output_filter(level: LogLevel, sink: StrConsumer, context: Optional[TransitionEventContext] = None) -> EventConsumer:
+def walk_output_filter(level: LogLevel, sink: StrConsumer,
+                       context: Optional[TransitionEventContext] = None) -> EventConsumer:
     machine = LogStateMachine(level, WalkState(), context)
     handler = run_event_machine(machine, sink)
     handler.send(InitialPrepareEvent())
@@ -31,7 +34,8 @@ OutputFilter = Callable[[LogLevel, StrConsumer, Optional[TransitionEventContext]
                         EventConsumer]
 
 
-def run_test_filter(outfilter: OutputFilter, filename: str, level: LogLevel = 'drned-overview', out: TextIO = sys.stdout) -> TransitionEventContext:
+def run_test_filter(outfilter: OutputFilter, filename: str, level: LogLevel = 'drned-overview',
+                    out: TextIO = sys.stdout) -> TransitionEventContext:
     '''
     Testing and experimenting utility.  Can be used as
 

@@ -194,6 +194,9 @@ class ParseLogErrorsOp(ActionBase):
         return problem_count
 
 
+NextType = TypeVar('NextType')
+
+
 class Handler:
     ''' Stub data provider handler.
         See documentation of ncs.experimental.DataCallbacks for details.
@@ -202,8 +205,6 @@ class Handler:
     @abstractmethod
     def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
         ...
-
-    NextType = TypeVar('NextType')
 
     # NOTE - method not implemented currently in drned-xmnr
     # @abstractmethod

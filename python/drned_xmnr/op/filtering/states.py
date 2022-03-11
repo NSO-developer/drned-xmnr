@@ -79,7 +79,8 @@ class TransitionEventContext(object):
         if event_type == 'rollback':
             self.rollback = True
 
-    def fail_transition(self, failure_event: Optional[DrnedFailureReasonEvent] = None) -> Optional[str]:
+    def fail_transition(self, failure_event: Optional[DrnedFailureReasonEvent] = None) \
+            -> Optional[str]:
         event: Optional[EventType] = 'rollback' if self.rollback else self.event
         if failure_event is None:
             comment = msg = self.failure_comment(event)
@@ -103,7 +104,8 @@ class TransitionEventContext(object):
             return None
         return TransitionEventContext.failure_comments.get(event_type, '')
 
-    def complete_transition(self, failure: Optional[str] = None, comment: Optional[str] = None, msg: Optional[str] = None) -> None:
+    def complete_transition(self, failure: Optional[str] = None,
+                            comment: Optional[str] = None, msg: Optional[str] = None) -> None:
         if self.to is None:
             return
         self.test_events.append(TransitionDesc(self.state, self.to, failure, comment, msg))
@@ -141,7 +143,8 @@ class LogStateMachine(object):
                   InitFailedEvent, TransFailedEvent, InitialPrepareEvent,
                   PyTestEvent}
 
-    def __init__(self, level: LogLevel, init_state: 'LogState', context: Optional[TransitionEventContext] = None) -> None:
+    def __init__(self, level: LogLevel, init_state: 'LogState',
+                 context: Optional[TransitionEventContext] = None) -> None:
         self.stack = [init_state]
         self.level = level
         self.context = context if context is not None else TransitionEventContext()
