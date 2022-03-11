@@ -13,10 +13,10 @@ from ncs import maagic
 from . import base_op
 from . import filtering
 
-from typing import Iterator, List, Literal, Optional, Union
-from drned_xmnr.typing_xmnr import ActionResult, LogLevel, StrConsumer, StrWriter
+from typing import Iterator, List, Literal, Optional, Union, Dict
+from drned_xmnr.typing_xmnr import ActionResult, ActionField, LogLevel
 from .filtering.events import EventConsumer, EventGenerator
-from .filtering.cort import IsStrConsumer
+from .filtering.cort import IsStrConsumer, StrConsumer, StrWriter
 from ncs.maagic import Node
 from ncs.maapi import Transaction
 
@@ -48,9 +48,9 @@ class TransitionsOp(base_op.ActionBase):
         self.run_with_trans(self.store_transition_events, write=True, db=_ncs.OPERATIONAL)
         return result
 
-    def get_log_detail(self, trans: Transaction) -> Optional[LogLevel]:
+    def get_log_detail(self, trans: Transaction) -> LogLevel:
         root = maagic.get_root(trans)
-        cli_val: Optional[LogLevel] = root.drned_xmnr.log_detail.cli
+        cli_val: LogLevel = root.drned_xmnr.log_detail.cli
         return cli_val
 
     def cli_filter(self, msg: str) -> None:
@@ -70,6 +70,7 @@ class TransitionsOp(base_op.ActionBase):
           events.
 
         '''
+        sink: StrConsumer
         if level in ('none', 'all'):
             sink = filtering.drop()
         else:
@@ -245,9 +246,9 @@ class ExploreTransitionsOp(StatesTransitionsOp):
                 self.progress_msg("Transition failed")
         if failed_transitions == [] and error_msgs == []:
             return {'success': "Completed successfully"}
-        result = {'failure':
-                  "\n".join(["{0}: {1} ==> {2}".format(c, f, t)
-                             for (f, t, c) in failed_transitions])}
+        result: Dict[ActionField, str] = \
+            {'failure': "\n".join(["{0}: {1} ==> {2}".format(c, f, t)
+                                   for (f, t, c) in failed_transitions])}
         if error_msgs != []:
             result['error'] = '\n'.join(error_msgs)
         return result

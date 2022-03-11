@@ -133,7 +133,7 @@ class ViewStateOp(ConfigOp):
     def perform(self) -> ActionResult:
         self.log.debug("config_view_state() with device {0}".format(self.dev_name))
         state_name = self.state_name
-        failed_result = {'failure': "Could not view " + state_name}
+        failed_result: ActionResult = {'failure': "Could not view " + state_name}
         state_filename = self.state_name_to_existing_filename(state_name)
         if state_filename is None:
             return failed_result
@@ -488,7 +488,7 @@ class StatesProvider(Handler):
     def get_states_data(self, tctx: Tctx, device: str) -> List[Tuple[str, bool]]:
         return StatesData.get_data(tctx, device, self.log, StatesData.states)
 
-    def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
+    def get_object(self, tctx: Tctx, kp: str, args: Dict[str, str]) -> Dict[str, Any]:
         states = sorted(self.get_states_data(tctx, args['device']))
         disabled_tag = _ncs.Value((ns.hash, ns.drned_xmnr_disabled), _ncs.C_XMLTAG)
         return {'states': [{'state': state, 'disabled': disabled_tag} if disabled

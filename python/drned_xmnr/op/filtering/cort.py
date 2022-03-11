@@ -8,7 +8,6 @@ import functools
 
 import sys
 from typing import Any, Callable, Generator, TypeVar
-from drned_xmnr.typing_xmnr import StrConsumer, StrWriter
 
 if sys.version_info >= (3, 8):
     from typing import Protocol
@@ -16,19 +15,27 @@ else:
     Protocol = object
 
 FnRes = TypeVar('FnRes')
+T = TypeVar('T')
 
 
-def coroutine(fn: Callable[..., Generator[None, FnRes, None]]) -> Callable[..., Generator[None, FnRes, None]]:
+CoRoutine = Generator[None, T, None]
+StrWriter = Callable[[str], int]
+StrConsumer = CoRoutine[str]
+
+CT = TypeVar('CT', bound=Callable[..., CoRoutine[Any]])
+
+
+def coroutine(fn: CT) -> CT:
     @functools.wraps(fn)
-    def start(*args: Any, **kwargs: Any) -> Generator[None, FnRes, None]:
+    def start(*args: Any, **kwargs: Any) -> CoRoutine[Any]:
         cr = fn(*args, **kwargs)
         next(cr)
         return cr
-    return start
+    return start  # type: ignore
 
 
 @coroutine
-def drop() -> Generator[None, Any, None]:
+def drop() -> CoRoutine[T]:
     while True:
         yield
 

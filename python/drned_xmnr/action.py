@@ -18,7 +18,7 @@ from drned_xmnr.op import coverage_op
 from drned_xmnr.op import common_op
 from drned_xmnr.op.ex import ActionError
 
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Dict, List, Optional, Tuple, Type
 from drned_xmnr.typing_xmnr import OptArgs, ActionResult
 from drned_xmnr.op.base_op import ActionBase
 from ncs.log import Log
@@ -54,12 +54,12 @@ class ActionHandler(dp.Action):
         self.running_handler: Optional[ActionBase] = None
 
     @dp.Action.action
-    def cb_action(self, uinfo: _ncs.UserInfo, op_name: str, kp: _ncs.HKeypathRef, input: Node, output: Node) -> Any:
+    def cb_action(self, uinfo: _ncs.UserInfo, op_name: str, kp: _ncs.HKeypathRef, input: Node, output: Node) -> None:
         self.log.debug("========== drned_xmnr cb_action() ==========")
         dev_name = str(kp[-3][0])
         self.log.debug("thandle={0} usid={1}".format(uinfo.actx_thandle, uinfo.usid))
 
-        handler_error = {'failure': "Operation not implemented: {0}".format(op_name)}
+        handler_error: ActionResult = {'failure': "Operation not implemented: {0}".format(op_name)}
         try:
             if op_name not in self.handlers:
                 raise ActionError(handler_error)
@@ -103,7 +103,8 @@ class CompletionHandler(dp.Action):
     # @dp.Action.completion
     # wrapper does not exist in PyAPI at the time of this implementation
     def cb_completion(self, uinfo: _ncs.UserInfo, cli_style: int, token: str, completion_char: int,
-                      kp: _ncs.HKeypathRef, cmdpath: str, cmdparam_id: str, simpleType: Optional[Tuple[str, str]], extra: str) -> Any:
+                      kp: _ncs.HKeypathRef, cmdpath: str, cmdparam_id: str,
+                      simpleType: Optional[Tuple[str, str]], extra: str) -> int:
         self.log.debug("========== drned_xmnr cb_completion() ==========")
         self.log.debug("thandle={0} usid={1}".format(uinfo.actx_thandle,
                                                      uinfo.usid))
@@ -141,7 +142,8 @@ class CompletionHandler(dp.Action):
 
 
 class XmnrDataHandler(application.Service):
-    def __init__(self, daemon: dp.Daemon, servicepoint: str, log: Optional[Log] = None, init_args: OptArgs = None) -> None:
+    def __init__(self, daemon: dp.Daemon, servicepoint: str, log: Optional[Log] = None,
+                 init_args: OptArgs = None) -> None:
         # FIXME: really experimental
         self._state = dp._daemon_as_dict(daemon)
         ctx = self._state['ctx']

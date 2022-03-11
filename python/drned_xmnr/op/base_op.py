@@ -22,7 +22,7 @@ from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
 from .ex import ActionError
 
-from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Type, TypeVar, TextIO
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Type, TypeVar, TextIO
 from drned_xmnr.typing_xmnr import ActionResult, Tctx
 from ncs.log import Log
 from ncs.maagic import Node
@@ -93,7 +93,7 @@ class CliLogger(object):
         self.trans.finish()
         self.maapi.close()
 
-    def log(self, msg: str) -> None:
+    def log(self, msg: str) -> int:
         if self.uinfo.context == 'cli':
             _maapi.cli_write(self.maapi.msock, self.uinfo.usid, msg)
         if self.cli_log_file is not None:
@@ -102,6 +102,7 @@ class CliLogger(object):
         if self.cli_log_action is not None:
             self.cli_log_params.message = msg
             self.cli_log_action.request(self.cli_log_params)
+        return len(msg)
 
 
 class XmnrBase(object):
@@ -219,6 +220,7 @@ class Progressor(object):
 
 
 ParamType = TypeVar('ParamType', str, int, None)
+CBRes = TypeVar('CBRes')
 
 
 class ActionBase(XmnrBase):
@@ -271,7 +273,8 @@ class ActionBase(XmnrBase):
             return default
         return value
 
-    def run_with_trans(self, callback: Callable[[Transaction], Any], write: bool = False, db: int = _ncs.RUNNING) -> Any:
+    def run_with_trans(self, callback: Callable[[Transaction], CBRes], write: bool = False,
+                       db: int = _ncs.RUNNING) -> CBRes:
         if write:
             # we do not want to write to the user's transaction
             with maapi.single_write_trans(self.uinfo.username, self.uinfo.context, db=db) as trans:
@@ -327,10 +330,11 @@ class ActionBase(XmnrBase):
             self.log.debug("process not responding to SIGINT - killing instead")
             self.drned_process.kill()
 
-    def cli_write(self, msg: str) -> None:
+    def cli_write(self, msg: str) -> int:
         if not self.aborted:
             # cannot write to CLI after an abort
-            self.cli_logger.log(msg)
+            return self.cli_logger.log(msg)
+        return 0
 
     def cli_filter(self, msg: str) -> None:
         print('cli filter', msg)
@@ -390,7 +394,8 @@ class ActionBase(XmnrBase):
                 return executable
         raise ActionError('PyTest not installed - pytest executable not found')
 
-    def get_authgroup_info(self, trans: Transaction, root: Node, locuser: str, authmap: Node) -> Tuple[Optional[str], Optional[str]]:
+    def get_authgroup_info(self, trans: Transaction, root: Node, locuser: str, authmap: Node) \
+            -> Tuple[Optional[str], Optional[str]]:
         if authmap.same_user.exists():
             username = locuser
         else:
@@ -441,7 +446,7 @@ class ActionBase(XmnrBase):
         args.extend(script_args)
         return self.run_in_drned_env(args)
 
-    def run_in_drned_env(self, args: List[str], **envdict: Any) -> ProcessResult:
+    def run_in_drned_env(self, args: List[str], **envdict: str) -> ProcessResult:
         env = self.run_with_trans(self.setup_drned_env)
         env.update(envdict)
         self.log.debug("using env {0}\n".format(env))
@@ -490,7 +495,8 @@ class XmnrDeviceData(XmnrBase):
     ClassType = TypeVar('ClassType', bound='XmnrDeviceData')
 
     @classmethod
-    def get_data(clazz: Type[ClassType], tctx: Tctx, device: str, log: Log, data_cb: Callable[[ClassType], DataType]) -> DataType:
+    def get_data(clazz: Type[ClassType], tctx: Tctx, device: str, log: Log,
+                 data_cb: Callable[[ClassType], XmnrDeviceData.DataType]) -> XmnrDeviceData.DataType:
         with maapi.Maapi() as mp:
             with mp.attach(tctx) as trans:
                 dd = clazz(device, log, trans)
