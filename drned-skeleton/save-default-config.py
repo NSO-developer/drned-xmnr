@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from argparse import Namespace
 from contextlib import closing
 

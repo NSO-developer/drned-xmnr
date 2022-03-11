@@ -13,8 +13,6 @@ two effects:
   other test events or their failures.
 
 '''
-from __future__ import annotations
-
 import collections
 
 from .events import DrnedPrepareEvent, DrnedLoadEvent, DrnedActionEvent, InitStatesEvent, \
@@ -26,7 +24,8 @@ from .events import DrnedPrepareEvent, DrnedLoadEvent, DrnedActionEvent, InitSta
 from .cort import coroutine
 
 
-from typing import Dict, List, Optional, Tuple, Type, Union, Iterator, Literal, cast
+import sys
+from typing import Dict, List, Optional, Tuple, Type, Union, Iterator, cast
 from drned_xmnr.typing_xmnr import LogLevel
 from .cort import StrConsumer
 from .events import EventConsumer, LineOutputEvent
@@ -36,7 +35,11 @@ TransitionDesc = collections.namedtuple('TransitionDesc',
                                         ['start', 'to', 'failure', 'comment', 'failure_message'])
 
 
-EventType = Literal['compare_config', 'load', 'commit', 'rollback']
+if sys.version_info >= (3, 8):
+    from typing import Literal
+    EventType = Literal['compare_config', 'load', 'commit', 'rollback']
+else:
+    EventType = str
 
 
 class TransitionEventContext(object):
@@ -138,7 +141,7 @@ class LogStateMachine(object):
                   InitFailedEvent, TransFailedEvent, InitialPrepareEvent,
                   PyTestEvent}
 
-    def __init__(self, level: LogLevel, init_state: LogState, context: Optional[TransitionEventContext] = None) -> None:
+    def __init__(self, level: LogLevel, init_state: 'LogState', context: Optional[TransitionEventContext] = None) -> None:
         self.stack = [init_state]
         self.level = level
         self.context = context if context is not None else TransitionEventContext()

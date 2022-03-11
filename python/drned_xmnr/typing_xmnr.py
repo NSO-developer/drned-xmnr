@@ -1,4 +1,5 @@
-from typing import Dict, Literal, Optional, Union
+import sys
+from typing import Dict, Optional, Union
 
 from _ncs import TransCtxRef
 
@@ -8,8 +9,12 @@ OptArgs = Optional[Dict[str, str]]
 
 Tctx = Union[TransCtxRef]
 
-LogLevel = Literal['none', 'overview', 'drned-overview', 'all']
-
-ActionField = Literal['failure', 'success', 'error']
+if sys.version_info > (3, 8):
+    from typing import Literal
+    LogLevel = Literal['none', 'overview', 'drned-overview', 'all']
+    ActionField = Literal['failure', 'success', 'error']
+else:
+    LogLevel = str
+    ActionField = str
 
 ActionResult = Union[Dict[ActionField, str], None]
