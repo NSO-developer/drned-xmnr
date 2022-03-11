@@ -101,6 +101,7 @@ class Devcli:
 
     def __init__(self, nsargs: argparse.Namespace) -> None:
         self.cli: Optional[pexpect.spawn] = None
+        self.Devcfg: Type[Devcfg]
         self.params: Dict[str, str] = {}
         for parname in ['devname', 'username', 'password', 'port', 'ip']:
             self.params[parname] = getattr(nsargs, parname)
@@ -136,7 +137,7 @@ class Devcli:
             if not m.startswith("__"):
                 setattr(self, m, getattr(module, m))
 
-        self.devcfg = Devcfg(dirname, dfile)
+        self.devcfg = self.Devcfg(dirname, dfile)
         if hasattr(self.devcfg, 'init_params'):
             self.devcfg.init_params(**self.params)
         self.ssh = "ssh -o StrictHostKeyChecking=no" + \

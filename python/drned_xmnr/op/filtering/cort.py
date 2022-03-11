@@ -6,8 +6,14 @@ See [David Beazly's presentation](http://www.dabeaz.com/coroutines/Coroutines.pd
 
 import functools
 
-from typing import Any, Callable, Generator, Protocol, TypeVar
+import sys
+from typing import Any, Callable, Generator, TypeVar
 from drned_xmnr.typing_xmnr import StrConsumer, StrWriter
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    Protocol = object
 
 FnRes = TypeVar('FnRes')
 

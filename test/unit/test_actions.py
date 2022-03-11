@@ -1,7 +1,8 @@
 from __future__ import print_function
 
 from . import mocklib
-from .mocklib import mock, xtest_patch
+from .mocklib import xtest_patch
+from unittest import mock
 import pytest
 from drned_xmnr import action
 from drned_xmnr.op import config_op, base_op, coverage_op, ex
@@ -1206,8 +1207,7 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         drned_output = DrnedWalkOutput(self.states, 'drned-overview', xpatch.system)
         output = self.invoke_action('walk-states', states=self.states,
                                     rollback=False)
-        assert output.error is None
-        assert output.failure == 'Operation failed'
+        self.check_output(output)
         with open(redir_file) as r_out:
             print('redir:', r_out.read())
         with open(redir_file) as r_out:
@@ -1224,8 +1224,7 @@ class TestTransitionsLogFiltersRedirect(TransitionsLogFiltersTestBase):
         self.setup_states_data(xpatch.system)
         DrnedWalkOutput(self.states, 'none', xpatch.system)
         output = self.invoke_action('walk-states', states=self.states, rollback=False)
-        assert output.error is None
-        assert output.failure == 'Operation failed'
+        self.check_output(output)
         calls = xpatch.ncs.data['ncs']['cli_write'].call_args_list
         assert ''.join(call[0][2] for call in calls) == ''
 

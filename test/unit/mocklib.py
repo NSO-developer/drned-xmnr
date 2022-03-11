@@ -6,10 +6,7 @@ import sys
 from contextlib import contextmanager
 import functools
 from pyfakefs import fake_filesystem_unittest as ffs
-from unittest import mock
-
-patch = mock.patch
-Mock = mock.Mock
+from unittest.mock import patch, Mock, MagicMock, DEFAULT
 
 
 class CxMgrMock(Mock):
@@ -41,7 +38,7 @@ class XtestPatch(object):
 
     def __init__(self, mock_gens):
         self.attribute_name = None
-        self.new = mock.DEFAULT
+        self.new = DEFAULT
         self.mock_gens = mock_gens
 
     def __call__(self, fn):
@@ -79,7 +76,7 @@ XMNR_INSTALL = 'xmnr-install'
 
 class TransMgr(object):
     def __init__(self):
-        self.trans_obj = mock.MagicMock()
+        self.trans_obj = MagicMock(name='transobj')
 
     def __enter__(self):
         return self.trans_obj
@@ -109,12 +106,14 @@ def ncs_mock():
                                     same_name=nonex, same_pass=nonex),
                    umap={})
     apmock = {'xmnr-cli-log': mock_path(['daemon', 'id'], None)}
-    rootmock = Mock(devices=Mock(device={DEVICE_NAME: device},
+    rootmock = Mock(name='rootmock',
+                    devices=Mock(device={DEVICE_NAME: device},
                                  authgroups=Mock(group={'default': authgrp})),
                     packages=Mock(package={'drned-xmnr': Mock(directory=XMNR_INSTALL)}),
                     drned_xmnr=Mock(xmnr_directory=XMNR_DIRECTORY,
                                     drned_directory=DRNED_DIRECTORY,
                                     log_detail=Mock(cli='all'),
+                                    last_test_results=MagicMock(),
                                     cli_log_file=None,
                                     xmnr_log_file=None),
                     ncs_state=mock_path(['internal', 'callpoints', 'actionpoint'], apmock))
@@ -218,16 +217,16 @@ class SystemMock(XtestMock):
 
     def mock_socket_data(self):
         socket = self.patches['socket']['socket']
-        socket.return_value = mock.Mock(recv=self.get_socket_data)
+        socket.return_value = Mock(recv=self.get_socket_data)
 
     def complete_popen_mock(self):
         popen = self.patches['subprocess']['Popen']
-        wait_mock = mock.Mock(return_value=0)
-        stdout_mock = mock.Mock(read=self.proc_stream.read)
-        popen.return_value = mock.Mock(wait=wait_mock,
-                                       poll=self.proc_stream.poll,
-                                       test=self.proc_stream.finished,
-                                       stdout=stdout_mock)
+        wait_mock = Mock(return_value=0)
+        stdout_mock = Mock(read=self.proc_stream.read)
+        popen.return_value = Mock(wait=wait_mock,
+                                  poll=self.proc_stream.poll,
+                                  test=self.proc_stream.finished,
+                                  stdout=stdout_mock)
         self.patches['select']['select'].side_effect = self.proc_stream.select
         self.patches['subprocess']['call'].side_effect = self.pytest_env.which
 
@@ -261,13 +260,13 @@ def system_mock():
 
     @contextmanager
     def make_patch_group(name):
-        with nest_mgrs([mock.patch('{}.{}'.format(name, item)) for item in calls[name]]) as mgrs:
+        with nest_mgrs([patch('{}.{}'.format(name, item)) for item in calls[name]]) as mgrs:
             yield dict(zip(calls[name], reversed(mgrs)))
 
     with nest_mgrs([make_patch_group(name) for name in calls]) as patchlist:
         with ffs.Patcher() as ff_patcher:
             # os.environ needs special care
-            with mock.patch.dict('os.environ', {'NCS_DIR': 'tmp_ncs_dir'}):
+            with patch.dict('os.environ', {'NCS_DIR': 'tmp_ncs_dir'}):
                 patches = dict(zip(calls.keys(), reversed(patchlist)))
                 yield SystemMock(ff_patcher, patches)
 
@@ -288,6 +287,9 @@ def init_mocks():
     """
     sys.modules['ncs'] = Mock(application=Mock(Application=Mock),
                               dp=Mock(Action=MockAction))
+    sys.modules['ncs.log'] = Mock()
+    sys.modules['ncs.maagic'] = Mock()
+    sys.modules['ncs.maapi'] = Mock()
     sys.modules['_ncs'] = Mock(LIB_VSN=0x07060000)
     sys.modules['_ncs.dp'] = Mock(Action=Mock)
     sys.modules['_ncs.maapi'] = Mock()
