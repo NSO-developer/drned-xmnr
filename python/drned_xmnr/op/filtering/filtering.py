@@ -1,13 +1,13 @@
 import sys
 from contextlib import closing
 
-from .cort import filter_sink
+from .cort import filter_sink, StrConsumer
 from .events import EventConsumer, EventGenerator, InitialPrepareEvent
 from .states import TransitionEventContext, LogStateMachine, TransitionTestState, \
     run_event_machine, ExploreState, WalkState
 
 from typing import Callable, Optional, TextIO
-from drned_xmnr.typing_xmnr import LogLevel, StrConsumer
+from drned_xmnr.typing_xmnr import LogLevel
 
 
 def transition_output_filter(level: LogLevel, sink: StrConsumer, context: Optional[TransitionEventContext] = None) -> EventConsumer:

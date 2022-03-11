@@ -1,8 +1,10 @@
+from typing import Union
+
 from drned_xmnr.typing_xmnr import ActionResult
 
 
 class ActionError(Exception):
-    def __init__(self, info: ActionResult) -> None:
+    def __init__(self, info: Union[ActionResult, str]) -> None:
         self.info: ActionResult
         if isinstance(info, dict):
             self.info = info

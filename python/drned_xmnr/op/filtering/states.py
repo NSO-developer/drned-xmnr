@@ -27,7 +27,8 @@ from .cort import coroutine
 
 
 from typing import Dict, List, Optional, Tuple, Type, Union, Iterator, Literal, cast
-from drned_xmnr.typing_xmnr import StrConsumer, LogLevel
+from drned_xmnr.typing_xmnr import LogLevel
+from .cort import StrConsumer
 from .events import EventConsumer, LineOutputEvent
 
 

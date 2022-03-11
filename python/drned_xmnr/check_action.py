@@ -42,8 +42,9 @@ def check(log: Optional[Log] = None) -> None:
             else:
                 errmsg = 'XMNR cannot run without the package {}'.format(package)
                 raise XmnrCheckException(errmsg) from ex
-        if version is not None:
-            imported_version = parse_version(mod.__version__)
+        modversion = getattr(mod, '__version__')
+        if version is not None and modversion is not None:
+            imported_version = parse_version(modversion)
             if imported_version < version:
                 version_str = '.'.join(map(str, version))
                 raise XmnrCheckException('Required {}>={}'.format(package, version_str))
