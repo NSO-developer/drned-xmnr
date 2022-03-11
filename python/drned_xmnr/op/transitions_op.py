@@ -11,9 +11,9 @@ from ncs import maagic
 from . import base_op
 from . import filtering
 
-from typing import Iterator, List, Literal, Optional, Union, Dict
+from typing import Iterator, List, Optional, Union, Dict
 from drned_xmnr.typing_xmnr import ActionResult, ActionField, LogLevel
-from .filtering.events import EventConsumer, EventGenerator
+from .filtering.events import EventConsumer
 from .filtering.cort import IsStrConsumer, StrConsumer, StrWriter
 from ncs.maagic import Node
 from ncs.maapi import Transaction
@@ -87,7 +87,7 @@ class TransitionsOp(base_op.ActionBase):
         self.log.debug("drned: {0}".format(args))
         return self.run_in_drned_env(args)
 
-    def transition_to_state(self, state_name: str, rollback: bool = False) -> Union[Literal[True], str]:
+    def transition_to_state(self, state_name: str, rollback: bool = False) -> Union[None, str]:
         filename = self.state_name_to_filename(state_name)
         self.log.debug("Transition_to_state: {0}\n".format(state_name))
         filepath = os.path.relpath(filename, self.drned_run_directory)
@@ -98,7 +98,7 @@ class TransitionsOp(base_op.ActionBase):
         self.log.debug("Test case completed\n")
         if result != 0:
             return "drned failed"
-        return True
+        return None
 
     failure_types = {'compare_config': 'compare',
                      'commit': 'commit',
@@ -144,7 +144,7 @@ class TransitionToStateOp(TransitionsOp):
               .format(self.dev_name, self.state_name)
         self.log.debug(msg)
         result = self.transition_to_state(self.state_name, self.rollback)
-        if result is True:
+        if result is None:
             return {'success': "Done"}
         else:
             return {'failure': result}
@@ -229,7 +229,7 @@ class ExploreTransitionsOp(StatesTransitionsOp):
             if prev_state != from_state:
                 self.progress_msg("Starting with state {0}".format(from_name))
                 tr_result = self.transition_to_state(from_name)
-                if tr_result is not True:
+                if tr_result is not None:
                     msg = "Failed to initialize state {0}".format(from_name)
                     self.progress_msg(msg)
                     self.log.warning(msg)
@@ -240,7 +240,7 @@ class ExploreTransitionsOp(StatesTransitionsOp):
             self.progress_msg("Transition {0}/{1}: {2} ==> {3}"
                               .format(index + 1, num_transitions, from_name, to_name))
             tr_result = self.transition_to_state(to_name, rollback=True)
-            if tr_result is not True:
+            if tr_result is not None:
                 failed_transitions.append((from_name, to_name, tr_result))
                 self.progress_msg("Transition failed")
         if failed_transitions == [] and error_msgs == []:
