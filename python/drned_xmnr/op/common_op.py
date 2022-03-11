@@ -192,6 +192,9 @@ class ParseLogErrorsOp(ActionBase):
         return problem_count
 
 
+NextType = TypeVar('NextType')
+
+
 class Handler(object):
     ''' Stub data provider handler.
         See documentation of ncs.experimental.DataCallbacks for details.
@@ -199,8 +202,6 @@ class Handler(object):
 
     def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
         pass
-
-    NextType = TypeVar('NextType')
 
     def get_next(self, tctx: Tctx, kp: str, args: Dict[str, Any], next: NextType) -> Optional[NextType]:
         return None
