@@ -6,10 +6,9 @@ that takes care of generating filtered output and transition events.
 '''
 
 import re
-from .cort import coroutine
+from .cort import coroutine, CoRoutine, StrConsumer
 
-from typing import Generator, Pattern
-from drned_xmnr.typing_xmnr import StrConsumer
+from typing import Pattern
 
 
 class LineOutputEvent(object):
@@ -34,7 +33,7 @@ class LineOutputEvent(object):
         return self.line
 
 
-EventConsumer = Generator[None, LineOutputEvent, None]
+EventConsumer = CoRoutine[LineOutputEvent]
 
 
 class InitialPrepareEvent(LineOutputEvent):

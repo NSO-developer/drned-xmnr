@@ -1,23 +1,31 @@
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union, TypeVar
 import _ncs
-from ncs import log
+import ncs
 from ncs.maagic import Node
 from ncs.maapi import Transaction
-
 
 class Daemon:
     class State: ...
 
 
-ActionCallback = Callable[[_ncs.UserInfo, str, _ncs.HKeypathRef, Node, Node, Transaction], Any]
+ActionObj = TypeVar('ActionObj', bound='Action')
+
+ACallback6 = Callable[[ActionObj, _ncs.UserInfo, str, _ncs.HKeypathRef, Node, Node],
+                      Optional[int]]
+ACallback7 = Callable[[ActionObj, _ncs.UserInfo, str, _ncs.HKeypathRef, Node, Node, Transaction],
+                      Optional[int]]
+ActionCallback = Union[ACallback6[ActionObj], ACallback7[ActionObj]]
+WrappedCallback = Callable[[ActionObj, _ncs.UserInfo, str, _ncs.HKeypathRef, list],
+                           Optional[int]]
 
 
 class Action:
-    log: log.Log = ...
+    log: ncs.log.Log = ...
     _state: Daemon.State = ...
 
     @staticmethod
-    def action(fn: ActionCallback) -> Any: ...
+    def action(fn: ActionCallback[ActionObj]) -> WrappedCallback[ActionObj]:
+        ...
 
     def _make_key(self, uinfo: _ncs.UserInfo) -> str: ...
 

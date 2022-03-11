@@ -17,7 +17,7 @@ import _ncs
 from ncs import maapi, maagic
 
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Type
+from typing import Dict, List, Tuple, Callable, Optional, Union, Type
 
 
 VERBOSE = True
@@ -50,7 +50,8 @@ class NcsDevice:
         self.device = root.devices.device[self.devname]
         return self
 
-    def __exit__(self, exc_type: Type[BaseException], exc_value: BaseException, traceback: TracebackType) -> None:
+    def __exit__(self, exc_type: Type[BaseException],
+                 exc_value: BaseException, traceback: TracebackType) -> None:
         self.tc.__exit__(exc_type, exc_value, traceback)
 
     def close(self) -> None:
@@ -75,14 +76,19 @@ class NcsDevice:
                 out.write(data)
 
 
+StateDesc = Tuple[Optional[str],
+                  Optional[Union[str, Callable[['Devcli'], str]]],
+                  str]
+
+
 class Devcfg:
     ''' Device driver class implemented by end-user. '''
     def __init__(self, path: str, name: str) -> None: ...
-    def init_params(self, *args: Any, **kwargs: Any) -> None: ...
+    def init_params(self, **kwargs: str) -> None: ...
     def get_address(self) -> str: ...
     def get_port(self) -> str: ...
     def get_username(self) -> str: ...
-    def get_state_machine(self) -> Dict[str, Any]: ...
+    def get_state_machine(self) -> Dict[str, List[StateDesc]]: ...
 
 
 class Devcli:
@@ -227,11 +233,8 @@ class Devcli:
         try:
             with closing(self._ssh()):
                 try:
-                    if isinstance(init_states, list):
-                        for init_state in init_states:
-                            self.interstate_one(init_state)
-                    else:
-                        self.interstate_one(init_states)
+                    for init_state in init_states:
+                        self.interstate_one(init_state)
                 except pexpect.exceptions.ExceptionPexpect as exc:
                     raise DevcliException(exc)
         except pexpect.exceptions.ExceptionPexpect as exc:
