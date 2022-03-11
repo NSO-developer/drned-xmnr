@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import fcntl
 import os
 import sys
@@ -67,7 +65,7 @@ all three layers with increasing margin:
 
 
 class CliLogger(object):
-    def __init__(self, action: ActionBase) -> None:
+    def __init__(self, action: 'ActionBase') -> None:
         self.uinfo = action.uinfo
         self.cli_log_file: Optional[TextIO]
         if action.cli_log_filename is not None:
@@ -137,7 +135,8 @@ class XmnrBase(object):
         except OSError:
             pass
 
-    def format_state_filename(self, statename: str, format: str = 'xml', suffix: Optional[str] = None) -> str:
+    def format_state_filename(self, statename: str, format: str = 'xml',
+                              suffix: Optional[str] = None) -> str:
         """Just convert the state name to the right filename."""
         if suffix is None:
             suffix = (self.cfg_statefile_extension if format == 'cfg'
@@ -156,7 +155,8 @@ class XmnrBase(object):
                 return path
         return None
 
-    def state_name_to_filename(self, statename: str, format: str = 'any', existing: bool = True) -> str:
+    def state_name_to_filename(self, statename: str, format: str = 'any', existing: bool = True) \
+            -> str:
         """Look for a state file.
 
         :param bool existing: if True, the file must exist, otherwise fail
@@ -207,7 +207,7 @@ class Progressor(object):
     Progress messages come in chunks and need to be re-chunked into
     lines.  This class is not directly related to The Noon Universe.
     """
-    def __init__(self, action: ActionBase) -> None:
+    def __init__(self, action: 'ActionBase') -> None:
         self.buf = ""
         self.action = action
 
@@ -411,7 +411,8 @@ class ActionBase(XmnrBase):
         trans.maapi.install_crypto_keys()
         return username, _ncs.decrypt(upwd)
 
-    def get_devcli_params(self, trans: Transaction) -> Tuple[str, Optional[str], Optional[str], str, int]:
+    def get_devcli_params(self, trans: Transaction) \
+            -> Tuple[str, Optional[str], Optional[str], str, int]:
         root = maagic.get_root(trans)
         device_node = root.devices.device[self.dev_name]
         ip = device_node.address
@@ -496,7 +497,8 @@ class XmnrDeviceData(XmnrBase):
 
     @classmethod
     def get_data(clazz: Type[ClassType], tctx: Tctx, device: str, log: Log,
-                 data_cb: Callable[[ClassType], XmnrDeviceData.DataType]) -> XmnrDeviceData.DataType:
+                 data_cb: Callable[[ClassType], 'XmnrDeviceData.DataType']) \
+            -> 'XmnrDeviceData.DataType':
         with maapi.Maapi() as mp:
             with mp.attach(tctx) as trans:
                 dd = clazz(device, log, trans)

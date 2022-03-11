@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from . import mocklib
 from .mocklib import xtest_patch
 from unittest import mock

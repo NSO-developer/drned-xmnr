@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 import sys
 import importlib
@@ -39,7 +37,7 @@ def check(log: Optional[Log] = None) -> None:
             else:
                 errmsg = 'XMNR cannot run without the package {}'.format(package)
                 raise XmnrCheckException(errmsg) from ex
-        modversion = getattr(mod, '__version__')
+        modversion = getattr(mod, '__version__', None)
         if version is not None and modversion is not None:
             imported_version = parse_version(modversion)
             if imported_version < version:

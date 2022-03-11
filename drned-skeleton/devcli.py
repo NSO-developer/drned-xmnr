@@ -1,8 +1,6 @@
 # Implementation of a "device" handler that allows connecting to a device
 # that suppors connections over SSH.
 
-from __future__ import annotations, print_function
-
 import argparse
 from contextlib import closing
 import importlib
@@ -43,7 +41,7 @@ class NcsDevice:
     def __init__(self, devname: str) -> None:
         self.devname = devname
 
-    def __enter__(self) -> NcsDevice:
+    def __enter__(self) -> 'NcsDevice':
         self.tc: maapi.Transaction = maapi.single_read_trans('admin', 'system')
         self.tp = self.tc.__enter__()
         root = maagic.get_root(self.tp)
@@ -174,7 +172,7 @@ class Devcli:
         if self.trace:
             self.trace(INDENT + inspect.stack()[1][3] + "(%s)" % txt)
 
-    def load_config(self, fname: str) -> Devcli:
+    def load_config(self, fname: str) -> 'Devcli':
         """Send configuration to the device.
         """
         self._banner(fname)
@@ -182,7 +180,7 @@ class Devcli:
         self.interstate(["put", "exit"])
         return self
 
-    def get_config(self, fname: str) -> Devcli:
+    def get_config(self, fname: str) -> 'Devcli':
         """Get configuration from the device.
         """
         self._banner(fname)
@@ -196,7 +194,7 @@ class Devcli:
             raise DevcliException("Failed to get config into %s" % fname)
         return self
 
-    def restore_config(self, fname: str) -> Devcli:
+    def restore_config(self, fname: str) -> 'Devcli':
         """Restore configuration on the device.
 
         If `fname` is not provided, the initial configuration is used.
@@ -208,17 +206,17 @@ class Devcli:
             self.trace(self.cli.before + self.cli.after)
         return self
 
-    def clean_config(self) -> Devcli:
+    def clean_config(self) -> 'Devcli':
         """Clean all device configuration and enter initial state.
         """
         return self.restore_config(self.initial_config)
 
-    def backup_config(self) -> Devcli:
+    def backup_config(self) -> 'Devcli':
         """Save the device initial configuration.
         """
         return self.save_config(self.initial_config)
 
-    def save_config(self, fname: str) -> Devcli:
+    def save_config(self, fname: str) -> 'Devcli':
         """Save the initial configuration.
         """
         self._banner(fname)

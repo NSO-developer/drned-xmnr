@@ -11,8 +11,6 @@ from typing import Any, Callable, Generator, TypeVar
 
 if sys.version_info >= (3, 8):
     from typing import Protocol
-else:
-    Protocol = object
 
 FnRes = TypeVar('FnRes')
 T = TypeVar('T')
@@ -40,9 +38,12 @@ def drop() -> CoRoutine[T]:
         yield
 
 
-class IsStrConsumer(Protocol):
-    def send(self, msg: str) -> None: ...
-    def close(self) -> None: ...
+if sys.version_info >= (3, 8):
+    class IsStrConsumer(Protocol):
+        def send(self, msg: str) -> None: ...
+        def close(self) -> None: ...
+else:
+    IsStrConsumer = Any
 
 
 @coroutine
