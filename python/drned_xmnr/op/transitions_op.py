@@ -42,9 +42,9 @@ class TransitionsOp(base_op.ActionBase):
         detail = self.run_with_trans(self.get_log_detail)
         self.filter_cr: Optional[IsStrConsumer] = None
         self.event_context = filtering.TransitionEventContext()
-        with closing(self.event_context):
-            with closing(self.build_filter(detail, self.cli_write)) as self.filter_cr:
-                result = self.perform_transitions()
+        with closing(self.event_context), \
+                closing(self.build_filter(detail, self.cli_write)) as self.filter_cr:
+            result = self.perform_transitions()
         self.run_with_trans(self.store_transition_events, write=True, db=_ncs.OPERATIONAL)
         return result
 
@@ -54,7 +54,7 @@ class TransitionsOp(base_op.ActionBase):
         return cli_val
 
     def cli_filter(self, msg: str) -> None:
-        if self.filter_cr is not None and isinstance(self.filter_cr, EventGenerator):
+        if self.filter_cr is not None:
             self.filter_cr.send(msg)
 
     def build_filter(self, level: LogLevel, writer: StrWriter) -> IsStrConsumer:

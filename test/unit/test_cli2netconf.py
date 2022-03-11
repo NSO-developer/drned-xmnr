@@ -6,7 +6,8 @@ import random
 import functools
 import sys
 
-from .mocklib import patch, mock
+from unittest import mock
+from mock import patch
 
 import cli2netconf
 
