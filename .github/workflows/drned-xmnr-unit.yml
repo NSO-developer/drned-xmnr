@@ -39,6 +39,10 @@ jobs:
           flake8 ${XMNR_DIR}/python ${XMNR_DIR}/test/unit/ --count --max-line-length=120 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 ${XMNR_DIR}/python ${XMNR_DIR}/test/unit/ --count --exit-zero --max-complexity=25 --max-line-length=120 --statistics
+      - name: Type check with mypy
+        run: |
+          python -m pip install mypy
+          ./mypy-check.sh
       - name: Test with pytest
         run:
           PYTHONPATH=${XMNR_DIR}/python:${XMNR_DIR}/drned-skeleton:${PYTHONPATH} coverage run -m pytest -s -v ${XMNR_DIR}/test/unit
