@@ -12,9 +12,9 @@ from . import base_op
 from .ex import ActionError
 
 
-from .common_op import Handler
+from .common_op import Handler, NextType
 
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Optional
 from drned_xmnr.typing_xmnr import ActionResult, Tctx
 from ncs.maagic import Node
 from ncs.log import Log
@@ -100,6 +100,12 @@ class DataHandler(Handler):
     def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
         dd = DeviceData.get_data(tctx, args['device'], self.log, DeviceData.get_coverage_data)
         return {'drned-xmnr': {'coverage': {'data': dd}}}
+
+    def count(self) -> int:
+        return 0
+
+    def get_next(self, tctx: Tctx, kp: str, args: Dict[str, Any], next: NextType) -> Optional[NextType]:
+        return None
 
 
 class DeviceData(base_op.XmnrDeviceData):

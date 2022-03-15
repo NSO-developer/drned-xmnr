@@ -13,6 +13,7 @@ from .base_op import maapi_keyless_create
 from .ex import ActionError
 from .parse_log_errors import ProblemData, gather_problems
 
+from abc import abstractmethod
 from typing import Any, Dict, List, Optional, TypeVar
 from drned_xmnr.typing_xmnr import ActionResult, Tctx
 from ncs.maagic import Node
@@ -195,16 +196,19 @@ class ParseLogErrorsOp(ActionBase):
 NextType = TypeVar('NextType')
 
 
-class Handler(object):
+class Handler:
     ''' Stub data provider handler.
         See documentation of ncs.experimental.DataCallbacks for details.
     '''
 
+    @abstractmethod
     def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        pass
+        ...
 
+    @abstractmethod
     def get_next(self, tctx: Tctx, kp: str, args: Dict[str, Any], next: NextType) -> Optional[NextType]:
-        return None
+        ...
 
+    @abstractmethod
     def count(self) -> int:
-        return 0
+        ...

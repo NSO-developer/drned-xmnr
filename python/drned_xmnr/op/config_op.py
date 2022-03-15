@@ -9,7 +9,7 @@ from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
 from . import base_op
 from .ex import ActionError
-from .common_op import DevcliLogMatch, Handler
+from .common_op import DevcliLogMatch, Handler, NextType
 
 from typing import Any, Dict, List, Optional, Set, Tuple
 from drned_xmnr.typing_xmnr import ActionResult, Tctx
@@ -494,6 +494,12 @@ class StatesProvider(Handler):
         return {'states': [{'state': state, 'disabled': disabled_tag} if disabled
                            else {'state': state}
                            for state, disabled in states]}
+
+    def count(self) -> int:
+        return 0
+
+    def get_next(self, tctx: Tctx, kp: str, args: Dict[str, Any], next: NextType) -> Optional[NextType]:
+        return None
 
 
 class StatesData(base_op.XmnrDeviceData):
