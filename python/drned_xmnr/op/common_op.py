@@ -1,4 +1,5 @@
 from __future__ import print_function
+from abc import abstractmethod
 
 import os
 import re
@@ -199,13 +200,18 @@ class Handler:
         See documentation of ncs.experimental.DataCallbacks for details.
     '''
 
+    @abstractmethod
     def get_object(self, tctx: Tctx, kp: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        pass
+        ...
 
     NextType = TypeVar('NextType')
 
-    def get_next(self, tctx: Tctx, kp: str, args: Dict[str, Any], next: NextType) -> Optional[NextType]:
-        return None
+    # NOTE - method not implemented currently in drned-xmnr
+    # @abstractmethod
+    # def get_next(self, tctx: Tctx, kp: str, args: Dict[str, Any], next: NextType) -> Optional[NextType]:
+    #     ...
 
-    def count(self) -> int:
-        return 0
+    # NOTE - method not used as of NSO 5.6
+    # @abstractmethod
+    # def count(self) -> int:
+    #     ...
