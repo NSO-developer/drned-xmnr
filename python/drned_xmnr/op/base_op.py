@@ -32,13 +32,6 @@ ReturnCode = int
 ProcessResult = Tuple[ReturnCode, str]
 
 
-def text_data(data: bytes) -> str:
-    if sys.version_info >= (3, 0):
-        return data.decode()
-    else:
-        return data
-
-
 def maapi_keyless_create(node: Node, i: int) -> Node:
     if _ncs.LIB_VSN < 0x07060000:
         return node.create(i)
@@ -235,11 +228,6 @@ class ActionBase(XmnrBase):
     def perform(self) -> ActionResult:
         pass
 
-    # TODO - may want to add fields/methods to class to make more explicit requirement for sub-classes
-    # if TYPE_CHECKING:
-        # action_name: str
-        # def perform(self) -> ActionResult: ...
-
     def __init__(self, uinfo: _ncs.UserInfo, dev_name: str, params: Node, log_obj: Log) -> None:
         super(ActionBase, self).__init__(dev_name, log_obj)
         self.uinfo = uinfo
@@ -247,7 +235,6 @@ class ActionBase(XmnrBase):
         self.aborted: bool = False
         self.abort_lock = threading.Lock()
         self.log_file: Optional[TextIO] = None
-        # self.maapi = maapi.Maapi()
         self.run_with_trans(self._setup_xmnr)
         self._init_params(params)
 

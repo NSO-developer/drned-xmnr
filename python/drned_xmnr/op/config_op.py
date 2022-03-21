@@ -361,7 +361,7 @@ class ConvertMatch(DevcliLogMatch):
         r')$')
     matchrx = re.compile(matchexpr)
 
-    def __init__(self, converter: ImportOp) -> None:
+    def __init__(self, converter: 'ImportConvertCliFiles') -> None:
         super(ConvertMatch, self).__init__()
         self.failures: List[str] = []
         self.waitstate = None
@@ -377,7 +377,7 @@ class ConvertMatch(DevcliLogMatch):
         gd = match.groupdict()
         if match.lastgroup == 'convert':
             return 'importing state ' + gd['cnvstate']
-        elif match.lastgroup == 'converted' and isinstance(self.converter, ImportConvertCliFiles):
+        elif match.lastgroup == 'converted':
             self.converter.complete_import(gd['target'], gd['donestate'])
             return None
         elif match.lastgroup == 'failure':

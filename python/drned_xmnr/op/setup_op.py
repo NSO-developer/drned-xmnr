@@ -10,7 +10,7 @@ from lxml import etree
 import _ncs
 from ncs import maagic
 
-from typing import Optional, Pattern
+from typing import Optional
 from drned_xmnr.typing_xmnr import ActionResult
 from ncs.maagic import Node
 from ncs.maapi import Transaction
@@ -26,7 +26,7 @@ class DevcliLogMatch(object):
     should call the `match` method of this class.
 
     """
-    matchexpr: str = (
+    matchexpr = (
         r'(?:(?P<devcli>.*DevcliException: No device definition found)'
         r'|(?P<traceback>Traceback [(]most recent call last[)]:)'
         r'|(?P<newstate>^STATE: (?P<state>[^ ]*) : .*)'
@@ -35,7 +35,7 @@ class DevcliLogMatch(object):
         r'|(?P<timeout>device communication failure: .*Timeout.*)'
         r'|(?P<authfailed>failed to authenticate)'
         r')$')
-    matchrx: Pattern[str] = re.compile(matchexpr)
+    matchrx = re.compile(matchexpr)
 
     def __init__(self) -> None:
         self.waitstate: Optional[str] = None

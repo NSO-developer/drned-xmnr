@@ -4,7 +4,7 @@ import os
 import sys
 import importlib
 
-from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple
 from ncs.log import Log
 
 Version = List[int]
@@ -29,9 +29,6 @@ def parse_version(verstr: str) -> Version:
 def check(log: Optional[Log] = None) -> None:
     if sys.version_info < (3, 6):
         raise XmnrCheckException('Required Python 3.6 or newer')
-    if TYPE_CHECKING:
-        package: str
-        version: Optional[Version]
     for (package, version) in xmnr_requirements(log):
         try:
             mod = importlib.import_module(package)
@@ -54,10 +51,7 @@ def check(log: Optional[Log] = None) -> None:
                 log.debug('using package {}'.format(package))
 
 
-XmnrRequirementItem = Union[Requirement, Tuple[str, None]]
-
-
-def xmnr_requirements(log: Optional[Log]) -> Iterator[XmnrRequirementItem]:
+def xmnr_requirements(log: Optional[Log]) -> Iterator[Requirement]:
     base = os.path.realpath(os.path.dirname(__file__))
     pkg_path = os.path.dirname(os.path.dirname(base))
     try:

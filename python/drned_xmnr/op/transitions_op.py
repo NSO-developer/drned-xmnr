@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 import os
 import time
 import random
@@ -21,12 +23,13 @@ from ncs.maapi import Transaction
 
 class TransitionsOp(base_op.ActionBase):
 
+    @abstractmethod
     def perform_transitions(self) -> ActionResult:
-        ''' Implemented in sub-classes. '''
-        pass
+        ...
 
+    @abstractmethod
     def event_processor(self, level: LogLevel, sink: StrConsumer) -> EventConsumer:
-        pass
+        ...
 
     def perform(self) -> ActionResult:
         '''Performs the transition action and process DrNED output.
@@ -50,7 +53,6 @@ class TransitionsOp(base_op.ActionBase):
         cli_val: Optional[LogLevel] = root.drned_xmnr.log_detail.cli
         return cli_val
 
-    # TODO - Event vs str?
     def cli_filter(self, msg: str) -> None:
         if self.filter_cr is not None and isinstance(self.filter_cr, EventGenerator):
             self.filter_cr.send(msg)
@@ -73,7 +75,6 @@ class TransitionsOp(base_op.ActionBase):
         else:
             sink = filtering.filter_sink(writer)
         events = filtering.EventGenerator(self.event_processor(level, sink))
-        # events  = cast(StrConsumer, events)
         if level == 'all':
             return filtering.fork(events, filtering.filter_sink(writer))
         return events

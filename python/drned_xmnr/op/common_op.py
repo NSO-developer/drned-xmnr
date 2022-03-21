@@ -194,7 +194,7 @@ class ParseLogErrorsOp(ActionBase):
         return problem_count
 
 
-class Handler(object):
+class Handler:
     ''' Stub data provider handler.
         See documentation of ncs.experimental.DataCallbacks for details.
     '''
