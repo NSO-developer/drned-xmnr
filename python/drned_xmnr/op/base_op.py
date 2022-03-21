@@ -220,7 +220,7 @@ class Progressor(object):
 
 
 ParamType = TypeVar('ParamType', str, int, None)
-CBRes = TypeVar('CBRes')
+T = TypeVar('T')
 
 
 class ActionBase(XmnrBase):
@@ -273,8 +273,8 @@ class ActionBase(XmnrBase):
             return default
         return value
 
-    def run_with_trans(self, callback: Callable[[Transaction], CBRes], write: bool = False,
-                       db: int = _ncs.RUNNING) -> CBRes:
+    def run_with_trans(self, callback: Callable[[Transaction], T], write: bool = False,
+                       db: int = _ncs.RUNNING) -> T:
         if write:
             # we do not want to write to the user's transaction
             with maapi.single_write_trans(self.uinfo.username, self.uinfo.context, db=db) as trans:

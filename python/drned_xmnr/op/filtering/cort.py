@@ -20,10 +20,10 @@ CoRoutine = Generator[None, T, None]
 StrWriter = Callable[[str], int]
 StrConsumer = CoRoutine[str]
 
-CT = TypeVar('CT', bound=Callable[..., CoRoutine[Any]])
+CoroutineGenT = TypeVar('CoroutineGenT', bound=Callable[..., CoRoutine[Any]])
 
 
-def coroutine(fn: CT) -> CT:
+def coroutine(fn: CoroutineGenT) -> CoroutineGenT:
     @functools.wraps(fn)
     def start(*args: Any, **kwargs: Any) -> CoRoutine[Any]:
         cr = fn(*args, **kwargs)
