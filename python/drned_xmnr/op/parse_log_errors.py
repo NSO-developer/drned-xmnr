@@ -191,6 +191,10 @@ class ProblemsParser:
                     pending.problem = None
                 pending.matcher = None
 
+        if pending.problem is not None:
+            add_new_problem(problems, pending.problem)
+            pending.problem = None
+
         return problems
 
 
