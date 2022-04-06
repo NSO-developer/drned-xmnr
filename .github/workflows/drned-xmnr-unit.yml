@@ -50,7 +50,7 @@ jobs:
           COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
         run: |
-          coveralls --service=github
+          coveralls
 
 
   coveralls:
