@@ -16,7 +16,7 @@ def _load_default_config(nso_device: NcsDevice, target_device: Devcli) -> None:
 
 
 def load_default_config(nsargs: Namespace) -> None:
-    def init_cli_dev() -> closing[Devcli]:
+    def init_cli_dev() -> closing(Devcli):
         return closing(Devcli(nsargs))
 
     def init_nso_dev(devcli: Devcli) -> NcsDevice:
