@@ -200,6 +200,19 @@ class ParseLogErrorsOp(ActionBase):
         return problem_count
 
 
+class CompareYangSetsOp(ActionBase):
+    ''' Action handler for `compare-yang-set' action.
+    '''
+    def _init_params(self, params: Node) -> None:
+        self.old: str = params.old_set
+        self.new: str = params.new_set
+        self.yangpath: List[str] = params.yangpath
+
+    def perform(self) -> ActionResult:
+        #FIXME:
+        os.system('./yangdiff.py -d --left {} --right {}'.format(self.old, self.new))
+
+
 NextType = TypeVar('NextType')
 
 

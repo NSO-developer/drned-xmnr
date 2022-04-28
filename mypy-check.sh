@@ -6,6 +6,7 @@ MYPY_ARGS+=" --follow-imports=normal"
 MYPY_ARGS+=" --implicit-reexport"
 MYPY_ARGS+=" --ignore-missing-imports"
 MYPY_ARGS+=" --namespace-packages"
+MYPY_ARGS+=" --exclude drned-skeleton/yangdiff.py"
 
 MYPY_TARGETS=""
 MYPY_TARGETS+=" drned-skeleton"

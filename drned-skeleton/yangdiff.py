@@ -184,18 +184,18 @@ def collapse_groupings(title, paths, node_info, strip_namespaces=False, regex_co
     collapsed_paths = list(paths)
     for p in paths:
         nodei = node_info[p]
-        if nodei.has_key("in_uses"):
+        if "in_uses" in nodei:
             grpname = nodei["in_uses"]
             useat = grpname[:grpname.rindex(":")]
             grpname = grpname[grpname.rindex(":")+1:]
-            if not grpmap.has_key(grpname):
+            if grpname not in grpmap:
                 grpmap[grpname] = dict()
             relpath = p[len(useat)+1:]
-            if not grpmap[grpname].has_key(relpath):
+            if relpath not in grpmap[grpname]:
                 grpmap[grpname][relpath] = list()
             grpmap[grpname][relpath].append(useat)
             collapsed_paths.remove(p)
-    for (grpname, relpaths) in grpmap.iteritems():
+    for (grpname, relpaths) in grpmap.items():
         max_uses = 1
         all_uses = None
         for uses in relpaths.values():
@@ -203,7 +203,7 @@ def collapse_groupings(title, paths, node_info, strip_namespaces=False, regex_co
                 max_uses = len(uses)
                 all_uses = uses
         all_relpaths = list()
-        for (rp, uses) in relpaths.iteritems():
+        for (rp, uses) in relpaths.items():
             if len(uses) == 1 or (len(uses) < max_uses):
                 collapsed_paths += [absp + "/" + rp for absp in uses]
             else:
@@ -459,8 +459,8 @@ Diff yang files between ned working-directory and given commit"""
     if plugin_dir:
         plugin_dir_arg = "-P %s" % plugin_dir
     elif have_drned:
-        plugin_dir_arg = "-P %s/../drned/yanger/plugins/`ncsc --version`" % neddir
-        subprocess.check_output("make -C %s/../drned/make/ yanger_plugins" % neddir, shell=True)
+        plugin_dir_arg = "-P %s/drned/yanger/plugins/`ncsc --version`" % os.environ['DRNED']
+        subprocess.check_output("make -C %s/drned/make/ yanger_plugins" % neddir, shell=True)
 
     if o.list_yang_files:
         modinfo = find_yang(neddir + "/src/yang/*.yang")
@@ -473,17 +473,17 @@ Diff yang files between ned working-directory and given commit"""
         print("---")
         all_augmented = set()
         augmented_by = dict()
-        for (am, a) in aug_mods.iteritems():
+        for (am, a) in aug_mods.items():
             # am = re.sub("^.*/(.+)\.yang$", "\\1", f)
             for m in a:
-                if not augmented_by.has_key(m):
+                if m not in augmented_by:
                     augmented_by[m] = list()
                 augmented_by[m].append(am)
                 all_augmented.add(m)
             print("%s augments: %s" % (am, ",".join(a)))
         print("---")
         all_augmenting = set(aug_mods.keys())
-        for (am, mods) in augmented_by.iteritems():
+        for (am, mods) in augmented_by.items():
             print("%s augmented by %d modules" % (am, len(mods)))
         print("---")
         both = all_augmented.intersection(all_augmenting)
@@ -532,11 +532,12 @@ Diff yang files between ned working-directory and given commit"""
                 if leftstandalone or rightstandalone:
                     modlist = [m]
                     extras = []
-                    if not leftstandalone and leftmodinfo.augmenting_mods.has_key(m):
+                    if m not in leftstandalone and leftmodinfo.augmenting_mods:
                         extras = leftmodinfo.augmenting_mods[m]
-                    elif not rightstandalone and rightmodinfo.augmenting_mods.has_key(m):
+                    elif m not in rightstandalone and rightmodinfo.augmenting_mods:
                         extras = rightmodinfo.augmenting_mods[m]
-                    extras = list(filter(lambda em: leftmodinfo.all_mods.has_key(em) and rightmodinfo.all_mods.has_key(em),
+                    extras = list(filter(lambda em: em in leftmodinfo.all_mods
+                                         and em in rightmodinfo.all_mods,
                                          extras))
                     modlist += extras
                     lmodlist = modlist
@@ -547,11 +548,13 @@ Diff yang files between ned working-directory and given commit"""
                     lmodlist = list(lc)
                     rmodlist = list(rc)
                     for lm in lc:
-                        if lm not in rc and rightmodinfo.all_mods.has_key(lm):
+                        if lm not in rc and lm in rightmodinfo.all_mods:
                             rmodlist.append(lm)
                     for rm in rc:
-                        if rm not in lc and leftmodinfo.all_mods.has_key(rm):
+                        if rm not in lc and rm in leftmodinfo.all_mods:
                             lmodlist.append(rm)
+                lmodlist.remove('tailf-ncs')
+                rmodlist.remove('tailf-ncs')
                 lfiles = [leftmodinfo.all_mods[lm] for lm in lmodlist]
                 rfiles = [rightmodinfo.all_mods[rm] for rm in rmodlist]
                 jdiff = yang_diff_files(lfiles, rfiles, include_paths=include_paths, exclude_paths=exclude_paths, plugin_dir_arg=plugin_dir_arg)
@@ -649,10 +652,10 @@ class ModulesInfo(object):
 
         self.all_augmented = set()
         augmented_by = dict()
-        for (am, a) in augmenting_mods.iteritems():
+        for (am, a) in augmenting_mods.items():
             # am = re.sub("^.*/(.+)\.yang$", "\\1", f)
             for m in a:
-                if not augmented_by.has_key(m):
+                if m not in augmented_by:
                     augmented_by[m] = list()
                 augmented_by[m].append(am)
                 self.all_augmented.add(m)
@@ -671,7 +674,7 @@ class ModulesInfo(object):
             else:
                 self.chains.append(chain)
 
-        for (m, augments) in augmenting_mods.iteritems():
+        for (m, augments) in augmenting_mods.items():
             if m not in self.all_augmented:
                 for a in augments:
                     build_chain(list([m]), a)
@@ -710,13 +713,13 @@ def filter_yang(files, exclude_prefix):
         imp_mod = None
         my_prefix = None
         modname = None
-        with open(fn, "rb") as f:
+        with open(fn) as f:
             md5 = hashlib.md5()
             for line in f.readlines():
                 line = line.strip()
                 if len(line) == 0:
                     continue
-                md5.update(line)
+                md5.update(line.encode())
                 if not checked_type:
                     if line.startswith("submodule"):
                         do_include = False
@@ -795,9 +798,7 @@ def yang_diff_files(left_yang_files, right_yang_files, skip_choice=True, include
     left_path_arg = ("--diff-left-path=%s" % os.path.dirname(left_yang_files[0])) if len(left_yang_files) > 0 else ""
     right_path = os.path.dirname(right_yang_files[0])
 
-    #    cmd = ("YANGERROR=prune_stack yanger -W none %s %s -p %s --diff-main-module=Cisco-IOS-XE-native -f diff --diff-json --diff-keep-ns %s %s %s %s %s 2> /tmp/diff.err" % (plugin_dir_arg, left_path_arg, right_path, skip_choice_arg, incl_arg, excl_arg, left_yang_files_arg, right_yang_files_arg))
-#    cmd = ("YANGERROR=prune_stack yanger -W none %s %s -p %s -f diff --diff-main-module=Cisco-IOS-XR-ifmgr-cfg --diff-json --diff-keep-ns %s %s %s %s %s 2> /tmp/diff.err" % (plugin_dir_arg, left_path_arg, right_path, skip_choice_arg, incl_arg, excl_arg, left_yang_files_arg, right_yang_files_arg))
-    cmd = ("YANGERROR=prune_stack yanger -W none %s %s -p %s -f diff --diff-json --diff-keep-ns %s %s %s %s %s 2> /tmp/diff.err" % (plugin_dir_arg, left_path_arg, right_path, skip_choice_arg, incl_arg, excl_arg, left_yang_files_arg, right_yang_files_arg))
+    cmd = ("YANGERROR=prune_stack yanger -W none %s %s -p %s/src/ncs/yang:%s -f diff --diff-json --diff-keep-ns %s %s %s %s %s 2> /tmp/diff.err" % (plugin_dir_arg, left_path_arg, os.environ['NCS_DIR'], right_path, skip_choice_arg, incl_arg, excl_arg, left_yang_files_arg, right_yang_files_arg))
 
     if DEBUG:
         print("RUNNING: '%s'" % cmd)
@@ -806,22 +807,22 @@ def yang_diff_files(left_yang_files, right_yang_files, skip_choice=True, include
     return json.loads(diff)
 
 def get_node(path, node_info_dict):
-    if not node_info_dict.has_key("__NODES__"):
+    if "__NODES__" not in node_info_dict:
         node_info_dict["__NODES__"] = dict()
     nodes = node_info_dict["__NODES__"]
-    if (nodes.has_key(path)):
+    if path in nodes:
         return nodes[path]
     node_json = node_info_dict[path]
     substmts = []
     in_uses = None
-    if node_json.has_key("substmts"):
+    if "substmts" in node_json:
         substmts = Ystmt.extract_flat_substmts(node_json["substmts"])
-    if node_json.has_key("in_uses"):
+    if "in_uses" in node_json:
         in_uses = node_json["in_uses"]
     name = path[path.rindex('/')+1:]
     ystmt = Ystmt(node_json["keyword"], name, in_uses, path, substmts)
     ppath = path[:path.rindex("/")]
-    if ystmt.keyword == "leaf" and node_info_dict.has_key(ppath):
+    if ystmt.keyword == "leaf" and ppath in node_info_dict:
         parent = get_node(ppath, node_info_dict)
         if parent.keyword == "list" and ystmt.arg in parent.keys:
             ystmt.is_key_leaf = True
@@ -1080,7 +1081,7 @@ def print_incompatible_nodes(incompat_nodes, old_node_info, new_node_info, outbu
         for ic in incompats:
             descs.append(incompatible_desc(ic))
         key = descs2key(descs)
-        if not incompat_paths.has_key(key):
+        if key not in incompat_paths:
             incompat_paths[key] = (descs, list())
         (_, paths) = incompat_paths[key]
         paths.append(p)

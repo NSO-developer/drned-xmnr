@@ -695,6 +695,21 @@ module drned-xmnr {
           uses action-output-common;
         }
       }
+      tailf:action compare-yang-sets {
+        input {
+          leaf old-set {
+            mandatory true;
+            type string;
+          }
+          leaf new-set {
+            mandatory true;
+            type string;
+          }
+          leaf-list yangpath {
+            type string;
+          }
+        }
+      }
     }
   }
 }

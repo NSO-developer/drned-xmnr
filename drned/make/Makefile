@@ -1,3 +1,5 @@
+NCSVER := $(shell ncsc --version 2> /dev/null)
+
 # Create drned symlinks
 symlinks:
 	rm -f conftest.py && ln -s $(abspath $(DRNED))/adm/conftest.py conftest.py
@@ -19,3 +21,20 @@ covstart:
 	rm -rf drned-work/coverage
 	mkdir -p drned-work/coverage
 .PHONY: covstart
+
+
+yanger_plugins: $(DRNED)/yanger/plugins/$(NCSVER)/yangdiff.beam
+.PHONY: yanger_plugins
+
+YPLUGIN_SRC := $(DRNED)/yanger/yangdiff.erl $(DRNED)/yanger/jsondump.erl
+$(DRNED)/yanger/plugins/$(NCSVER)/yangdiff.beam: $(DRNED)/yanger/hrl/$(NCSVER) $(YPLUGIN_SRC)
+	@mkdir -p $(DRNED)/yanger/plugins/$(NCSVER)
+	@if [ -f "$$NCS_DIR/erlang/yanger/include/yang.hrl" ]; then \
+	    echo 'Found yang.hrl in NSO dist'; \
+	    erlc -I "$$NCS_DIR/erlang/" -o $(DRNED)/yanger/plugins/$(NCSVER) $(DRNED)/yanger/jsondump.erl ;\
+	    erlc -I "$$NCS_DIR/erlang/" -o $(DRNED)/yanger/plugins/$(NCSVER) $(DRNED)/yanger/yangdiff.erl ;\
+	else \
+	    echo 'No yang.hrl in NSO dist, using local'; \
+	    erlc -I $(DRNED)/yanger/hrl/$(NCSVER) -o $(DRNED)/yanger/plugins/$(NCSVER) $(DRNED)/yanger/jsondump.erl ;\
+	    erlc -I $(DRNED)/yanger/hrl/$(NCSVER) -o $(DRNED)/yanger/plugins/$(NCSVER) $(DRNED)/yanger/yangdiff.erl ;\
+	fi
