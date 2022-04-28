@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 import os
 import re
+import subprocess
 
 from _ncs import OPERATIONAL
 from ncs import maagic
@@ -10,7 +11,7 @@ from datetime import datetime
 
 from drned_xmnr.namespaces.drned_xmnr_ns import ns
 
-from .base_op import ActionBase
+from .base_op import ActionBase, Progressor
 from .base_op import maapi_keyless_create
 from .ex import ActionError
 from .parse_log_errors import ProblemData, ProblemsParser
@@ -203,14 +204,32 @@ class ParseLogErrorsOp(ActionBase):
 class CompareYangSetsOp(ActionBase):
     ''' Action handler for `compare-yang-set' action.
     '''
+    action_name = 'compare yang sets'
+
     def _init_params(self, params: Node) -> None:
         self.old: str = params.old_set
         self.new: str = params.new_set
         self.yangpath: List[str] = params.yangpath
 
     def perform(self) -> ActionResult:
-        #FIXME:
-        os.system('./yangdiff.py -d --left {} --right {}'.format(self.old, self.new))
+        args = ['python', 'yangdiff.py', '--left', self.old, '--right', self.new]
+        self.log.debug(f'running {args} in {self.drned_run_directory} / {os.environ["NCS_DIR"]}')
+        env = os.environ.copy()
+        drdir = os.path.join(self.dev_test_dir, 'drned')
+        env.update(DRNED=drdir, PYTHONPATH=drdir)
+        self.drned_process = subprocess.Popen(args,
+                                              env=env,
+                                              cwd=self.drned_run_directory,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.STDOUT)
+        self.log.debug("run_in_drned_env, going in")
+        result, _ = self.proc_run(Progressor(self).progress)
+        if result != 0:
+            raise ActionError('comparing failed')
+        return {'success': 'done comparing'}
+
+    def cli_filter(self, msg):
+        self.cli_write(msg + '\n')
 
 
 NextType = TypeVar('NextType')

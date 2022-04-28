@@ -451,16 +451,14 @@ Diff yang files between ned working-directory and given commit"""
         exclude_regex = [o.exclude_regex]
 
     plugin_dir = o.plugin_dir
-    neddir = o.ned_dir
-    if not neddir and have_drned:
-        neddir = subprocess.check_output("git rev-parse --show-toplevel", shell=True).strip()
+    drneddir = os.environ['DRNED']
 
     plugin_dir_arg = ""
     if plugin_dir:
         plugin_dir_arg = "-P %s" % plugin_dir
     elif have_drned:
-        plugin_dir_arg = "-P %s/drned/yanger/plugins/`ncsc --version`" % os.environ['DRNED']
-        subprocess.check_output("make -C %s/drned/make/ yanger_plugins" % neddir, shell=True)
+        plugin_dir_arg = "-P %s/yanger/plugins" % drneddir
+        subprocess.check_output("make -C %s/make/ yanger_plugins" % drneddir, shell=True)
 
     if o.list_yang_files:
         modinfo = find_yang(neddir + "/src/yang/*.yang")

@@ -46,6 +46,7 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_load_default_config_: common_op.LoadDefaultConfigOp,
         ns.ns.drned_xmnr_save_default_config_: common_op.SaveDefaultConfigOp,
         ns.ns.drned_xmnr_parse_log_errors_: common_op.ParseLogErrorsOp,
+        ns.ns.drned_xmnr_compare_yang_sets_: common_op.CompareYangSetsOp,
     }
 
     def init(self) -> None:
