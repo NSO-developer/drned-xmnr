@@ -551,8 +551,6 @@ Diff yang files between ned working-directory and given commit"""
                     for rm in rc:
                         if rm not in lc and rm in leftmodinfo.all_mods:
                             lmodlist.append(rm)
-                lmodlist.remove('tailf-ncs')
-                rmodlist.remove('tailf-ncs')
                 lfiles = [leftmodinfo.all_mods[lm] for lm in lmodlist]
                 rfiles = [rightmodinfo.all_mods[rm] for rm in rmodlist]
                 jdiff = yang_diff_files(lfiles, rfiles, include_paths=include_paths, exclude_paths=exclude_paths, plugin_dir_arg=plugin_dir_arg)
