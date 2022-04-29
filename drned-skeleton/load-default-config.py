@@ -1,4 +1,3 @@
-from typing import TYPE_CHECKING
 from argparse import Namespace
 from contextlib import closing
 import sys
@@ -16,14 +15,8 @@ def _load_default_config(nso_device: NcsDevice, target_device: Devcli) -> None:
         sys.exit(-1)
 
 
-if TYPE_CHECKING:
-    ClosedDevcli = closing[Devcli]
-else:
-    ClosedDevcli = closing
-
-
 def load_default_config(nsargs: Namespace) -> None:
-    def init_cli_dev() -> ClosedDevcli:
+    def init_cli_dev() -> 'closing[Devcli]':
         return closing(Devcli(nsargs))
 
     def init_nso_dev(devcli: Devcli) -> NcsDevice:
