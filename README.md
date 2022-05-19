@@ -132,6 +132,30 @@ more details about the problem in case of failure).
     covered; the tool implements a simple wrapper around this DrNED capability,
     including status data providing the coverage report in a structured form.
 
+    Typical usage:
+
+    * reset coverage data:
+
+        ncs(config-device-testdev)# drned-xmnr coverage reset
+
+    * do transitions, i.e. walk-states, explore-states etc.
+
+    * collect coverage data:
+
+        ncs(config-device-testdev)# drned-xmnr coverage collect
+
+    * inspect collected coverage data:
+
+        ncs(config-device-testdev)# do show devices device testdev drned-xmnr coverage
+        drned-xmnr coverage data nodes-total 13
+        drned-xmnr coverage data lists-total 3
+        drned-xmnr coverage data percents nodes read-or-set total 4
+        ...
+
+    The coverage data is available in the form of operational data until the
+    next `reset` action.
+
+
 ## Debugging issues
 
 Your main tools for debugging issues are logs.
