@@ -1273,6 +1273,32 @@ class TestCoverage(TestBase):
             assert data['percents'][group] == collect_dict[group]
 
     @xtest_patch
+    def test_coverage_collect_defaults(self, xpatch):
+        collect_dict = {'nodes-total': randint(0, 1000), 'lists-total': randint(0, 1000)}
+        for (group, entries) in self.collect_groups.items():
+            collect_dict[group] = {}
+            for entry in entries:
+                collect_dict[group][entry] = self.line_entry(randint(0, 1000), randint(0, 100))
+        xpatch.system.proc_data(drned_collect_output.format(**collect_dict).encode())
+        root = xpatch.ncs.data['root']
+        devcomponent = mock.Mock(ned=mock.Mock(netconf=mock.Mock(ned_id=mocklib.MOCK_NED_ID)))
+        pkgdir = 'pkgdir'
+        pattern = f'/packages/{pkgdir}/src/yang/*.yang'
+        devpkg = mock.Mock(component=[mock.Mock()], directory=pkgdir)
+        root.packages.package = [mock.Mock(component=[]), devpkg]
+        with mock.patch('glob.glob', return_value=['testfile']) as glob:
+            # this fails, no suitable component is available
+            output = self.invoke_action('collect', yang_patterns=[])
+            assert output.success is None
+            assert 'package could not be found' in output.failure
+            glob.assert_not_called()
+            # this passes
+            devpkg.component.append(devcomponent)
+            output = self.invoke_action('collect', yang_patterns=[])
+            self.check_output(output)
+            glob.assert_called_once_with(pattern)
+
+    @xtest_patch
     def test_coverage_failure(self, xpatch):
         log = mock.Mock()
         cdata = coverage_op.DataHandler(log)

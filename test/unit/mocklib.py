@@ -70,6 +70,7 @@ XMNR_DIRECTORY = 'test_xmnr_dir'
 DRNED_DIRECTORY = 'drned_dir'
 DEVICE_NAME = 'mock-device'
 XMNR_INSTALL = 'xmnr-install'
+MOCK_NED_ID = 'id:mock-id-1.0'
 
 
 class TransMgr(object):
@@ -98,7 +99,7 @@ def mock_path(path, value):
 @contextmanager
 def ncs_mock():
     nonex = Mock(exists=lambda: False)
-    device = Mock(device_type=Mock(ne_type='netconf', netconf='netconf'),
+    device = Mock(device_type=Mock(ne_type='netconf', netconf=Mock(ned_id=MOCK_NED_ID)),
                   read_timeout=None, address='1.2.3.4', port='5555', authgroup='default')
     authgrp = Mock(default_map=Mock(remote_name='admin', remote_password='admin',
                                     same_name=nonex, same_pass=nonex),

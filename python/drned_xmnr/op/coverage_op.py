@@ -16,7 +16,9 @@ from .common_op import Handler
 
 from typing import Any, Dict, List, Sequence
 from drned_xmnr.typing_xmnr import ActionResult, Tctx
+from ncs import maagic
 from ncs.maagic import Node
+from ncs.maapi import Transaction
 from ncs.log import Log
 
 
@@ -35,6 +37,10 @@ class CoverageOp(base_op.ActionBase):
 
     def _init_params(self, params: Node) -> None:
         self.patterns: List[str] = list(params.yang_patterns)
+
+    def cli_filter(self, msg: str) -> None:
+        # no output from DrNED should be passed to CLI
+        return
 
     def perform(self) -> ActionResult:
         if self.patterns == []:
@@ -55,9 +61,28 @@ class CoverageOp(base_op.ActionBase):
         self.parse_output(output)
         return {'success': "Completed successfully"}
 
+    def device_package_name(self, trans: Transaction) -> str:
+        root = maagic.get_root(trans)
+        devtype = root.devices.device[self.dev_name].device_type
+        if devtype.ne_type != 'netconf':
+            raise ActionError('Non-netconf device; yang-patterns must be provided for collect')
+        ned_id = devtype.netconf.ned_id
+        for package in root.packages.package:
+            for component in package.component:
+                try:
+                    if component.ned.netconf.ned_id == ned_id:
+                        # package.directory is something like state/packages-in-use/nedname
+                        return str(os.path.basename(package.directory))
+                except AttributeError:
+                    continue
+        raise ActionError('NED package could not be found; '
+                          'yang-patterns must be provided for collect')
+
     def device_modules_pattern(self) -> str:
-        # FIXME: should we try to lookup device package first?
-        return os.path.join(os.getcwd(), 'packages', self.dev_name, 'src', 'yang', '*.yang')
+        pkg_name = self.run_with_trans(self.device_package_name)
+        if pkg_name is not None:
+            return os.path.join(os.getcwd(), 'packages', pkg_name, 'src', 'yang', '*.yang')
+        return ''
 
     def parse_output(self, output: str) -> None:
         lines = iter(output.split('\n'))

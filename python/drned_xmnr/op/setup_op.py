@@ -146,16 +146,6 @@ class SetupOp(base_op.ActionBase):
         self.drned_skeleton = os.path.join(xmnr_pkg, 'drned-skeleton')
         self.drned_submod = os.path.join(xmnr_pkg, 'drned')
 
-    def find_ned_package(self, root: Node, ned_id: str, ned_type: str) -> Node:
-        for package in root.packages.package:
-            for component in package.component:
-                try:
-                    if getattr(component.ned, ned_type).ned_id == ned_id:
-                        return package
-                except AttributeError:
-                    continue
-        return None
-
     def setup_drned(self) -> None:
         env = self.run_with_trans(self.setup_drned_env)
         self.drned_process = subprocess.Popen(['make', 'env.sh'],

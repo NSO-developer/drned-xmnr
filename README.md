@@ -144,6 +144,14 @@ more details about the problem in case of failure).
 
             ncs(config-device-testdev)# drned-xmnr coverage collect
 
+      Note that in this short form the tool looks up the NED package and uses
+      all its YANG modules.  This may take long and yield very low coverage
+      percentage.  If only a subset of YANG modules is relevant for the
+      coverage test, use a path pattern (or patterns) with wildcards pointing
+      to the interesting files like this:
+
+              ... coverage collect yang-patterns [ <pattern1> <pattern2> ... ]
+
     * inspect collected coverage data:
 
             ncs(config-device-testdev)# do show devices device testdev drned-xmnr coverage
