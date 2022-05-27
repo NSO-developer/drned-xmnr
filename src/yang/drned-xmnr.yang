@@ -48,10 +48,14 @@ module drned-xmnr {
   }
   typedef state-file-format {
     type enumeration {
-      enum xml;
-      enum c-style;
+      enum nso-xml {
+        tailf:code-name state-nso-xml;
+      }
+      enum nso-c-style {
+        tailf:code-name state-nso-c;
+      }
     }
-    default xml;
+    default nso-xml;
   }
 
   container drned-xmnr {
@@ -373,7 +377,7 @@ module drned-xmnr {
                 enum nso-xml;
                 enum nso-c-style;
               }
-              default xml;
+              default nso-xml;
             }
             leaf target-format {
               type state-file-format;

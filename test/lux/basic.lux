@@ -52,12 +52,12 @@
     !config dhcp default-lease-time 200s
     !commit
     ???Commit complete.
-    !drned-xmnr state record-state state-name time format c-style overwrite true
+    !drned-xmnr state record-state state-name time format nso-c-style overwrite true
     ???success
     !drned-xmnr state record-state state-name time
     ???failure state time already exists
     ~drned-xmnr state import-state-files
-    ! file-path-pattern ../subnet.xml merge false overwrite true
+    ! file-path-pattern ../subnet.xml merge false overwrite true format xml
     ???success
     ~drned-xmnr state import-state-files
     ! file-path-pattern ../dhcp-ls.cfg format nso-c-style merge false overwrite true
