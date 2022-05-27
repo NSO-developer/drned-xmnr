@@ -337,7 +337,6 @@ class ActionBase(XmnrBase):
         return 0
 
     def cli_filter(self, msg: str) -> None:
-        print('cli filter', msg)
         self.cli_write(msg)
 
     def progress_msg(self, msg: str) -> None:
