@@ -39,7 +39,7 @@ class FilteringTest(object):
             ctx = filtering.run_test_filter(self.filter, logfile, out=out, level=level)
             with open(logbase + ext) as res:
                 assert out.getvalue() == res.read()
-            assert(ctx.test_events == events)
+            assert ctx.test_events == events
 
 
 class TestTransitions(FilteringTest):
