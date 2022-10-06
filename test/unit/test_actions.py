@@ -452,7 +452,7 @@ class TestStates(TestBase):
         xpatch.system.socket_data(test_state_data.encode())
         output = self.invoke_action('record-state',
                                     state_name='test_state',
-                                    format="c-style",
+                                    format="nso-c-style",
                                     overwrite=False,
                                     including_rollbacks=None)
         self.check_output(output)
@@ -468,7 +468,7 @@ class TestStates(TestBase):
         xpatch.system.socket_data(test_state_data_xml.encode())
         output = self.invoke_action('record-state',
                                     state_name='test_state_xml',
-                                    format="xml",
+                                    format="nso-xml",
                                     overwrite=False,
                                     including_rollbacks=None)
         self.check_output(output)

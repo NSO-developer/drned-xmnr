@@ -183,7 +183,7 @@ class RecordStateOp(ConfigOp):
             state_name_index = state_name
             if index > 0:
                 state_name_index = state_name + "-" + str(index)
-            format = 'xml' if 'xml' == str(self.style_format) else 'cfg'
+            format = 'xml' if 'nso-xml' == str(self.style_format) else 'cfg'
             existing_filename = self.state_name_to_existing_filename(state_name_index)
             if existing_filename is not None:
                 if not self.overwrite:
