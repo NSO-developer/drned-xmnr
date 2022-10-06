@@ -196,7 +196,7 @@ class ExploreTransitionsOp(StatesTransitionsOp):
         states = self.state_filenames
         num_states = len(states)
         num_transitions = num_states * (num_states - 1)
-        if(0 == num_transitions):
+        if 0 == num_transitions:
             return {'failure': "Could not process the request",
                     'error': "No transitions to make. Run 'config record-state' or "
                     "'config import-state-files' several times "
