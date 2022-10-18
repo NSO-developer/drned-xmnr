@@ -87,7 +87,7 @@ class SetupOp(base_op.ActionBase):
                                    'package-meta-data.xml'),
                       'w') as meta:
                 if not self.queue:
-                    print('<requires-transaction-states/>', file=meta)
+                    meta.write('<requires-transaction-states/>\n')
         except OSError as ose:
             msg = "Failed to set up package-meta-data file {0}".format(os.strerror(ose.errno))
             raise ActionError(msg)
