@@ -2,6 +2,7 @@ import os
 import glob
 import sys
 import traceback
+import threading
 
 import _ncs
 from ncs import dp, application, experimental
@@ -16,7 +17,7 @@ from drned_xmnr.op import coverage_op
 from drned_xmnr.op import common_op
 from drned_xmnr.op.ex import ActionError
 
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Dict, List, Optional, Tuple, Type, Any
 from drned_xmnr.typing_xmnr import OptArgs, ActionResult
 from drned_xmnr.op.base_op import ActionBase
 from ncs.log import Log
@@ -48,8 +49,9 @@ class ActionHandler(dp.Action):
         ns.ns.drned_xmnr_parse_log_errors_: common_op.ParseLogErrorsOp,
     }
 
-    def init(self) -> None:
-        self.running_handler: Optional[ActionBase] = None
+    def init(self, *args: Any) -> None:
+        self.running_handlers: Dict[int, ActionBase] = {}
+        self.handlers_lock: threading.Lock = threading.Lock()
 
     @dp.Action.action
     def cb_action(self, uinfo: _ncs.UserInfo, op_name: str, kp: _ncs.HKeypathRef, input: Node, output: Node) -> None:
@@ -62,10 +64,12 @@ class ActionHandler(dp.Action):
             if op_name not in self.handlers:
                 raise ActionError(handler_error)
             handler_cls = self.handlers[op_name]
-            self.running_handler = handler_cls(uinfo, dev_name, input, self.log)
-            if self.running_handler is None:
+            handler = handler_cls(uinfo, dev_name, input, self.log)
+            if handler is None:
                 raise ActionError(handler_error)
-            result = self.running_handler.perform_action()
+            with self.handlers_lock:
+                self.running_handlers[uinfo.usid] = handler
+            result = handler.perform_action()
             return self.action_response(uinfo, result, output)
 
         except ActionError as ae:
@@ -77,11 +81,14 @@ class ActionHandler(dp.Action):
             output.failure = "Operation failed"
 
         finally:
-            self.running_handler = None
+            with self.handlers_lock:
+                if uinfo.usid in self.running_handlers:
+                    del self.running_handlers[uinfo.usid]
 
     def cb_abort(self, uinfo: _ncs.UserInfo) -> None:
         self.log.debug('aborting the action')
-        handler = self.running_handler
+        with self.handlers_lock:
+            handler = self.running_handlers.get(uinfo.usid)
         if handler is not None:
             handler.abort_action()
 
@@ -164,7 +171,8 @@ class XmnrDataHandler(application.Service):
 
 class Xmnr(application.Application):
     def setup(self) -> None:
-        self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler)
+        args = {'arg': 'value'}  # needed to make sure init() is invoked
+        self.register_action(ns.ns.actionpoint_drned_xmnr, ActionHandler, args)
         self.register_action('drned-xmnr-completion', CompletionHandler)
         self.register_service(ns.ns.callpoint_coverage_data, XmnrDataHandler)
         self.register_service(ns.ns.callpoint_xmnr_states, XmnrDataHandler)

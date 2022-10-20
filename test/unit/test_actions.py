@@ -285,6 +285,7 @@ class TestBase(object):
     def invoke_action(self, action_name, **action_params):
         params = mock.Mock(spec=action_params.keys(), **action_params)
         ah = action.ActionHandler()
+        ah.init()
         self.setup_log(ah)
         kp = [[mocklib.DEVICE_NAME], None, None]
         output = mock.Mock(error=None, failure=None, success=None)
@@ -311,7 +312,8 @@ class TestStartup(TestBase):
     def test_registry(self):
         xmnr = action.Xmnr()
         xmnr.setup()
-        xmnr.register_action.assert_has_calls([mock.call('drned-xmnr', action.ActionHandler),
+        xmnr.register_action.assert_has_calls([mock.call('drned-xmnr', action.ActionHandler,
+                                                         {'arg': 'value'}),
                                                mock.call('drned-xmnr-completion',
                                                          action.CompletionHandler)])
         xmnr.register_service.assert_has_calls([mock.call('coverage-data', action.XmnrDataHandler),
