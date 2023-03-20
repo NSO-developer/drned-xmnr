@@ -22,7 +22,7 @@ package. Using the tool's actions you can:
 
 ## Prerequisites
 
-The tool is supported to run on Python 3.6 or newer.
+The tool is supported to run on Python 3.7 or newer.
 
 Apart form that, several Python packages are needed: `pytest`, `pexpect`, and
 `lxml`; `pytest` version needs to be at least 3.0.  There are several options
